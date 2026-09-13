@@ -1,0 +1,173 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 800" width="100%" height="100%">
+  <defs>
+    <!-- Shelf Ambient Lighting -->
+    <linearGradient id="shelfGrad" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stopColor="#120c08" />
+      <stop offset="40%" stopColor="#25170f" />
+      <stop offset="85%" stopColor="#1a110a" />
+      <stop offset="100%" stopColor="#0a0704" />
+    </linearGradient>
+
+    <radialGradient id="shelfWarmGlow" cx="60%" cy="20%" r="70%">
+      <stop offset="0%" stopColor="#f59e0b" stopOpacity="0.12" />
+      <stop offset="60%" stopColor="#78350f" stopOpacity="0.04" />
+      <stop offset="100%" stopColor="#000000" stopOpacity="0" />
+    </radialGradient>
+
+    <!-- Paper & Spine Gradients -->
+    <linearGradient id="paperGrad" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0%" stopColor="#E5E5E7" />
+      <stop offset="5%" stopColor="#F9F9FB" />
+      <stop offset="95%" stopColor="#F6F6F8" />
+      <stop offset="100%" stopColor="#E7E7E9" />
+    </linearGradient>
+
+    <linearGradient id="spineGrad2" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0%" stopColor="#CECECE" />
+      <stop offset="40%" stopColor="#ECECEC" />
+      <stop offset="85%" stopColor="#C4C4C4" />
+      <stop offset="100%" stopColor="#808080" />
+    </linearGradient>
+
+    <!-- Bull Medallion Gradient -->
+    <radialGradient id="coinGrad" cx="35%" cy="35%" r="65%">
+      <stop offset="0%" stopColor="#4B5563" />
+      <stop offset="50%" stopColor="#1F2937" />
+      <stop offset="100%" stopColor="#0B0F17" />
+    </radialGradient>
+    <linearGradient id="coinRim" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stopColor="#9CA3AF" />
+      <stop offset="50%" stopColor="#374151" />
+      <stop offset="100%" stopColor="#111827" />
+    </linearGradient>
+
+    <!-- Shadows -->
+    <filter id="bookShadow2" x="-15%" y="-10%" width="130%" height="130%">
+      <feDropShadow dx="18" dy="24" stdDeviation="16" flood-color="#000000" flood-opacity="0.75" />
+    </filter>
+    <filter id="embossBull" x="-10%" y="-10%" width="120%" height="120%">
+      <feDropShadow dx="2" dy="2" stdDeviation="1.5" flood-color="#000000" flood-opacity="0.8" />
+    </filter>
+  </defs>
+
+  <!-- Bookshelf Background -->
+  <rect width="600" height="800" fill="url(#shelfGrad)" />
+  <rect width="600" height="800" fill="url(#shelfWarmGlow)" />
+
+  <!-- Wooden Shelf Surface Lines -->
+  <rect x="0" y="725" width="600" height="75" fill="#180e07" />
+  <line x1="0" y1="725" x2="600" y2="725" stroke="#3d2516" stroke-width="3" />
+  <line x1="0" y1="728" x2="600" y2="728" stroke="#0a0503" stroke-width="1.5" />
+
+  <!-- Nearby Books on Shelf (Background Context) -->
+  <g opacity="0.35">
+    <!-- Book on left -->
+    <rect x="15" y="110" width="60" height="615" fill="#374151" rx="2" />
+    <line x1="15" y1="200" x2="75" y2="200" stroke="#D97706" stroke-width="2" />
+    <line x1="15" y1="640" x2="75" y2="640" stroke="#D97706" stroke-width="2" />
+    <!-- Book on right -->
+    <rect x="525" y="140" width="65" height="585" fill="#2E1065" rx="2" />
+    <line x1="525" y1="230" x2="590" y2="230" stroke="#F59E0B" stroke-width="2" />
+  </g>
+
+  <!-- Ground Contact Shadow -->
+  <ellipse cx="300" cy="735" rx="210" ry="20" fill="#000000" opacity="0.85" />
+
+  <!-- 3D BOOK STRUCTURE -->
+  <g filter="url(#bookShadow2)">
+    <!-- Book Spine -->
+    <path d="M 95 80 L 135 68 L 135 715 L 95 730 Z" fill="url(#spineGrad2)" />
+    <!-- Spine Typography -->
+    <g transform="translate(118, 380) rotate(-90)">
+      <text x="-60" y="0" text-anchor="middle" font-family="'Impact', 'Arial Black', sans-serif" font-size="12" font-weight="900" fill="#18181B" letter-spacing="2">
+        THE AI PROMPT ENGINEERING HANDBOOK
+      </text>
+      <text x="180" y="0" text-anchor="middle" font-family="'Inter', sans-serif" font-size="11" font-weight="bold" fill="#3F3F46" letter-spacing="1.5">
+        M. DINGA
+      </text>
+    </g>
+    <!-- Mini Spine Bull -->
+    <circle cx="115" cy="690" r="10" fill="#18181B" />
+    <circle cx="115" cy="690" r="8" fill="none" stroke="#FFFFFF" stroke-width="0.8" opacity="0.4" />
+
+    <!-- Front Cover Surface -->
+    <rect x="135" y="68" width="380" height="647" rx="5" fill="url(#paperGrad)" />
+
+    <!-- Edge highlights & creasing -->
+    <line x1="136" y1="68" x2="136" y2="715" stroke="#FFFFFF" stroke-width="2" />
+    <line x1="140" y1="68" x2="140" y2="715" stroke="#DCDCE0" stroke-width="1" />
+    <line x1="513" y1="69" x2="513" y2="714" stroke="#D1D1D6" stroke-width="1.5" />
+    <line x1="135" y1="714" x2="514" y2="714" stroke="#B8B8BD" stroke-width="1.5" />
+
+    <!-- ================= COVER DESIGN ================= -->
+
+    <!-- Top Right Author -->
+    <text x="490" y="115" text-anchor="end" font-family="'Montserrat', 'Arial Black', sans-serif" font-size="18" font-weight="900" fill="#18181B" letter-spacing="1">
+      M. DINGA
+    </text>
+
+    <!-- HUGE BOLD SWISS / MODERNIST DISPLAY TYPOGRAPHY -->
+    <g transform="translate(170, 195)">
+      <text x="0" y="0" font-family="'Arial Black', 'Impact', sans-serif" font-size="64" font-weight="900" fill="#09090B" letter-spacing="1">
+        THE AI
+      </text>
+      <text x="0" y="80" font-family="'Arial Black', 'Impact', sans-serif" font-size="64" font-weight="900" fill="#09090B" letter-spacing="1">
+        PROMPT
+      </text>
+      <text x="0" y="160" font-family="'Arial Black', 'Impact', sans-serif" font-size="47" font-weight="900" fill="#09090B" letter-spacing="-0.5">
+        ENGINEERING
+      </text>
+      <g>
+        <text x="0" y="240" font-family="'Arial Black', 'Impact', sans-serif" font-size="52" font-weight="900" fill="#09090B" letter-spacing="0">
+          HANDBOOK
+        </text>
+        <!-- The stylish open curly brace in gray -->
+        <text x="312" y="240" font-family="'Arial Black', 'Courier New', monospace" font-size="64" font-weight="400" fill="#71717A">
+          {
+        </text>
+      </g>
+    </g>
+
+    <!-- SUBTITLE BLOCK -->
+    <g transform="translate(260, 490)">
+      <text x="0" y="0" font-family="'Arial Black', 'Montserrat', sans-serif" font-size="20" font-weight="900" fill="#18181B" letter-spacing="0.5">
+        FOR TRADING
+      </text>
+      <text x="0" y="28" font-family="'Arial Black', 'Montserrat', sans-serif" font-size="20" font-weight="900" fill="#18181B" letter-spacing="0.5">
+        AUTOMATION (Vol 2)
+      </text>
+
+      <!-- Red Highlighted Text -->
+      <g transform="translate(0, 68)" font-family="'Inter', 'Helvetica Neue', sans-serif" font-size="15" font-weight="800">
+        <text x="0" y="0" fill="#18181B">
+          Build Trading <tspan fill="#DC2626">Robots &amp;</tspan>
+        </text>
+        <text x="0" y="24" fill="#18181B">
+          Indicators Using Purely AI
+        </text>
+      </g>
+    </g>
+
+    <!-- 3D SCULPTED CHARGING BULL MEDALLION (Bottom Left) -->
+    <g transform="translate(205, 545)" filter="url(#embossBull)">
+      <!-- Outer Rim -->
+      <circle cx="0" cy="0" r="42" fill="url(#coinRim)" stroke="#09090B" stroke-width="2" />
+      <!-- Inner Coin Face -->
+      <circle cx="0" cy="0" r="38" fill="url(#coinGrad)" />
+      <circle cx="0" cy="0" r="35" fill="none" stroke="#6B7280" stroke-width="0.8" opacity="0.6" />
+
+      <!-- Wall Street Charging Bull Silhouette -->
+      <g fill="#E5E7EB" transform="translate(-25, -20) scale(0.68)">
+        <!-- Muscular head, horns, body, legs of charging bull -->
+        <path d="M 45 10 C 47 6, 52 4, 56 6 C 58 7, 56 12, 53 14 C 58 14, 63 17, 65 22 C 67 27, 63 33, 60 36 L 56 34 C 57 32, 58 28, 56 25 C 53 23, 49 23, 46 25 L 43 28 C 38 23, 31 21, 25 21 C 18 21, 12 24, 8 30 L 10 33 C 13 28, 18 26, 24 26 C 29 26, 34 29, 37 34 L 35 48 L 30 58 L 24 58 L 20 45 L 14 45 L 14 58 L 8 58 L 10 40 C 6 36, 4 30, 4 24 C 4 15, 12 8, 22 8 C 29 8, 36 12, 40 17 Z" />
+        <path d="M 48 10 C 51 4, 56 0, 62 2 C 65 3, 63 8, 59 10 Z" fill="#F3F4F6" />
+        <circle cx="56" cy="22" r="2.5" fill="#111827" />
+        <!-- Powerful shoulder ridge -->
+        <ellipse cx="32" cy="28" rx="8" ry="5" fill="#D1D5DB" opacity="0.4" />
+      </g>
+    </g>
+
+    <!-- Bottom Spine/Base Highlight -->
+    <line x1="135" y1="712" x2="515" y2="712" stroke="#FFFFFF" stroke-width="1" opacity="0.6" />
+  </g>
+</svg>

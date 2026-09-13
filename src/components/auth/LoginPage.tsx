@@ -1,0 +1,350 @@
+import { useState, useEffect } from 'react';
+import { useAuth } from '../../context/AuthContext.tsx';
+import { ActiveView } from '../../types.ts';
+import { 
+  LogIn, 
+  UserPlus, 
+  Mail, 
+  Lock, 
+  User as UserIcon, 
+  AlertCircle, 
+  CheckCircle2, 
+  Eye, 
+  EyeOff, 
+  ArrowLeft,
+  Shield,
+  Loader2
+} from 'lucide-react';
+
+interface LoginPageProps {
+  onNavigate: (view: ActiveView) => void;
+  initialMode?: 'login' | 'register';
+}
+
+export function LoginPage({ onNavigate, initialMode = 'login' }: LoginPageProps) {
+  const { user, login, register, loading: authLoading, isAdmin } = useAuth();
+
+  const [mode, setMode] = useState<'login' | 'register'>(initialMode);
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [name, setName] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
+
+  const [submitting, setSubmitting] = useState(false);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [infoMessage, setInfoMessage] = useState<string | null>(null);
+
+  // If user is already authenticated, redirect to /portal
+  useEffect(() => {
+    if (user && !authLoading) {
+      onNavigate('portal');
+    }
+  }, [user, authLoading, onNavigate]);
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setErrorMessage(null);
+    setInfoMessage(null);
+
+    if (!email.trim()) {
+      setErrorMessage('Please enter your email address.');
+      return;
+    }
+    if (!password) {
+      setErrorMessage('Please enter your password.');
+      return;
+    }
+    if (password.length < 6) {
+      setErrorMessage('Password must be at least 6 characters.');
+      return;
+    }
+
+    setSubmitting(true);
+
+    try {
+      if (mode === 'login') {
+        const result = await login(email, password);
+        if (!result.success) {
+          setErrorMessage(result.error || 'Invalid login credentials');
+        } else {
+          // Upon successful login, instantly redirect to /portal
+          onNavigate('portal');
+        }
+      } else {
+        const result = await register({
+          email: email.trim(),
+          password,
+          name: name.trim() || undefined,
+        });
+
+        if (!result.success) {
+          setErrorMessage(result.error || 'Registration failed. Please check your details.');
+        } else {
+          if (result.message) {
+            setInfoMessage(result.message);
+          }
+          // If session was created, redirect to /portal
+          if (!result.message) {
+            onNavigate('portal');
+          }
+        }
+      }
+    } catch (err: any) {
+      setErrorMessage(err.message || 'An unexpected error occurred. Please try again.');
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  return (
+    <div className="min-h-[85vh] bg-[#070B14] flex flex-col justify-center items-center px-4 py-12 relative overflow-hidden">
+      {/* Background Ambient Glows */}
+      <div className="absolute top-1/4 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[550px] h-[550px] bg-emerald-500/10 rounded-full blur-[120px] pointer-events-none -z-10" />
+      <div className="absolute bottom-10 right-10 w-96 h-96 bg-teal-500/5 rounded-full blur-[100px] pointer-events-none -z-10" />
+
+      {/* Return Navigation Links */}
+      <div className="w-full max-w-md mb-6 flex items-center justify-between">
+        <button
+          onClick={() => onNavigate('home')}
+          className="inline-flex items-center gap-2 text-xs font-mono text-slate-400 hover:text-emerald-400 transition-colors group cursor-pointer"
+        >
+          <ArrowLeft className="w-3.5 h-3.5 group-hover:-translate-x-0.5 transition-transform" />
+          <span>Return to Storefront</span>
+        </button>
+
+        <button
+          onClick={() => onNavigate('academy')}
+          className="inline-flex items-center gap-1.5 text-xs font-mono text-emerald-400 hover:text-emerald-300 transition-colors cursor-pointer"
+        >
+          <span>Academy</span>
+          <ArrowLeft className="w-3 h-3 rotate-180" />
+        </button>
+      </div>
+
+      {/* Authentication Card */}
+      <div className="w-full max-w-md bg-[#0B111E] border border-slate-800/90 rounded-2xl p-6 sm:p-8 shadow-[0_20px_60px_rgba(0,0,0,0.8)] backdrop-blur-xl">
+        {/* Brand & Title */}
+        <div className="text-center mb-6">
+          <div className="inline-flex items-center justify-center w-12 h-12 rounded-xl bg-slate-900 border border-slate-700/80 mb-3 shadow-inner">
+            <Shield className="w-6 h-6 text-emerald-400" />
+          </div>
+          <h1 className="text-xl sm:text-2xl font-extrabold text-white tracking-tight">
+            {mode === 'login' ? 'Sign In to Your Account' : 'Create Trader Account'}
+          </h1>
+          <p className="text-xs text-slate-400 mt-1.5 font-sans">
+            {mode === 'login' 
+              ? 'Access your purchased EAs, downloads, license keys, and project portals.' 
+              : 'Join EA Automation Hub for automated trading systems and algorithmic guides.'}
+          </p>
+        </div>
+
+        {/* Mode Toggle Switch */}
+        <div className="grid grid-cols-2 p-1 bg-[#070B14] border border-slate-800 rounded-xl mb-6">
+          <button
+            type="button"
+            onClick={() => {
+              setMode('login');
+              setErrorMessage(null);
+              setInfoMessage(null);
+            }}
+            className={`py-2 text-xs font-semibold rounded-lg transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
+              mode === 'login'
+                ? 'bg-slate-800/90 text-white shadow-md border border-slate-700/60'
+                : 'text-slate-400 hover:text-slate-200'
+            }`}
+          >
+            <LogIn className="w-3.5 h-3.5" />
+            <span>Log In</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => {
+              setMode('register');
+              setErrorMessage(null);
+              setInfoMessage(null);
+            }}
+            className={`py-2 text-xs font-semibold rounded-lg transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
+              mode === 'register'
+                ? 'bg-emerald-500/20 text-emerald-300 shadow-md border border-emerald-500/30 font-bold'
+                : 'text-slate-400 hover:text-slate-200'
+            }`}
+          >
+            <UserPlus className="w-3.5 h-3.5" />
+            <span>Create Account</span>
+          </button>
+        </div>
+
+        {/* Error Notification */}
+        {errorMessage && (
+          <div 
+            id="auth-error-banner"
+            className="mb-5 p-3.5 rounded-xl bg-rose-500/10 border border-rose-500/30 text-rose-300 text-xs flex items-start gap-2.5 animate-fadeIn"
+          >
+            <AlertCircle className="w-4 h-4 text-rose-400 shrink-0 mt-0.5" />
+            <div className="leading-relaxed">
+              <span className="font-semibold block text-rose-200">Authentication Error</span>
+              <span>{errorMessage}</span>
+            </div>
+          </div>
+        )}
+
+        {/* Info Notification */}
+        {infoMessage && (
+          <div 
+            id="auth-info-banner"
+            className="mb-5 p-3.5 rounded-xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-300 text-xs flex items-start gap-2.5 animate-fadeIn"
+          >
+            <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0 mt-0.5" />
+            <div className="leading-relaxed">
+              <span className="font-semibold block text-emerald-200">Verification Sent</span>
+              <span>{infoMessage}</span>
+            </div>
+          </div>
+        )}
+
+        {/* Auth Form */}
+        <form onSubmit={handleSubmit} className="space-y-4">
+          {/* Optional Name (Register Mode) */}
+          {mode === 'register' && (
+            <div>
+              <label className="block text-xs font-medium text-slate-300 mb-1.5 font-mono">
+                Full Name (Optional)
+              </label>
+              <div className="relative">
+                <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-500">
+                  <UserIcon className="w-4 h-4" />
+                </div>
+                <input
+                  type="text"
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  placeholder="Alexander Trader"
+                  className="w-full pl-10 pr-4 py-2.5 bg-[#070B14] border border-slate-800 rounded-xl text-white text-sm placeholder-slate-600 focus:outline-none focus:border-emerald-500/80 focus:ring-1 focus:ring-emerald-500/80 transition-colors"
+                />
+              </div>
+            </div>
+          )}
+
+          {/* Email Field (Required) */}
+          <div>
+            <label className="block text-xs font-medium text-slate-300 mb-1.5 font-mono">
+              Email Address <span className="text-emerald-400">*</span>
+            </label>
+            <div className="relative">
+              <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-500">
+                <Mail className="w-4 h-4" />
+              </div>
+              <input
+                type="email"
+                required
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="your.email@gmail.com"
+                autoComplete="email"
+                className="w-full pl-10 pr-4 py-2.5 bg-[#070B14] border border-slate-800 rounded-xl text-white text-sm placeholder-slate-600 focus:outline-none focus:border-emerald-500/80 focus:ring-1 focus:ring-emerald-500/80 transition-colors"
+              />
+            </div>
+          </div>
+
+          {/* Password Field (Required) */}
+          <div>
+            <div className="flex items-center justify-between mb-1.5">
+              <label className="block text-xs font-medium text-slate-300 font-mono">
+                Password <span className="text-emerald-400">*</span>
+              </label>
+              {mode === 'login' && (
+                <span className="text-[11px] text-slate-500 font-mono">
+                  Min 6 characters
+                </span>
+              )}
+            </div>
+            <div className="relative">
+              <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-500">
+                <Lock className="w-4 h-4" />
+              </div>
+              <input
+                type={showPassword ? 'text' : 'password'}
+                required
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                placeholder="••••••••••••"
+                autoComplete={mode === 'login' ? 'current-password' : 'new-password'}
+                className="w-full pl-10 pr-11 py-2.5 bg-[#070B14] border border-slate-800 rounded-xl text-white text-sm placeholder-slate-600 focus:outline-none focus:border-emerald-500/80 focus:ring-1 focus:ring-emerald-500/80 transition-colors"
+              />
+              <button
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                className="absolute inset-y-0 right-0 pr-3.5 flex items-center text-slate-500 hover:text-slate-300 transition-colors cursor-pointer"
+                aria-label="Toggle password visibility"
+              >
+                {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+              </button>
+            </div>
+          </div>
+
+          {/* Submit Button */}
+          <button
+            type="submit"
+            disabled={submitting}
+            className="w-full mt-2 py-3 px-4 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-400 hover:to-teal-400 text-slate-950 font-extrabold text-sm tracking-wide shadow-lg shadow-emerald-500/20 hover:shadow-emerald-500/35 transition-all flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            {submitting ? (
+              <>
+                <Loader2 className="w-4 h-4 animate-spin" />
+                <span>{mode === 'login' ? 'Authenticating...' : 'Creating Account...'}</span>
+              </>
+            ) : mode === 'login' ? (
+              <>
+                <LogIn className="w-4 h-4" />
+                <span>Log In to Account</span>
+              </>
+            ) : (
+              <>
+                <UserPlus className="w-4 h-4" />
+                <span>Create Trader Account</span>
+              </>
+            )}
+          </button>
+        </form>
+
+        {/* Footer info */}
+        <div className="mt-6 pt-5 border-t border-slate-800/80 text-center text-xs text-slate-400">
+          {mode === 'login' ? (
+            <p>
+              Don't have an account yet?{' '}
+              <button
+                type="button"
+                onClick={() => {
+                  setMode('register');
+                  setErrorMessage(null);
+                  setInfoMessage(null);
+                }}
+                className="text-emerald-400 hover:text-emerald-300 font-semibold cursor-pointer underline underline-offset-2"
+              >
+                Create Account
+              </button>
+            </p>
+          ) : (
+            <p>
+              Already registered?{' '}
+              <button
+                type="button"
+                onClick={() => {
+                  setMode('login');
+                  setErrorMessage(null);
+                  setInfoMessage(null);
+                }}
+                className="text-emerald-400 hover:text-emerald-300 font-semibold cursor-pointer underline underline-offset-2"
+              >
+                Log In
+              </button>
+            </p>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+export default LoginPage;

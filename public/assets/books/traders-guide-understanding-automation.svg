@@ -1,0 +1,272 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 800" width="100%" height="100%">
+  <defs>
+    <!-- Background Gradient -->
+    <linearGradient id="bgStudio" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stopColor="#080e14" />
+      <stop offset="50%" stopColor="#111a24" />
+      <stop offset="100%" stopColor="#1a1410" />
+    </linearGradient>
+    <radialGradient id="emeraldAmbient" cx="40%" cy="30%" r="65%">
+      <stop offset="0%" stopColor="#10b981" stopOpacity="0.2" />
+      <stop offset="60%" stopColor="#064e3b" stopOpacity="0.05" />
+      <stop offset="100%" stopColor="#000000" stopOpacity="0" />
+    </radialGradient>
+
+    <!-- Metallic Emerald & Gold Text Gradients -->
+    <linearGradient id="emeraldGold" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stopColor="#6EE7B7" />
+      <stop offset="35%" stopColor="#10B981" />
+      <stop offset="70%" stopColor="#059669" />
+      <stop offset="100%" stopColor="#064E3B" />
+    </linearGradient>
+    <linearGradient id="goldAccent" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stopColor="#FDE68A" />
+      <stop offset="40%" stopColor="#D97706" />
+      <stop offset="80%" stopColor="#B45309" />
+      <stop offset="100%" stopColor="#78350F" />
+    </linearGradient>
+
+    <!-- Paper & Spine -->
+    <linearGradient id="paperWhite" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0%" stopColor="#E7E9EC" />
+      <stop offset="5%" stopColor="#FAFAFC" />
+      <stop offset="95%" stopColor="#F6F7F9" />
+      <stop offset="100%" stopColor="#E9ECEF" />
+    </linearGradient>
+    <linearGradient id="spineGuide" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0%" stopColor="#C9D1D9" />
+      <stop offset="40%" stopColor="#E5E9F0" />
+      <stop offset="85%" stopColor="#C1C7D0" />
+      <stop offset="100%" stopColor="#7C8592" />
+    </linearGradient>
+
+    <!-- Holographic Portal Gradients -->
+    <radialGradient id="matrixCore" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stopColor="#ECFDF5" />
+      <stop offset="25%" stopColor="#6EE7B7" />
+      <stop offset="60%" stopColor="#059669" />
+      <stop offset="85%" stopColor="#064E3B" />
+      <stop offset="100%" stopColor="#022C22" stopOpacity="0" />
+    </radialGradient>
+
+    <!-- Filters -->
+    <filter id="bookShadow3" x="-15%" y="-10%" width="130%" height="130%">
+      <feDropShadow dx="18" dy="24" stdDeviation="16" flood-color="#000000" flood-opacity="0.75" />
+    </filter>
+    <filter id="emeraldGlow" x="-20%" y="-20%" width="140%" height="140%">
+      <feGaussianBlur stdDeviation="3.5" result="blur" />
+      <feComposite in="SourceGraphic" in2="blur" operator="over" />
+    </filter>
+    <filter id="emboss3" x="-5%" y="-5%" width="110%" height="110%">
+      <feDropShadow dx="1" dy="1.5" stdDeviation="0.8" flood-color="#000000" flood-opacity="0.3" />
+    </filter>
+  </defs>
+
+  <!-- Studio Background -->
+  <rect width="600" height="800" fill="url(#bgStudio)" />
+  <rect width="600" height="800" fill="url(#emeraldAmbient)" />
+
+  <!-- Soft background bokeh candlestick indicators -->
+  <g opacity="0.15">
+    <line x1="45" y1="90" x2="45" y2="340" stroke="#10b981" stroke-width="2" />
+    <rect x="37" y="140" width="16" height="110" fill="#10b981" rx="2" />
+    <line x1="80" y1="130" x2="80" y2="390" stroke="#059669" stroke-width="2" />
+    <rect x="72" y="190" width="16" height="80" fill="#059669" rx="2" />
+  </g>
+
+  <!-- Ground Shadow -->
+  <ellipse cx="320" cy="740" rx="230" ry="24" fill="#000000" opacity="0.8" />
+
+  <!-- 3D BOOK CONTAINER -->
+  <g filter="url(#bookShadow3)">
+    <!-- Book Spine -->
+    <path d="M 85 75 L 125 65 L 125 715 L 85 730 Z" fill="url(#spineGuide)" />
+    <!-- Spine Text -->
+    <g transform="translate(108, 380) rotate(-90)">
+      <text x="0" y="0" text-anchor="middle" font-family="'Cinzel', 'Georgia', serif" font-size="12" font-weight="bold" fill="#064E3B" letter-spacing="3.5">
+        THE TRADER'S GUIDE TO UNDERSTANDING TRADING AUTOMATION
+      </text>
+      <text x="215" y="0" text-anchor="middle" font-family="'Cinzel', serif" font-size="10.5" font-weight="bold" fill="#047857" letter-spacing="2.5">
+        M. DINGA
+      </text>
+    </g>
+
+    <!-- Front Cover -->
+    <rect x="125" y="65" width="410" height="650" rx="6" fill="url(#paperWhite)" />
+
+    <!-- Spine fold highlights -->
+    <line x1="126" y1="65" x2="126" y2="715" stroke="#FFFFFF" stroke-width="2" opacity="0.9" />
+    <line x1="130" y1="65" x2="130" y2="715" stroke="#D1D5DB" stroke-width="1" />
+    <line x1="534" y1="66" x2="534" y2="714" stroke="#E2E8F0" stroke-width="1.5" />
+    <line x1="125" y1="714" x2="535" y2="714" stroke="#CBD5E1" stroke-width="1.5" />
+
+    <!-- Top Series Badge -->
+    <g transform="translate(330, 105)" text-anchor="middle">
+      <rect x="-85" y="-12" width="170" height="20" rx="10" fill="#ECFDF5" stroke="#10B981" stroke-width="1" />
+      <text x="0" y="2" font-family="'Inter', sans-serif" font-size="8.5" font-weight="bold" fill="#047857" letter-spacing="1.5">
+        STRATEGY AUDIT SERIES
+      </text>
+    </g>
+
+    <!-- ================= COVER TITLES ================= -->
+    <g filter="url(#emboss3)" text-anchor="middle">
+      <text x="330" y="148" font-family="'Cinzel', 'Playfair Display', serif" font-size="34" font-weight="900" fill="#0F172A" letter-spacing="1">
+        The Trader's
+      </text>
+      <text x="330" y="196" font-family="'Cinzel', 'Playfair Display', serif" font-size="52" font-weight="900" fill="url(#emeraldGold)" letter-spacing="1">
+        Guide
+      </text>
+      <text x="330" y="234" font-family="'Cinzel', 'Playfair Display', serif" font-size="25" font-weight="800" fill="#1E293B" letter-spacing="1.5">
+        to Understanding
+      </text>
+      <text x="330" y="272" font-family="'Cinzel', 'Playfair Display', serif" font-size="32" font-weight="900" fill="url(#goldAccent)" letter-spacing="1">
+        Trading Automation
+      </text>
+    </g>
+
+    <!-- Subtitle -->
+    <text x="330" y="302" text-anchor="middle" font-family="'Inter', sans-serif" font-size="11" font-weight="600" fill="#475569" letter-spacing="0.2">
+      A Practical Blueprint for Discretionary Traders —
+    </text>
+    <text x="330" y="318" text-anchor="middle" font-family="'Inter', sans-serif" font-size="11" font-weight="600" fill="#475569" letter-spacing="0.2">
+      Discover What Can and Cannot Be Automated.
+    </text>
+
+    <!-- ================= CENTRAL GRAPHIC: 5-PILLAR AUTOMATION DECISION MATRIX ================= -->
+    <g transform="translate(330, 450)">
+      <!-- Outer Matrix Burst -->
+      <circle cx="0" cy="0" r="110" fill="url(#matrixCore)" opacity="0.85" />
+
+      <!-- Concentric Orbital Nodes -->
+      <circle cx="0" cy="0" r="92" fill="none" stroke="#10B981" stroke-width="1.5" stroke-dasharray="5 3" opacity="0.6" />
+      <circle cx="0" cy="0" r="72" fill="none" stroke="#059669" stroke-width="2" opacity="0.8" />
+      <circle cx="0" cy="0" r="54" fill="#064E3B" stroke="#34D399" stroke-width="3" filter="url(#emeraldGlow)" />
+
+      <!-- Center Check Icon & Word -->
+      <path d="M -14 0 L -4 10 L 16 -10" fill="none" stroke="#FFFFFF" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" filter="url(#emeraldGlow)" />
+      <text x="0" y="26" text-anchor="middle" font-family="'Montserrat', sans-serif" font-size="9" font-weight="900" fill="#A7F3D0" letter-spacing="1">
+        FEASIBLE
+      </text>
+
+      <!-- 5-Point Automation Circuit Nodes -->
+      <!-- Node 1: Entry -->
+      <circle cx="0" cy="-92" r="6" fill="#10B981" stroke="#FFFFFF" stroke-width="1.5" />
+      <!-- Node 2: Stop Loss -->
+      <circle cx="87" cy="-28" r="6" fill="#10B981" stroke="#FFFFFF" stroke-width="1.5" />
+      <!-- Node 3: Take Profit -->
+      <circle cx="54" cy="74" r="6" fill="#10B981" stroke="#FFFFFF" stroke-width="1.5" />
+      <!-- Node 4: Risk Sizing -->
+      <circle cx="-54" cy="74" r="6" fill="#10B981" stroke="#FFFFFF" stroke-width="1.5" />
+      <!-- Node 5: Filter -->
+      <circle cx="-87" cy="-28" r="6" fill="#10B981" stroke="#FFFFFF" stroke-width="1.5" />
+
+      <!-- LEFT FLOATING HUD: AUTOMATION CHECKLIST CARD -->
+      <g transform="translate(-165, -70)">
+        <rect width="115" height="140" rx="8" fill="#0B1522" fill-opacity="0.95" stroke="#10B981" stroke-width="1.5" filter="url(#emboss3)" />
+        <rect width="115" height="22" rx="8" fill="#064E3B" />
+        <text x="12" y="15" font-family="'Inter', sans-serif" font-size="8" font-weight="bold" fill="#D1FAE5">
+          STRATEGY AUDIT
+        </text>
+        <!-- Checklist items with checkmarks -->
+        <g font-family="'Inter', sans-serif" font-size="7" fill="#E2E8F0" transform="translate(8, 34)">
+          <text x="0" y="0" fill="#34D399">✓ Entry Trigger</text>
+          <text x="0" y="20" fill="#34D399">✓ Hard Stop Loss</text>
+          <text x="0" y="40" fill="#34D399">✓ Explicit Exit</text>
+          <text x="0" y="60" fill="#34D399">✓ Dynamic Risk %</text>
+          <text x="0" y="80" fill="#34D399">✓ Session Filter</text>
+          <rect x="-2" y="88" width="103" height="12" rx="3" fill="#10B981" />
+          <text x="50" y="97" text-anchor="middle" font-family="'JetBrains Mono', monospace" font-size="6.5" font-weight="bold" fill="#064E3B">
+            READY TO CODE
+          </text>
+        </g>
+      </g>
+
+      <!-- RIGHT FLOATING HUD: DISCRETIONARY VS CODE METRICS -->
+      <g transform="translate(55, -70)">
+        <rect width="115" height="140" rx="8" fill="#0B1522" fill-opacity="0.95" stroke="#10B981" stroke-width="1.5" filter="url(#emboss3)" />
+        <rect width="115" height="22" rx="8" fill="#134E4A" />
+        <text x="10" y="15" font-family="'Inter', sans-serif" font-size="8" font-weight="bold" fill="#99F6E4">
+          SYSTEM MATRIX
+        </text>
+        <!-- Simulation Chart -->
+        <g transform="translate(10, 32)">
+          <line x1="8" y1="5" x2="8" y2="40" stroke="#10B981" stroke-width="1" />
+          <rect x="5" y="12" width="6" height="22" fill="#10B981" rx="1" />
+          <line x1="24" y1="8" x2="24" y2="42" stroke="#10B981" stroke-width="1" />
+          <rect x="21" y="15" width="6" height="18" fill="#10B981" rx="1" />
+          <line x1="40" y1="2" x2="40" y2="38" stroke="#EF4444" stroke-width="1" />
+          <rect x="37" y="8" width="6" height="15" fill="#EF4444" rx="1" />
+          <line x1="56" y1="6" x2="56" y2="45" stroke="#10B981" stroke-width="1" />
+          <rect x="53" y="10" width="6" height="25" fill="#10B981" rx="1" />
+          <line x1="72" y1="12" x2="72" y2="42" stroke="#10B981" stroke-width="1" />
+          <rect x="69" y="16" width="6" height="20" fill="#10B981" rx="1" />
+          <line x1="88" y1="4" x2="88" y2="40" stroke="#FBBF24" stroke-width="1" />
+          <rect x="85" y="8" width="6" height="22" fill="#FBBF24" rx="1" />
+        </g>
+        <!-- Bottom Stat -->
+        <g transform="translate(10, 88)">
+          <text x="0" y="0" font-family="'JetBrains Mono', monospace" font-size="7" fill="#94A3B8">EXECUTION EDGE</text>
+          <text x="0" y="14" font-family="'Inter', sans-serif" font-size="11" font-weight="900" fill="#10B981">0% EMOTION</text>
+          <text x="0" y="24" font-family="'Inter', sans-serif" font-size="6.5" fill="#64748B">100% Deterministic</text>
+        </g>
+      </g>
+    </g>
+
+    <!-- ================= BOTTOM 4-STEP PROCESS ICONS ================= -->
+    <g transform="translate(145, 595)">
+      <!-- Step 1: Strategy -->
+      <g transform="translate(0, 0)">
+        <circle cx="22" cy="12" r="10" fill="none" stroke="#059669" stroke-width="1.5" />
+        <circle cx="22" cy="12" r="3" fill="#059669" />
+        <text x="22" y="32" text-anchor="middle" font-family="'Inter', sans-serif" font-size="7" font-weight="bold" fill="#334155" letter-spacing="0.5">
+          STRATEGY
+        </text>
+      </g>
+
+      <text x="68" y="16" font-family="'Inter', sans-serif" font-size="12" fill="#059669" font-weight="bold">&gt;</text>
+
+      <!-- Step 2: Audit -->
+      <g transform="translate(95, 0)">
+        <rect x="13" y="4" width="18" height="16" rx="3" fill="none" stroke="#059669" stroke-width="1.5" />
+        <path d="M 18 12 L 21 15 L 26 9" stroke="#059669" stroke-width="1.5" fill="none" />
+        <text x="22" y="32" text-anchor="middle" font-family="'Inter', sans-serif" font-size="7" font-weight="bold" fill="#334155" letter-spacing="0.5">
+          RULES AUDIT
+        </text>
+      </g>
+
+      <text x="163" y="16" font-family="'Inter', sans-serif" font-size="12" fill="#059669" font-weight="bold">&gt;</text>
+
+      <!-- Step 3: Logic -->
+      <g transform="translate(190, 0)">
+        <text x="22" y="16" text-anchor="middle" font-family="'JetBrains Mono', monospace" font-size="13" font-weight="bold" fill="#059669">&lt;/&gt;</text>
+        <text x="22" y="32" text-anchor="middle" font-family="'Inter', sans-serif" font-size="7" font-weight="bold" fill="#334155" letter-spacing="0.5">
+          CODED RULES
+        </text>
+      </g>
+
+      <text x="258" y="16" font-family="'Inter', sans-serif" font-size="12" fill="#059669" font-weight="bold">&gt;</text>
+
+      <!-- Step 4: Execution -->
+      <g transform="translate(285, 0)">
+        <circle cx="22" cy="12" r="10" fill="none" stroke="#059669" stroke-width="1.5" />
+        <path d="M 22 5 L 22 19 M 15 12 L 29 12" stroke="#059669" stroke-width="1.5" />
+        <circle cx="22" cy="12" r="5" fill="none" stroke="#059669" stroke-width="1" />
+        <text x="22" y="32" text-anchor="middle" font-family="'Inter', sans-serif" font-size="7" font-weight="bold" fill="#334155" letter-spacing="0.5">
+          EXECUTION
+        </text>
+      </g>
+    </g>
+
+    <!-- ================= BOTTOM AUTHOR FOOTER ================= -->
+    <g transform="translate(330, 675)" text-anchor="middle">
+      <line x1="-120" y1="-6" x2="-60" y2="-6" stroke="url(#goldAccent)" stroke-width="1.5" />
+      <text x="0" y="0" font-family="'Cinzel', 'Playfair Display', serif" font-size="19" font-weight="bold" fill="#0F172A" letter-spacing="4.5">
+        M. DINGA
+      </text>
+      <line x1="60" y1="-6" x2="120" y2="-6" stroke="url(#goldAccent)" stroke-width="1.5" />
+      <text x="0" y="16" font-family="'Inter', sans-serif" font-size="7.5" font-weight="bold" fill="#059669" letter-spacing="2">
+        100% FREE STRATEGY BLUEPRINT • EA AUTOMATION HUB
+      </text>
+    </g>
+  </g>
+</svg>

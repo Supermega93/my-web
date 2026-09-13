@@ -1,0 +1,6 @@
+{
+  "name": "EA Automation Hub",
+  "description": "MEG.AI LABS — Institutional AI Trading Technology, quantitative Expert Advisors, MQL5 algorithmic systems, and Strategy Architect Academy.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
