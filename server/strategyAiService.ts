@@ -18,8 +18,8 @@ export interface StrategyAiInterpretationResponse {
     indicatorPlots?: string;
     alertTypes?: string;
     calculationMethod?: string;
-    windowType?: 'Chart Window' | 'Separate Subwindow' | 'Not specified';
-    repaintPolicy?: 'Strict Non-Repainting (Bar Close)' | 'Real-time Bar 0 (Forming)' | 'Not specified';
+    windowType?: 'Chart Window' | 'Separate Subwindow' | string;
+    repaintPolicy?: 'Strict Non-Repainting (Bar Close)' | 'Real-time Bar 0 (Forming)' | string;
     maxBarsCalculate?: string;
   };
   clarifications: Array<{
@@ -62,6 +62,7 @@ Your directives:
 4. Extract structured fields for both automated compilation and review. Set all indicator-only fields to "N/A - Expert Advisor".
 5. Identify 2 to 3 genuine ambiguities or execution parameters requiring developer clarification (e.g. Candle Close confirmation vs Tick Touch, exact lot sizing calculation formula, Friday market closeout policy).
 6. Generate a ready-to-run MQL5 developer prompt for code generation.
+7. CRITICAL QUALITY DIRECTIVE: NEVER write "Not specified" in any field, markdown section, or value. If the trader did not explicitly state a parameter, provide an institutional baseline or configurable parameter label (e.g. "EURUSD / Multi-Asset", "M15", "Long & Short", "Structural Swing High/Low", "Dynamic 1:2 R/R", "1.0% Equity Risk", "All Liquid Sessions"). Outputs containing "Not specified" are considered unrefined and unprofessional.
 
 You MUST respond with valid JSON strictly conforming to this structure:
 {
@@ -73,7 +74,7 @@ You MUST respond with valid JSON strictly conforming to this structure:
     "primaryDescription": "...",
     "instrument": "...",
     "timeframe": "...",
-    "direction": "Long & Short | Long Only | Short Only | Not specified",
+    "direction": "Long & Short | Long Only | Short Only",
     "setup": "...",
     "entryRules": "...",
     "exitRules": "...",
@@ -95,13 +96,13 @@ You MUST respond with valid JSON strictly conforming to this structure:
     "consecutiveLossProtection": "...",
     "positionSizing": "...",
     "maxExposure": "...",
-    "entryTriggerType": "Candle Close | Instant Tick Touch | Retest / Limit | Not specified",
+    "entryTriggerType": "Candle Close | Instant Tick Touch | Retest / Limit",
     "indicatorPlots": "N/A - Expert Advisor",
     "alertTypes": "Trade Server Notifications & Journal Logs",
     "calculationMethod": "OnTick event state machine with bar-close / tick evaluation",
-    "windowType": "Not specified",
-    "repaintPolicy": "Not specified",
-    "maxBarsCalculate": "Not specified"
+    "windowType": "N/A - Expert Advisor",
+    "repaintPolicy": "N/A - Expert Advisor",
+    "maxBarsCalculate": "N/A - Expert Advisor"
   },
   "clarifications": [
     {
@@ -147,6 +148,7 @@ Your directives:
    - Extract indicatorPlots, alertTypes, calculationMethod, windowType, repaintPolicy, and maxBarsCalculate accurately.
 5. Identify 2 to 3 genuine ambiguities or visual/alert parameters requiring developer clarification (e.g. Strict Bar Close vs Intra-Bar Tick Alert, arrow style/color palette preference, alert throttling frequency).
 6. Generate a ready-to-run MQL5 developer prompt for indicator code generation.
+7. CRITICAL QUALITY DIRECTIVE: NEVER write "Not specified" in any field, markdown section, or value. If the trader did not explicitly state a parameter, supply an institutional baseline or configurable parameter label (e.g. "EURUSD / Multi-Asset", "M15", "Long & Short", "Strict Non-Repainting (Bar Close)", "Chart Window"). Outputs containing "Not specified" are considered unrefined and unprofessional.
 
 You MUST respond with valid JSON strictly conforming to this structure:
 {
@@ -158,7 +160,7 @@ You MUST respond with valid JSON strictly conforming to this structure:
     "primaryDescription": "...",
     "instrument": "...",
     "timeframe": "...",
-    "direction": "Long & Short | Long Only | Short Only | Not specified",
+    "direction": "Long & Short | Long Only | Short Only",
     "setup": "...",
     "entryRules": "...",
     "exitRules": "Invalidation condition when signal marker/zone expires or price violates level",
@@ -180,7 +182,7 @@ You MUST respond with valid JSON strictly conforming to this structure:
     "consecutiveLossProtection": "N/A - Technical Indicator",
     "positionSizing": "N/A - Technical Indicator",
     "maxExposure": "N/A - Technical Indicator",
-    "entryTriggerType": "Candle Close | Instant Tick Touch | Not specified",
+    "entryTriggerType": "Candle Close | Instant Tick Touch",
     "indicatorPlots": "Detailed description of plots (e.g. Signal Arrows Wingdings #233/#234, Shaded Retest Boxes, EMA Lines)",
     "alertTypes": "Terminal Popup, Audio Sound Chime, MT5 Mobile Push Notification",
     "calculationMethod": "OnCalculate buffer array scanning with prev_calculated zero-lag optimization",
@@ -302,9 +304,9 @@ function generateDeterministicFallback(
       indicatorPlots: isEa ? 'N/A - Expert Advisor' : (result.structured.indicatorPlots || 'Signal Arrows & Chart Overlay Zones'),
       alertTypes: isEa ? 'Trade Server Notifications & Journal Logs' : (result.structured.alertTypes || 'Terminal Popup, Sound Alert, MT5 Mobile Push'),
       calculationMethod: isEa ? 'OnTick event state machine with bar-close / tick evaluation' : (result.structured.calculationMethod || 'OnCalculate buffer array scanning with prev_calculated optimization'),
-      windowType: isEa ? 'Not specified' : (result.structured.windowType || 'Chart Window'),
-      repaintPolicy: isEa ? 'Not specified' : (result.structured.repaintPolicy || 'Strict Non-Repainting (Bar Close)'),
-      maxBarsCalculate: isEa ? 'Not specified' : (result.structured.maxBarsCalculate || '1000 Bars'),
+      windowType: isEa ? 'N/A - Expert Advisor' : (result.structured.windowType || 'Chart Window'),
+      repaintPolicy: isEa ? 'N/A - Expert Advisor' : (result.structured.repaintPolicy || 'Strict Non-Repainting (Bar Close)'),
+      maxBarsCalculate: isEa ? 'N/A - Expert Advisor' : (result.structured.maxBarsCalculate || '1000 Bars'),
     },
     clarifications: result.clarifications,
     devPrompt: prompt,

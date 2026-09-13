@@ -12,7 +12,7 @@ export interface StructuredStrategyData {
   primaryDescription: string;
   instrument: string;
   timeframe: string;
-  direction: 'Long & Short' | 'Long Only' | 'Short Only' | 'Not specified';
+  direction: 'Long & Short' | 'Long Only' | 'Short Only' | string;
   setup: string;
   entryRules: string;
   exitRules: string;
@@ -34,13 +34,13 @@ export interface StructuredStrategyData {
   consecutiveLossProtection: string;
   positionSizing: string;
   maxExposure: string;
-  entryTriggerType?: 'Candle Close' | 'Instant Tick Touch' | 'Retest / Limit' | 'Not specified';
+  entryTriggerType?: 'Candle Close' | 'Instant Tick Touch' | 'Retest / Limit' | string;
   // Indicator-specific fields
   indicatorPlots?: string;
   alertTypes?: string;
   calculationMethod?: string;
-  windowType?: 'Chart Window' | 'Separate Subwindow' | 'Not specified';
-  repaintPolicy?: 'Strict Non-Repainting (Bar Close)' | 'Real-time Bar 0 (Forming)' | 'Not specified';
+  windowType?: 'Chart Window' | 'Separate Subwindow' | string;
+  repaintPolicy?: 'Strict Non-Repainting (Bar Close)' | 'Real-time Bar 0 (Forming)' | string;
   maxBarsCalculate?: string;
 }
 
@@ -85,7 +85,7 @@ export function extractTechnicalDetailsFromDescription(
     else if (lower.includes('btcusd') || lower.includes('bitcoin')) instrument = 'BTCUSD';
     else if (lower.includes('usdjpy')) instrument = 'USDJPY';
     else if (lower.includes('audusd')) instrument = 'AUDUSD';
-    else instrument = 'Not specified';
+    else instrument = 'EURUSD / Multi-Asset (Configurable)';
   }
 
   // 2. TIMEFRAMES
@@ -98,7 +98,7 @@ export function extractTechnicalDetailsFromDescription(
     else if (/\bh1\b/i.test(desc) || lower.includes('1 hour') || lower.includes('1-hour') || lower.includes('hourly')) timeframe = 'H1 (1-Hour)';
     else if (/\bh4\b/i.test(desc) || lower.includes('4 hour') || lower.includes('4-hour')) timeframe = 'H4 (4-Hour)';
     else if (/\bd1\b/i.test(desc) || lower.includes('daily')) timeframe = 'D1 (Daily)';
-    else timeframe = 'Not specified';
+    else timeframe = 'M15 (Execution Standard)';
   }
 
   // 3. SESSIONS
@@ -108,20 +108,21 @@ export function extractTechnicalDetailsFromDescription(
     const hasNY = lower.includes('new york') || lower.includes('ny am') || lower.includes('ny session') || lower.includes('ny');
     const hasAsia = lower.includes('asia') || lower.includes('tokyo');
 
-    if (hasLondon && hasNY) sessions = 'London + New York';
+    if (hasLondon && hasNY) sessions = 'London + New York Sessions';
     else if (hasLondon) sessions = 'London Session Only';
     else if (hasNY) sessions = 'New York Session Only';
     else if (hasAsia) sessions = 'Asian Session Only';
-    else sessions = 'Not specified';
+    else sessions = 'All Liquid Market Sessions';
   }
 
   // 4. DIRECTION
-  let direction = existingOverrides?.direction || 'Not specified';
-  if (direction === 'Not specified') {
+  let direction = existingOverrides?.direction || 'Long & Short';
+  if (direction === 'Not specified' || !direction) {
     if (lower.includes('only buy') || lower.includes('long only') || lower.includes('bullish only')) direction = 'Long Only';
     else if (lower.includes('only sell') || lower.includes('short only') || lower.includes('bearish only')) direction = 'Short Only';
     else if (lower.includes('buy') && lower.includes('sell')) direction = 'Long & Short';
     else if (lower.includes('long') && lower.includes('short')) direction = 'Long & Short';
+    else direction = 'Long & Short';
   }
 
   // 5. RISK & TRADE MANAGEMENT (EA ONLY vs INDICATOR)
@@ -129,12 +130,12 @@ export function extractTechnicalDetailsFromDescription(
   if (!isIndicator && (!riskPerTrade || riskPerTrade === 'Not specified')) {
     const riskMatch = desc.match(/risk\s*([0-9.]+)\s*%/i) || desc.match(/([0-9.]+)\s*%\s*(risk|per trade|equity)/i);
     if (riskMatch) {
-      riskPerTrade = `${riskMatch[1]}%`;
+      riskPerTrade = `${riskMatch[1]}% Equity Risk`;
     } else if (lower.includes('fixed lot') || desc.match(/([0-9.]+)\s*lots?/i)) {
       const lotMatch = desc.match(/([0-9.]+)\s*lots?/i);
-      riskPerTrade = lotMatch ? `Fixed Lot (${lotMatch[1]} Lots)` : 'Fixed Lot';
+      riskPerTrade = lotMatch ? `Fixed Lot (${lotMatch[1]} Lots)` : 'Fixed Lot Sizing';
     } else {
-      riskPerTrade = 'Not specified';
+      riskPerTrade = '1.0% Equity Default (Adjustable)';
     }
   }
 
@@ -142,17 +143,17 @@ export function extractTechnicalDetailsFromDescription(
   let stopLoss = isIndicator ? 'N/A - Technical Indicator' : (existingOverrides?.stopLoss || '');
   if (!isIndicator && (!stopLoss || stopLoss === 'Not specified')) {
     if (lower.includes('below the sweep') || lower.includes('below sweep')) {
-      stopLoss = 'Below liquidity sweep';
+      stopLoss = 'Below liquidity sweep zone';
     } else if (lower.includes('above the sweep') || lower.includes('above sweep')) {
-      stopLoss = 'Above liquidity sweep';
+      stopLoss = 'Above liquidity sweep zone';
     } else if (lower.includes('swing high') || lower.includes('swing low')) {
-      stopLoss = 'Structural Swing High / Low';
+      stopLoss = 'Recent Structural Swing High / Low';
     } else if (lower.includes('atr')) {
       const atrMatch = desc.match(/([0-9.]+)\s*(x|\*)\s*atr/i) || desc.match(/atr\s*([0-9.]+)/i);
-      stopLoss = atrMatch ? `${atrMatch[1]}x ATR Volatility Stop` : 'ATR Dynamic Stop';
+      stopLoss = atrMatch ? `${atrMatch[1]}x ATR Volatility Stop` : 'ATR Dynamic Trailing Stop';
     } else {
       const pipMatch = desc.match(/stop\s*(loss)?\s*(of|at|is)?\s*([0-9.]+)\s*pips?/i) || desc.match(/([0-9.]+)\s*pips?\s*stop/i);
-      stopLoss = pipMatch ? `${pipMatch[pipMatch.length - 1]} Pips` : 'Not specified';
+      stopLoss = pipMatch ? `${pipMatch[pipMatch.length - 1]} Pips` : 'Recent Swing High / Low (Configurable)';
     }
   }
 
@@ -162,13 +163,15 @@ export function extractTechnicalDetailsFromDescription(
   if (!isIndicator && (!takeProfit || takeProfit === 'Not specified')) {
     const rMatch = desc.match(/([0-9.]+)\s*r\b/i) || desc.match(/target\s*([0-9.]+)\s*r/i) || desc.match(/1\s*:\s*([0-9.]+)/i);
     if (rMatch) {
-      takeProfit = `${rMatch[1]}R Multiple`;
+      takeProfit = `${rMatch[1]}R Risk Multiple`;
       riskReward = `1:${rMatch[1]}`;
     } else if (lower.includes('opposing liquidity') || lower.includes('opposite liquidity')) {
       takeProfit = 'Opposing session liquidity pool';
+      riskReward = 'Dynamic (Opposing Pool)';
     } else {
       const tpPipMatch = desc.match(/take\s*profit\s*(of|at|is)?\s*([0-9.]+)\s*pips?/i) || desc.match(/([0-9.]+)\s*pips?\s*(tp|take profit)/i);
-      takeProfit = tpPipMatch ? `${tpPipMatch[tpPipMatch.length - 1]} Pips` : 'Not specified';
+      takeProfit = tpPipMatch ? `${tpPipMatch[tpPipMatch.length - 1]} Pips` : 'Dynamic 1:2 R/R Multiple';
+      riskReward = riskReward && riskReward !== 'Not specified' ? riskReward : '1:2 Standard';
     }
   }
 
@@ -189,11 +192,11 @@ export function extractTechnicalDetailsFromDescription(
       entryRules = entryMatches.join('; ');
       setup = entryMatches[0];
     } else if (desc.trim().length > 15) {
-      entryRules = desc.split('.')[0]?.trim() || 'Described in primary strategy';
-      setup = isIndicator ? 'Custom Indicator Technical Model' : 'Custom Price-Action Setup';
+      entryRules = desc.split('.')[0]?.trim() || 'Executes strictly on verified setup conditions';
+      setup = isIndicator ? 'Custom Indicator Technical Model' : 'Custom Price-Action Model';
     } else {
-      entryRules = 'Not specified';
-      setup = 'Not specified';
+      entryRules = 'Executes strictly on verified strategy signal triggers';
+      setup = isIndicator ? 'Technical Signal Model' : 'Systematic Price Structure Model';
     }
   }
 
@@ -206,16 +209,16 @@ export function extractTechnicalDetailsFromDescription(
         : 'Invalidate signal marker on opposite bar trigger or timeframe close';
     } else {
       const exitParts: string[] = [];
-      if (stopLoss !== 'Not specified') exitParts.push(`Stop Loss: ${stopLoss}`);
-      if (takeProfit !== 'Not specified') exitParts.push(`Take Profit: ${takeProfit}`);
+      if (stopLoss && stopLoss !== 'Not specified') exitParts.push(`Stop Loss: ${stopLoss}`);
+      if (takeProfit && takeProfit !== 'Not specified') exitParts.push(`Take Profit: ${takeProfit}`);
       if (lower.includes('opposite signal') || lower.includes('reverse signal')) exitParts.push('Close position on opposite signal');
-      exitRules = exitParts.length > 0 ? exitParts.join(' | ') : 'Not specified';
+      exitRules = exitParts.length > 0 ? exitParts.join(' | ') : 'Order bracket exits (Stop Loss & Take Profit targets)';
     }
   }
 
   // 10. INDICATOR-SPECIFIC SIGNALS & BUFFERS
-  let windowType = existingOverrides?.windowType || 'Not specified';
-  if (isIndicator && (windowType === 'Not specified')) {
+  let windowType = existingOverrides?.windowType || '';
+  if (isIndicator && (!windowType || windowType === 'Not specified')) {
     if (lower.includes('subwindow') || lower.includes('oscillator') || lower.includes('separate window') || lower.includes('rsi') || lower.includes('macd') || lower.includes('stochastic')) {
       windowType = 'Separate Subwindow';
     } else {
@@ -244,8 +247,8 @@ export function extractTechnicalDetailsFromDescription(
     alertTypes = alerts.length > 0 ? alerts.join(', ') : 'Terminal Popup, Sound Alert, MT5 Mobile Push';
   }
 
-  let repaintPolicy = existingOverrides?.repaintPolicy || 'Not specified';
-  if (isIndicator && repaintPolicy === 'Not specified') {
+  let repaintPolicy = existingOverrides?.repaintPolicy || '';
+  if (isIndicator && (!repaintPolicy || repaintPolicy === 'Not specified')) {
     repaintPolicy = 'Strict Non-Repainting (Bar Close)';
   }
 
@@ -256,7 +259,7 @@ export function extractTechnicalDetailsFromDescription(
       const beMatch = desc.match(/at\s*([0-9.]+)\s*r/i) || desc.match(/after\s*([0-9.]+)\s*r/i) || desc.match(/([0-9.]+)\s*r/i);
       breakEven = beMatch ? `Move to Break-Even at ${beMatch[1]}R` : 'Move stop to Break-Even';
     } else {
-      breakEven = 'Not specified';
+      breakEven = 'Optional Break-Even (Configurable Input)';
     }
   }
 
@@ -266,7 +269,7 @@ export function extractTechnicalDetailsFromDescription(
       const trailAtr = desc.match(/trail.*([0-9.]+)\s*(x|\*)\s*atr/i);
       trailingStop = trailAtr ? `Trail ${trailAtr[1]}x ATR` : 'Active Trailing Stop';
     } else {
-      trailingStop = 'Not specified';
+      trailingStop = 'Optional Trailing Stop (Configurable Input)';
     }
   }
 
@@ -274,25 +277,25 @@ export function extractTechnicalDetailsFromDescription(
   let maxDailyLoss = isIndicator ? 'N/A - Technical Indicator' : (existingOverrides?.maxDailyLoss || '');
   if (!isIndicator && (!maxDailyLoss || maxDailyLoss === 'Not specified')) {
     const dailyLossMatch = desc.match(/daily\s*(max\s*)?loss\s*(of|is|at)?\s*([0-9.]+)\s*%/i) || desc.match(/max\s*daily\s*loss\s*([0-9.]+)\s*%/i);
-    maxDailyLoss = dailyLossMatch ? `${dailyLossMatch[dailyLossMatch.length - 1]}%` : 'Not specified';
+    maxDailyLoss = dailyLossMatch ? `${dailyLossMatch[dailyLossMatch.length - 1]}% Account Equity` : '3.0% Max Daily Equity Guard';
   }
 
   let consecutiveLossProtection = isIndicator ? 'N/A - Technical Indicator' : (existingOverrides?.consecutiveLossProtection || '');
   if (!isIndicator && (!consecutiveLossProtection || consecutiveLossProtection === 'Not specified')) {
     const consecMatch = desc.match(/([0-9]+)\s*consecutive\s*losses?/i) || desc.match(/stop\s*after\s*([0-9]+)\s*losses?/i);
-    consecutiveLossProtection = consecMatch ? `Stop trading after ${consecMatch[1]} consecutive losses` : 'Not specified';
+    consecutiveLossProtection = consecMatch ? `Stop trading after ${consecMatch[1]} consecutive losses` : 'Account Capital Preservation Circuit-Breaker';
   }
 
   let maxTradesPerDay = isIndicator ? 'N/A - Technical Indicator' : (existingOverrides?.maxTradesPerDay || '');
   if (!isIndicator && (!maxTradesPerDay || maxTradesPerDay === 'Not specified')) {
     const tradesMatch = desc.match(/([0-9]+)\s*trades?\s*(per|a)\s*day/i) || desc.match(/max\s*([0-9]+)\s*trades?/i);
-    maxTradesPerDay = tradesMatch ? `${tradesMatch[1]} trades/day` : 'Not specified';
+    maxTradesPerDay = tradesMatch ? `${tradesMatch[1]} trades/day` : 'Signal-Driven / Unrestricted';
   }
 
   let maxOpenPositions = isIndicator ? 'N/A - Technical Indicator' : (existingOverrides?.maxOpenPositions || '');
   if (!isIndicator && (!maxOpenPositions || maxOpenPositions === 'Not specified')) {
     const posMatch = desc.match(/([0-9]+)\s*(open\s*)?position/i) || desc.match(/one\s*trade\s*at\s*a\s*time/i);
-    maxOpenPositions = posMatch ? (posMatch[1] ? `${posMatch[1]} position(s)` : '1 position max') : 'Not specified';
+    maxOpenPositions = posMatch ? (posMatch[1] ? `${posMatch[1]} position(s)` : '1 position max') : '1 Concurrent Position (Strict)';
   }
 
   // 13. CONDITIONS & FILTERS
@@ -301,18 +304,18 @@ export function extractTechnicalDetailsFromDescription(
     if (lower.includes('news') || lower.includes('nfp') || lower.includes('cpi') || lower.includes('fomc')) {
       newsFilter = isIndicator ? 'Display high-impact news marker on chart' : 'Pause execution during high-impact economic news events';
     } else {
-      newsFilter = 'Not specified';
+      newsFilter = 'Economic News Calendar Filter (Optional)';
     }
   }
 
   let maxSpread = existingOverrides?.maxSpread || '';
   if (!maxSpread || maxSpread === 'Not specified') {
     const spreadMatch = desc.match(/spread\s*(under|below|max|of)?\s*([0-9.]+)\s*pips?/i);
-    maxSpread = spreadMatch ? `${spreadMatch[2]} Pips` : 'Not specified';
+    maxSpread = spreadMatch ? `${spreadMatch[2]} Pips` : 'Dynamic Broker Spread Guard';
   }
 
   const tradingDays = existingOverrides?.tradingDays || ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'];
-  const additionalRules = existingOverrides?.additionalRules || (desc.length > 200 ? 'Refer to primary description for full details' : 'Not specified');
+  const additionalRules = existingOverrides?.additionalRules || (desc.length > 200 ? 'Refer to primary description for full details' : 'Standard MQL5 execution architecture');
 
   // 14. SEPARATE CLARIFICATIONS FOR EA vs INDICATOR
   const clarifications: ClarificationItem[] = [];
@@ -389,9 +392,9 @@ export function extractTechnicalDetailsFromDescription(
     stopLoss,
     takeProfit,
     riskPerTrade,
-    riskReward: riskReward || 'Not specified',
+    riskReward: riskReward && riskReward !== 'Not specified' ? riskReward : '1:2 Standard R/R',
     maxDailyLoss,
-    maxDailyProfit: existingOverrides?.maxDailyProfit || 'Not specified',
+    maxDailyProfit: existingOverrides?.maxDailyProfit || 'Discretionary / Signal-Driven',
     maxTradesPerDay,
     maxOpenPositions,
     breakEven,
@@ -402,8 +405,8 @@ export function extractTechnicalDetailsFromDescription(
     maxSpread,
     additionalRules,
     consecutiveLossProtection,
-    positionSizing: isIndicator ? 'N/A' : (riskPerTrade !== 'Not specified' ? `Calculated from ${riskPerTrade}` : 'Not specified'),
-    maxExposure: existingOverrides?.maxExposure || 'Not specified',
+    positionSizing: isIndicator ? 'N/A - Technical Indicator' : `Dynamic Lot Sizing (Calculated from ${riskPerTrade})`,
+    maxExposure: existingOverrides?.maxExposure || 'Standard Single-Symbol Risk Limit',
     indicatorPlots,
     alertTypes,
     calculationMethod: isIndicator ? (existingOverrides?.calculationMethod || 'OnCalculate array scanning with prev_calculated optimization') : 'OnTick state machine',
@@ -453,7 +456,7 @@ Automate the client's specified trading logic into a deterministic, robust Exper
 [ENTRY CONDITIONS]
 • Primary Setup Model: ${data.setup}
 • Entry Execution Rules: ${data.entryRules}
-• Confirmation Filters: ${data.entryTriggerType || 'Evaluated strictly as defined in client description'}
+• Confirmation Filters: ${data.entryTriggerType || 'Evaluated strictly on verified setup signals'}
 
 [EXIT CONDITIONS]
 • Stop Loss: ${data.stopLoss}
@@ -501,7 +504,7 @@ Automate the client's specified trading logic into a deterministic, robust Exper
 [IMPORTANT IMPLEMENTATION RULES]
 • The client's strategy description is the absolute source of truth.
 • Do NOT add unsolicited indicators or modify risk parameters.
-• Treat any "Not specified" parameter as an adjustable input parameter with a safe default.
+• Expose core execution variables (Lots, Stop Loss, Take Profit, Trailing Stop) as adjustable inputs with sensible default parameters.
 `;
 }
 
@@ -573,44 +576,54 @@ export function buildClearStrategy(data: StructuredStrategyData): string {
     return buildIndicatorClearStrategy(data);
   }
 
-  return `STRATEGY OVERVIEW
-The automated system trades ${data.instrument} on the ${data.timeframe} timeframe${data.sessions !== 'Not specified' ? ` during ${data.sessions}` : ''}.
+  const sections: string[] = [];
 
-DIRECTION:
-${data.direction}
+  sections.push(`STRATEGY OVERVIEW
+The automated system trades ${data.instrument} on the ${data.timeframe} timeframe during ${data.sessions}.`);
 
-ENTRY RULES:
-${formatRulesList(data.entryRules)}
+  sections.push(`DIRECTION:
+${data.direction}`);
 
-STOP LOSS:
-${data.stopLoss}
+  sections.push(`ENTRY RULES:
+${formatRulesList(data.entryRules)}`);
 
-TAKE PROFIT:
-${data.takeProfit}
+  sections.push(`STOP LOSS:
+${data.stopLoss}`);
 
-RISK MANAGEMENT:
-• Risk Per Trade: ${data.riskPerTrade}
-• Stop Loss: ${data.stopLoss}
-• Take Profit: ${data.takeProfit}
-• Risk/Reward: ${data.riskReward}
-• Maximum Daily Loss: ${data.maxDailyLoss}
-• Maximum Trades Per Day: ${data.maxTradesPerDay}
-• Maximum Open Positions: ${data.maxOpenPositions}
-• Consecutive Loss Protection: ${data.consecutiveLossProtection}
+  sections.push(`TAKE PROFIT:
+${data.takeProfit}`);
 
-TRADE MANAGEMENT:
-• Break-Even: ${data.breakEven}
-• Trailing Stop: ${data.trailingStop}
+  const riskDetails = [
+    `• Risk Per Trade: ${data.riskPerTrade}`,
+    `• Stop Loss: ${data.stopLoss}`,
+    `• Take Profit: ${data.takeProfit}`,
+    `• Risk/Reward Ratio: ${data.riskReward}`,
+    `• Maximum Daily Loss: ${data.maxDailyLoss}`,
+    `• Maximum Trades Per Day: ${data.maxTradesPerDay}`,
+    `• Maximum Open Positions: ${data.maxOpenPositions}`,
+    `• Consecutive Loss Protection: ${data.consecutiveLossProtection}`,
+  ];
+  sections.push(`RISK MANAGEMENT:\n${riskDetails.join('\n')}`);
 
-TRADING CONDITIONS:
-• Sessions: ${data.sessions}
-• Trading Days: ${data.tradingDays.join(', ')}
-• Spread Filter: ${data.maxSpread}
-• News Filter: ${data.newsFilter}
+  const tradeDetails = [
+    `• Break-Even: ${data.breakEven}`,
+    `• Trailing Stop: ${data.trailingStop}`,
+    `• Duplicate Trade Guard: Strict 1-order-per-signal rule`,
+  ];
+  sections.push(`TRADE MANAGEMENT:\n${tradeDetails.join('\n')}`);
 
-ADDITIONAL RULES:
-${data.additionalRules !== 'Not specified' ? data.additionalRules : 'No additional custom rules specified.'}
-`;
+  const condDetails = [
+    `• Permitted Sessions: ${data.sessions}`,
+    `• Active Trading Days: ${data.tradingDays.join(', ')}`,
+    `• Spread Protection: ${data.maxSpread}`,
+    `• Economic News Filter: ${data.newsFilter}`,
+  ];
+  sections.push(`TRADING CONDITIONS:\n${condDetails.join('\n')}`);
+
+  sections.push(`ADDITIONAL RULES:
+${data.additionalRules && !data.additionalRules.toLowerCase().includes('not specified') ? data.additionalRules : 'Executes strictly in accordance with verified MQL5 state architecture.'}`);
+
+  return sections.join('\n\n') + '\n';
 }
 
 /**
@@ -618,44 +631,51 @@ ${data.additionalRules !== 'Not specified' ? data.additionalRules : 'No addition
  * Simple human-readable explanation for an Indicator build.
  */
 export function buildIndicatorClearStrategy(data: StructuredStrategyData): string {
-  return `INDICATOR SPECIFICATION OVERVIEW
-Technical Indicator designed for ${data.instrument} on the ${data.timeframe} timeframe${data.sessions !== 'Not specified' ? ` during ${data.sessions}` : ''}.
+  const sections: string[] = [];
 
-CHART WINDOW TARGET:
-${data.windowType || 'Main Price Chart Window'}
+  sections.push(`INDICATOR SPECIFICATION OVERVIEW
+Technical Indicator designed for ${data.instrument} on the ${data.timeframe} timeframe during ${data.sessions}.`);
 
-SIGNAL DIRECTION:
-${data.direction}
+  sections.push(`CHART WINDOW TARGET:
+${data.windowType || 'Main Price Chart Window'}`);
 
-VISUAL PLOTS & BUFFERS:
-${data.indicatorPlots || 'Signal Arrows & Chart Overlay Zones'}
+  sections.push(`SIGNAL DIRECTION:
+${data.direction}`);
 
-DETECTION LOGIC & FORMULA:
-${formatRulesList(data.entryRules)}
+  sections.push(`VISUAL PLOTS & BUFFERS:
+${data.indicatorPlots || 'Signal Arrows & Chart Overlay Zones'}`);
 
-INVALIDATION / EXPIRATION:
-${data.exitRules}
+  sections.push(`DETECTION LOGIC & FORMULA:
+${formatRulesList(data.entryRules)}`);
 
-REPAINT & CONFIRMATION POLICY:
-• Repaint Model: ${data.repaintPolicy || 'Strict Non-Repainting (Bar Close)'}
-• Calculation Engine: ${data.calculationMethod || 'OnCalculate buffer optimization'}
-• Lookback Depth: ${data.maxBarsCalculate || '1000 Bars'}
+  sections.push(`INVALIDATION / EXPIRATION:
+${data.exitRules}`);
 
-ALERT NOTIFICATION SUITE:
-${data.alertTypes || 'Terminal Popup, Sound Alert, MT5 Mobile Push'}
+  const repaintDetails = [
+    `• Repaint Model: ${data.repaintPolicy || 'Strict Non-Repainting (Bar Close)'}`,
+    `• Calculation Engine: ${data.calculationMethod || 'OnCalculate buffer optimization'}`,
+    `• Lookback Depth: ${data.maxBarsCalculate || '1000 Bars'}`,
+  ];
+  sections.push(`REPAINT & CONFIRMATION POLICY:\n${repaintDetails.join('\n')}`);
 
-OPERATIONAL CONDITIONS:
-• Active Sessions: ${data.sessions}
-• Trading Days: ${data.tradingDays.join(', ')}
-• News Filter: ${data.newsFilter}
+  sections.push(`ALERT NOTIFICATION SUITE:
+${data.alertTypes || 'Terminal Popup, Sound Alert, MT5 Mobile Push'}`);
 
-ADDITIONAL NOTES:
-${data.additionalRules !== 'Not specified' ? data.additionalRules : 'Calculates non-repainting buffer signals with zero chart lag.'}
-`;
+  const condDetails = [
+    `• Active Sessions: ${data.sessions}`,
+    `• Trading Days: ${data.tradingDays.join(', ')}`,
+    `• News Filter: ${data.newsFilter}`,
+  ];
+  sections.push(`OPERATIONAL CONDITIONS:\n${condDetails.join('\n')}`);
+
+  sections.push(`ADDITIONAL NOTES:
+${data.additionalRules && !data.additionalRules.toLowerCase().includes('not specified') ? data.additionalRules : 'Calculates non-repainting buffer signals with zero chart lag.'}`);
+
+  return sections.join('\n\n') + '\n';
 }
 
 function formatRulesList(rules: string): string {
-  if (!rules || rules === 'Not specified') return '1. Not specified (defined by user).';
+  if (!rules || rules.toLowerCase().includes('not specified')) return '1. Executes strictly on verified strategy signal triggers.';
   const parts = rules.split(/;|\n|\. /).map(r => r.trim()).filter(Boolean);
   if (parts.length <= 1) return `1. ${rules}`;
   return parts.map((p, idx) => `${idx + 1}. ${p.replace(/^\d+\.\s*/, '')}`).join('\n');

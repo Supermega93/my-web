@@ -23,7 +23,8 @@ import {
   Monitor,
   ShieldCheck,
   Code2,
-  Sparkles
+  Sparkles,
+  Terminal
 } from 'lucide-react';
 
 interface EaProductDetailProps {
@@ -58,56 +59,57 @@ export function EaProductDetail({
 
   const pricingTiers: PricingTier[] = [
     {
-      id: 'pc',
-      name: 'PC Version',
+      id: 'license_6m',
+      name: '6 Month License',
       price: 199,
       currency: 'USD',
       displayPrice: formatCurrencyPrice(199, 'USD'),
-      license: 'Standard License: Single user/account',
+      license: 'Access Period: 6 Months Licensed Access',
+      badge: 'STANDARD ACCESS',
       features: [
-        'Compiled .ex5 binary for MetaTrader 5',
-        'Standard License: Single user/account',
-        'Forex & XAUUSD optimized set files',
-        'Adaptive liquidity & breakout detection',
-        'RSI & 50/200 EMA trend filtering',
-        '1:5 risk-to-reward & trailing stop controls',
-        'Lifetime license for licensed version'
+        'Full licensed access to Adaptive Liquidity Pro V1.0',
+        'Access Period: 6 Months active license term',
+        'Compiled .ex5 binary for MetaTrader 5 (Windows/VPS)',
+        'Forex & XAUUSD optimized configuration presets',
+        'Adaptive liquidity & breakout detection engine',
+        'Prop-firm risk controls & equity protection guards',
+        'Active license key verification for trading terminal'
       ]
     },
     {
-      id: 'propfirm',
-      name: 'Professional/Propfirm Version',
-      price: 249,
+      id: 'license_12m',
+      name: '12 Month License',
+      price: 299,
       currency: 'USD',
-      displayPrice: formatCurrencyPrice(249, 'USD'),
-      license: 'Professional License: Full professional feature set',
-      badge: 'RECOMMENDED FOR PROP FIRMS',
+      displayPrice: formatCurrencyPrice(299, 'USD'),
+      license: 'Access Period: 12 Months Licensed Access',
+      badge: 'BEST VALUE',
       popular: true,
       features: [
-        'All PC Version features included',
-        'Professional License: Full professional feature set',
-        'Dedicated Prop-Firm risk controls & equity protection',
-        'Daily risk and loss limit enforcement',
-        'Trading-session & profit-recycling controls',
-        'ADR/ATR dynamic volatility filtering',
-        'Lifetime access + future marketplace updates'
+        'Full licensed access to Adaptive Liquidity Pro V1.0',
+        'Access Period: 12 Months active license term',
+        'Compiled .ex5 binary for MetaTrader 5 (Windows/VPS)',
+        'Prop-firm & institutional risk controls suite',
+        'Trading-session, ADR/ATR volatility & profit-recycling',
+        'Priority marketplace updates during access period',
+        'Multi-account license support (Live + Demo + Challenge)'
       ]
     },
     {
-      id: 'source_code',
-      name: 'With Source Code',
-      price: 349,
+      id: 'license_source',
+      name: 'Source Code License',
+      price: 499,
       currency: 'USD',
-      displayPrice: formatCurrencyPrice(349, 'USD'),
-      license: 'Multi-Account License + Full MQL5 Source Code',
-      badge: 'COMPLETE DEVELOPER ACCESS',
+      displayPrice: formatCurrencyPrice(499, 'USD'),
+      license: 'Developer License: Complete MQL5 Source Code',
+      badge: 'DEVELOPER ACCESS',
       features: [
         'Complete editable MQL5 (.mq5) source code',
-        'Multi-Account License for multiple trading terminals',
+        'Unrestricted private execution on unlimited accounts',
         'Full algorithmic transparency & modular architecture',
-        'Customizable EA parameters & logic adaptation',
+        'Customizable EA parameters & custom logic adaptation',
         'Backtesting & multi-asset optimization framework',
-        'All future update blueprints & documentation'
+        'Comprehensive developer documentation & logic maps'
       ]
     }
   ];
@@ -251,14 +253,14 @@ export function EaProductDetail({
                     icon={<ArrowRight className="w-4 h-4" />}
                     className="font-bold shadow-lg shadow-emerald-900/15 bg-gradient-to-r from-emerald-800 via-emerald-700 to-teal-700 text-white hover:opacity-95"
                   >
-                    Buy {selectedTier.name}
+                    Get Licensed Access
                   </Button>
                   <Button
                     variant="outline"
                     size="lg"
                     onClick={scrollToPricing}
                   >
-                    View All Tiers
+                    View License Terms
                   </Button>
                 </div>
               </div>
@@ -347,29 +349,30 @@ export function EaProductDetail({
           </div>
         </div>
 
-        {/* 3. CURRENT PRICING SECTION (Transparent Tier Comparison) */}
+        {/* 3. CURRENT PRICING SECTION (Licensed Access & Terms) */}
         <div ref={pricingRef} className="pt-12 border-t border-slate-200/80 space-y-8">
           <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
             <div className="space-y-2">
               <span className="text-xs font-mono uppercase tracking-widest text-emerald-800 font-semibold">
-                Transparent Licensing
+                Licensed Access Terms
               </span>
               <h2 className="text-2xl sm:text-3xl font-bold text-slate-900 tracking-tight">
-                Choose Your Adaptive Liquidity Pro Edition
+                Select Your Licensed Access Term
               </h2>
               <p className="text-xs sm:text-sm text-slate-600 max-w-2xl">
-                Choose the edition that fits your workflow. From ready-to-trade compiled MT5 builds to full MQL5 source code access.
+                Obtain structured licensed access to Adaptive Liquidity Pro V1.0 for your preferred access period, or acquire full developer source code access.
               </p>
             </div>
 
-            <div className="flex items-center gap-2 text-xs font-mono text-slate-500 bg-white border border-slate-200 px-3 py-1.5 rounded-full shadow-xs">
+            <div className="flex items-center gap-2 text-xs font-mono text-slate-600 bg-white border border-slate-200 px-3.5 py-1.5 rounded-full shadow-xs">
               <ShieldCheck className="w-4 h-4 text-emerald-600" />
-              <span>One-Time Fee • No Monthly Subscriptions</span>
+              <span>Licensed Access • Term-Based Deployment</span>
             </div>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 items-stretch">
-            {pricingTiers.map((tier) => {
+          {/* Licensed Access Terms (6 Months vs 12 Months) */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-stretch">
+            {pricingTiers.slice(0, 2).map((tier) => {
               const isSelected = selectedTier.id === tier.id;
               const isPopular = tier.popular;
 
@@ -386,13 +389,16 @@ export function EaProductDetail({
                   {isPopular && (
                     <div className="absolute -top-3.5 left-1/2 -translate-x-1/2 bg-emerald-700 text-white font-mono text-[10px] font-bold uppercase tracking-wider px-3.5 py-1 rounded-full shadow-sm flex items-center gap-1">
                       <Sparkles className="w-3 h-3" />
-                      <span>{tier.badge || 'RECOMMENDED'}</span>
+                      <span>{tier.badge || 'BEST VALUE'}</span>
                     </div>
                   )}
 
                   <div className="space-y-6">
                     <div>
-                      <h3 className="text-xl font-bold text-slate-900">{tier.name}</h3>
+                      <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-emerald-50 border border-emerald-200 text-emerald-800 text-[10px] font-mono font-bold uppercase tracking-wider mb-2">
+                        Licensed Access
+                      </div>
+                      <h3 className="text-2xl font-bold text-slate-900">{tier.name}</h3>
                       <div className="text-xs text-emerald-700 font-mono mt-1 font-semibold">{tier.license}</div>
                     </div>
 
@@ -401,7 +407,7 @@ export function EaProductDetail({
                         {tier.displayPrice}
                       </div>
                       <div className="text-xs text-slate-500 font-mono mt-1">
-                        {currentCurrency.code} • One-time purchase • Lifetime
+                        {currentCurrency.code} • License Term: {tier.name === '12 Month License' ? '12 Months' : '6 Months'} Access Period
                       </div>
                     </div>
 
@@ -437,6 +443,82 @@ export function EaProductDetail({
               );
             })}
           </div>
+
+          {/* VISUALLY SEPARATE: SOURCE CODE DEVELOPER LICENSE ($499) */}
+          {(() => {
+            const sourceTier = pricingTiers[2];
+            const isSourceSelected = selectedTier.id === sourceTier.id;
+
+            return (
+              <div 
+                onClick={() => setSelectedTier(sourceTier)}
+                className={`mt-6 rounded-3xl p-7 sm:p-9 transition-all duration-300 relative cursor-pointer border-2 ${
+                  isSourceSelected
+                    ? 'bg-gradient-to-br from-slate-900 via-slate-950 to-slate-900 text-white border-emerald-500 shadow-2xl ring-2 ring-emerald-500/20'
+                    : 'bg-gradient-to-br from-slate-900 via-slate-900 to-slate-950 text-white border-slate-800 hover:border-slate-700 shadow-xl'
+                }`}
+              >
+                <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-8">
+                  <div className="space-y-4 max-w-2xl">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <span className="px-3 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 font-mono text-[10px] font-bold uppercase tracking-wider flex items-center gap-1.5">
+                        <Terminal className="w-3.5 h-3.5" />
+                        <span>Visually Separate Developer License</span>
+                      </span>
+                      <span className="px-2.5 py-1 rounded-full bg-slate-800 text-slate-300 font-mono text-[10px] font-semibold">
+                        Full MQL5 Source (.mq5)
+                      </span>
+                    </div>
+
+                    <div>
+                      <h3 className="text-2xl sm:text-3xl font-extrabold text-white tracking-tight">
+                        {sourceTier.name}
+                      </h3>
+                      <p className="text-xs sm:text-sm text-slate-300 mt-1.5 font-sans leading-relaxed">
+                        Complete MQL5 (.mq5) source code access for institutional quantitative developers and traders requiring unrestricted logic adaptation, multi-terminal deployment, and private algorithmic ownership.
+                      </p>
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 pt-2">
+                      {sourceTier.features.map((feat, fIdx) => (
+                        <div key={fIdx} className="flex items-center gap-2 text-xs text-slate-300">
+                          <Check className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
+                          <span>{feat}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div className="flex flex-col sm:flex-row lg:flex-col items-start lg:items-end justify-between gap-5 shrink-0 lg:border-l lg:border-slate-800/80 lg:pl-8">
+                    <div>
+                      <span className="text-[11px] font-mono uppercase text-slate-400 font-semibold block">
+                        Source Code License
+                      </span>
+                      <div className="text-4xl sm:text-5xl font-black text-white font-mono mt-1">
+                        {sourceTier.displayPrice}
+                      </div>
+                      <span className="text-xs font-mono text-emerald-400 mt-1 block">
+                        Full Developer Rights • Unlimited Use
+                      </span>
+                    </div>
+
+                    <Button
+                      variant="primary"
+                      size="lg"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setSelectedTier(sourceTier);
+                        handlePurchase(sourceTier);
+                      }}
+                      className="w-full sm:w-auto font-bold bg-gradient-to-r from-emerald-600 via-emerald-500 to-teal-500 text-slate-950 hover:brightness-110 shadow-lg shadow-emerald-500/20"
+                    >
+                      {isSourceSelected ? 'Obtain Source Code License' : 'Select Source Code License'}
+                    </Button>
+                  </div>
+                </div>
+              </div>
+            );
+          })()}
         </div>
 
         {/* 4. CORE FEATURES SECTION (All 18 Specifications) */}

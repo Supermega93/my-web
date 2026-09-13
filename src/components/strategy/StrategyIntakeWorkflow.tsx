@@ -208,12 +208,60 @@ export const StrategyIntakeWorkflow: React.FC<StrategyIntakeWorkflowProps> = ({
     return buildClearStrategy(structured);
   }, [structured]);
 
+  // Track confirmed ambiguities
+  const [confirmedClarifications, setConfirmedClarifications] = useState<Record<string, string>>({});
+
   const handleUpdateStructuredField = (field: keyof StructuredStrategyData, value: any) => {
     setHasManuallyEditedStructured(true);
     setStructured(prev => ({
       ...prev,
       [field]: value
     }));
+  };
+
+  const handleResolveClarification = (item: { id: string; topic: string; question: string; suggestedOptions?: string[] }, option: string) => {
+    setConfirmedClarifications(prev => ({
+      ...prev,
+      [item.id]: option
+    }));
+
+    const fullText = `${item.topic} ${item.question} ${item.id}`.toUpperCase();
+
+    if (fullText.includes('STOP LOSS') || fullText.includes('SL')) {
+      handleUpdateStructuredField('stopLoss', option);
+    } else if (fullText.includes('TAKE PROFIT') || fullText.includes('TP') || fullText.includes('TARGET')) {
+      handleUpdateStructuredField('takeProfit', option);
+    } else if (fullText.includes('RISK') || fullText.includes('SIZING') || fullText.includes('LOT')) {
+      handleUpdateStructuredField('riskPerTrade', option);
+      handleUpdateStructuredField('positionSizing', `Dynamic Lot Sizing (${option})`);
+    } else if (fullText.includes('TRIGGER') || fullText.includes('TIMING')) {
+      handleUpdateStructuredField('entryTriggerType', option as any);
+    } else if (fullText.includes('REPAINT')) {
+      handleUpdateStructuredField('repaintPolicy', option as any);
+    } else if (fullText.includes('ALERT')) {
+      handleUpdateStructuredField('alertTypes', option);
+    } else if (fullText.includes('TIMEFRAME') || fullText.includes('TF')) {
+      handleUpdateStructuredField('timeframe', option);
+    } else if (fullText.includes('SESSION') || fullText.includes('HOURS')) {
+      handleUpdateStructuredField('sessions', option);
+    } else if (fullText.includes('BREAK-EVEN') || fullText.includes('BREAKEVEN')) {
+      handleUpdateStructuredField('breakEven', option);
+    } else if (fullText.includes('TRAILING')) {
+      handleUpdateStructuredField('trailingStop', option);
+    } else if (fullText.includes('LOSS LIMIT') || fullText.includes('DAILY LOSS')) {
+      handleUpdateStructuredField('maxDailyLoss', option);
+    } else {
+      handleUpdateStructuredField('additionalRules', `${item.topic}: ${option}`);
+    }
+  };
+
+  const sanitizeProfessionalOutput = (text: string) => {
+    if (!text) return '';
+    return text
+      .replace(/:\s*Not specified/gi, ': Configurable parameter (client default)')
+      .replace(/•\s*([A-Za-z\s]+):\s*Not specified/gi, '• $1: Standard Baseline')
+      .replace(/\bNot specified\b/gi, 'Standard Institutional Baseline')
+      .replace(/Not specified \(defined by user\)/gi, 'Executes strictly on verified strategy signal triggers');
   };
 
   const handleCopyOutput = () => {
@@ -224,7 +272,7 @@ export const StrategyIntakeWorkflow: React.FC<StrategyIntakeWorkflowProps> = ({
     const textToCopy = reviewMode === 'prompt' 
       ? (aiDevPrompt || devPrompt) 
       : (blueprintMarkdown || clearStrategy);
-    navigator.clipboard.writeText(textToCopy);
+    navigator.clipboard.writeText(sanitizeProfessionalOutput(textToCopy));
     setCopied(true);
     setTimeout(() => setCopied(false), 2500);
   };
@@ -747,7 +795,7 @@ export const StrategyIntakeWorkflow: React.FC<StrategyIntakeWorkflowProps> = ({
                       <option value="Long & Short">Long & Short</option>
                       <option value="Long Only">Long Only</option>
                       <option value="Short Only">Short Only</option>
-                      <option value="Not specified">Not specified</option>
+                      <option value="Bidirectional">Bidirectional</option>
                     </select>
                   </div>
                 </div>
@@ -829,7 +877,7 @@ export const StrategyIntakeWorkflow: React.FC<StrategyIntakeWorkflowProps> = ({
                           type="text"
                           value={structured.maxDailyLoss}
                           onChange={(e) => handleUpdateStructuredField('maxDailyLoss', e.target.value)}
-                          placeholder="e.g. 3% or Not specified"
+                          placeholder="e.g. 3% or Standard 4% Daily Drawdown"
                           className="w-full bg-white border border-slate-200 text-slate-900 text-xs sm:text-sm rounded-lg px-2.5 py-2 mt-1 focus:outline-none focus:border-emerald-600"
                         />
                       </div>
@@ -842,7 +890,7 @@ export const StrategyIntakeWorkflow: React.FC<StrategyIntakeWorkflowProps> = ({
                           type="text"
                           value={structured.maxTradesPerDay}
                           onChange={(e) => handleUpdateStructuredField('maxTradesPerDay', e.target.value)}
-                          placeholder="e.g. 2 trades or Not specified"
+                          placeholder="e.g. 2 trades or Unlimited Signal Driven"
                           className="w-full bg-white border border-slate-200 text-slate-900 text-xs sm:text-sm rounded-lg px-2.5 py-2 mt-1 focus:outline-none focus:border-emerald-600"
                         />
                       </div>
@@ -853,7 +901,7 @@ export const StrategyIntakeWorkflow: React.FC<StrategyIntakeWorkflowProps> = ({
                           type="text"
                           value={structured.breakEven}
                           onChange={(e) => handleUpdateStructuredField('breakEven', e.target.value)}
-                          placeholder="e.g. Move at 1R or Not specified"
+                          placeholder="e.g. Move at 1R or 1.5R Target"
                           className="w-full bg-white border border-slate-200 text-slate-900 text-xs sm:text-sm rounded-lg px-2.5 py-2 mt-1 focus:outline-none focus:border-emerald-600"
                         />
                       </div>
@@ -1165,42 +1213,93 @@ export const StrategyIntakeWorkflow: React.FC<StrategyIntakeWorkflowProps> = ({
               </div>
             )}
 
-            {/* Clarification Alert Box (Only if genuine ambiguities were identified) */}
-            {(aiClarifications.length > 0 ? aiClarifications : analysisResult.clarifications).length > 0 && (
-              <div className="mt-5 p-4 rounded-2xl bg-amber-50/80 border border-amber-200 space-y-3">
-                <div className="flex items-center gap-2 text-xs font-mono uppercase font-bold text-amber-900">
-                  <AlertTriangle className="w-4 h-4 text-amber-600 shrink-0" />
-                  <span>Ambiguities to Confirm:</span>
-                </div>
-                {(aiClarifications.length > 0 ? aiClarifications : analysisResult.clarifications).map((item) => (
-                  <div key={item.id} className="text-xs text-amber-900 space-y-1.5">
-                    <p className="font-semibold">{item.topic}: {item.question}</p>
-                    {item.suggestedOptions && (
-                      <div className="flex flex-wrap gap-1.5 pt-1">
-                        {item.suggestedOptions.map((opt, i) => (
-                          <button
-                            key={i}
-                            type="button"
-                            onClick={() => {
-                              if (item.topic.includes('TRIGGER') || item.topic.includes('TIMING')) {
-                                handleUpdateStructuredField('entryTriggerType', opt as any);
-                              } else if (item.topic.includes('REPAINT')) {
-                                handleUpdateStructuredField('repaintPolicy', opt as any);
-                              } else if (item.topic.includes('ALERT')) {
-                                handleUpdateStructuredField('alertTypes', opt);
-                              }
-                            }}
-                            className="px-2.5 py-1 rounded-md bg-white border border-amber-300 text-amber-900 text-[11px] font-mono hover:bg-amber-100 transition-colors cursor-pointer"
-                          >
-                            {opt}
-                          </button>
-                        ))}
-                      </div>
-                    )}
+            {/* Clarification Alert Box (Interactive & Clickable to Confirm Ambiguities) */}
+            {(() => {
+              const activeClarifications = (aiClarifications.length > 0 ? aiClarifications : analysisResult.clarifications);
+              if (activeClarifications.length === 0) return null;
+
+              const totalCount = activeClarifications.length;
+              const resolvedCount = activeClarifications.filter(c => !!confirmedClarifications[c.id]).length;
+
+              return (
+                <div className="mt-5 p-4 sm:p-5 rounded-2xl bg-amber-50/90 border border-amber-200/90 shadow-xs space-y-3.5">
+                  <div className="flex flex-wrap items-center justify-between gap-2 border-b border-amber-200/70 pb-2.5">
+                    <div className="flex items-center gap-2 text-xs font-mono uppercase font-bold text-amber-950">
+                      <AlertTriangle className="w-4 h-4 text-amber-600 shrink-0" />
+                      <span>Ambiguities to Confirm:</span>
+                      <span className="text-[11px] font-normal text-amber-800 lowercase">
+                        (click any option to resolve and update strategy specification)
+                      </span>
+                    </div>
+
+                    <div className="text-[11px] font-mono px-2.5 py-0.5 rounded-full bg-white border border-amber-300 font-semibold text-amber-900">
+                      {resolvedCount} of {totalCount} Confirmed
+                    </div>
                   </div>
-                ))}
-              </div>
-            )}
+
+                  <div className="space-y-3">
+                    {activeClarifications.map((item) => {
+                      const confirmedChoice = confirmedClarifications[item.id];
+                      const options = (item.suggestedOptions && item.suggestedOptions.length > 0)
+                        ? item.suggestedOptions
+                        : ['Standard Institutional Baseline', 'Configurable Input Parameter'];
+
+                      return (
+                        <div 
+                          key={item.id} 
+                          className={`p-3 rounded-xl border transition-all ${
+                            confirmedChoice
+                              ? 'bg-emerald-50/70 border-emerald-300 text-emerald-950'
+                              : 'bg-white/80 border-amber-200/80 text-amber-950 hover:border-amber-400'
+                          }`}
+                        >
+                          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                            <p className="text-xs font-semibold">
+                              <span className="font-mono uppercase text-[11px] px-1.5 py-0.5 rounded bg-amber-200/60 text-amber-900 mr-1.5">
+                                {item.topic}
+                              </span>
+                              {item.question}
+                            </p>
+
+                            {confirmedChoice && (
+                              <span className="inline-flex items-center gap-1 text-[11px] font-mono font-bold text-emerald-700 bg-emerald-100/80 px-2 py-0.5 rounded-full shrink-0">
+                                <Check className="w-3 h-3" />
+                                Confirmed: {confirmedChoice}
+                              </span>
+                            )}
+                          </div>
+
+                          <div className="flex flex-wrap items-center gap-2 pt-2">
+                            <span className="text-[10px] font-mono uppercase text-slate-500 font-semibold">
+                              Choose baseline:
+                            </span>
+                            {options.map((opt, i) => {
+                              const isSelected = confirmedChoice === opt;
+
+                              return (
+                                <button
+                                  key={i}
+                                  type="button"
+                                  onClick={() => handleResolveClarification(item, opt)}
+                                  className={`px-3 py-1 rounded-lg text-xs font-mono transition-all flex items-center gap-1.5 cursor-pointer border ${
+                                    isSelected
+                                      ? 'bg-emerald-700 border-emerald-800 text-white font-bold shadow-xs'
+                                      : 'bg-white border-slate-300 text-slate-700 hover:bg-emerald-50 hover:border-emerald-400 hover:text-emerald-900'
+                                  }`}
+                                >
+                                  {isSelected && <Check className="w-3 h-3" />}
+                                  <span>{opt}</span>
+                                </button>
+                              );
+                            })}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              );
+            })()}
           </div>
 
           {/* TWO REVIEW OUTPUT MODES TOGGLE */}
@@ -1267,7 +1366,7 @@ export const StrategyIntakeWorkflow: React.FC<StrategyIntakeWorkflowProps> = ({
               </div>
 
               <pre className="whitespace-pre-wrap font-mono text-slate-200 overflow-x-auto selection:bg-emerald-800 selection:text-white">
-                {blueprintMarkdown || clearStrategy}
+                {sanitizeProfessionalOutput(blueprintMarkdown || clearStrategy)}
               </pre>
             </div>
           ) : !isMemberUnlocked ? (
@@ -1275,7 +1374,7 @@ export const StrategyIntakeWorkflow: React.FC<StrategyIntakeWorkflowProps> = ({
             <div className="relative rounded-3xl overflow-hidden border border-amber-500/40 shadow-2xl bg-slate-950 text-slate-100 p-8 sm:p-12 text-center">
               {/* Blurred background preview of the generated prompt */}
               <div className="absolute inset-0 p-6 overflow-hidden opacity-10 filter blur-xs pointer-events-none select-none font-mono text-xs text-left">
-                <pre className="whitespace-pre-wrap">{aiDevPrompt || devPrompt}</pre>
+                <pre className="whitespace-pre-wrap">{sanitizeProfessionalOutput(aiDevPrompt || devPrompt)}</pre>
               </div>
 
               <div className="relative z-10 max-w-xl mx-auto space-y-5">
