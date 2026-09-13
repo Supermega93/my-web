@@ -23,6 +23,7 @@ import {
   getStoredCompletedLessonIds
 } from '../../services/academyAccess.ts';
 import { AcademyAuthModal } from './AcademyAuthModal.tsx';
+import { FreeCourseEmailModal } from './FreeCourseEmailModal.tsx';
 import { 
   ArrowLeft, 
   ArrowRight, 
@@ -38,7 +39,9 @@ import {
   ChevronRight,
   GraduationCap,
   HelpCircle,
-  Award
+  Award,
+  Mail,
+  RotateCcw
 } from 'lucide-react';
 import { Button } from '../common/Button.tsx';
 
@@ -56,8 +59,23 @@ export function LessonViewerPage({ lessonId, onNavigate, onOpenCheckout }: Lesso
   const [isCompleted, setIsCompleted] = useState(false);
   const [copiedLink, setCopiedLink] = useState(false);
   const [authModalOpen, setAuthModalOpen] = useState(false);
+  const [emailModalOpen, setEmailModalOpen] = useState(false);
   const [studentTier, setStudentTier] = useState<StudentTier>(() => getActiveStudentTier(user, isAdmin));
   const [completedLessonIds, setCompletedLessonIds] = useState<string[]>(() => getStoredCompletedLessonIds());
+  const [trackingEmail, setTrackingEmail] = useState<string>(() => {
+    if (user?.email) return user.email;
+    return localStorage.getItem('academy_tracking_email') || '';
+  });
+
+  // Prompt gently for email tracking if not already set and not skipped
+  useEffect(() => {
+    if (!user && !localStorage.getItem('academy_tracking_email') && !localStorage.getItem('academy_tracking_skipped')) {
+      const timer = setTimeout(() => {
+        setEmailModalOpen(true);
+      }, 1500);
+      return () => clearTimeout(timer);
+    }
+  }, [user]);
 
   // Sync tier state reactively
   useEffect(() => {
@@ -153,6 +171,24 @@ export function LessonViewerPage({ lessonId, onNavigate, onOpenCheckout }: Lesso
   const prevLesson = currentIndex > 0 ? visibleLessons[currentIndex - 1] : null;
   const nextLesson = currentIndex >= 0 && currentIndex < visibleLessons.length - 1 ? visibleLessons[currentIndex + 1] : null;
 
+  const syncProgressToServer = async (ids: string[]) => {
+    const emailToUse = user?.email || localStorage.getItem('academy_tracking_email');
+    if (!emailToUse) return; // Untracked session
+    try {
+      await fetch('/api/academy/progress', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          email: emailToUse,
+          completedLessonIds: ids,
+          lastLessonId: lesson?.id,
+        }),
+      });
+    } catch {
+      // Non-blocking offline fallback
+    }
+  };
+
   const handleMarkComplete = (explicitLessonId?: string) => {
     const targetId = explicitLessonId || lesson?.id;
     if (!targetId) return;
@@ -164,6 +200,7 @@ export function LessonViewerPage({ lessonId, onNavigate, onOpenCheckout }: Lesso
         setCompletedLessonIds(updated);
         localStorage.setItem('completed_lesson_ids', JSON.stringify(updated));
         window.dispatchEvent(new CustomEvent('academy-progress-change', { detail: { completedIds: updated } }));
+        syncProgressToServer(updated);
       } else {
         setIsCompleted(true);
       }
@@ -187,6 +224,7 @@ export function LessonViewerPage({ lessonId, onNavigate, onOpenCheckout }: Lesso
       setCompletedLessonIds(updated);
       localStorage.setItem('completed_lesson_ids', JSON.stringify(updated));
       window.dispatchEvent(new CustomEvent('academy-progress-change', { detail: { completedIds: updated } }));
+      syncProgressToServer(updated);
     } catch {
       // ignore
     }
@@ -341,6 +379,29 @@ export function LessonViewerPage({ lessonId, onNavigate, onOpenCheckout }: Lesso
                 <Lock className="w-3 h-3" />
                 <span>Masterclass Pro</span>
               </span>
+            )}
+
+            {/* Gentle Progress Tracking Status */}
+            {trackingEmail ? (
+              <button
+                type="button"
+                onClick={() => setEmailModalOpen(true)}
+                className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-950/60 border border-emerald-500/40 text-emerald-300 text-xs font-mono hover:border-emerald-400 transition-colors cursor-pointer"
+                title="Click to manage or switch tracking email"
+              >
+                <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
+                <span>Tracking to: <span className="underline">{trackingEmail}</span></span>
+              </button>
+            ) : (
+              <button
+                type="button"
+                onClick={() => setEmailModalOpen(true)}
+                className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-slate-900 border border-slate-700 text-slate-300 text-xs font-mono hover:bg-slate-800 hover:border-emerald-500/40 transition-colors cursor-pointer"
+                title="Save your results so you can resume anytime"
+              >
+                <Mail className="w-3.5 h-3.5 text-emerald-400" />
+                <span>Want to track your results? Enter email</span>
+              </button>
             )}
 
             <div className="flex items-center gap-1.5 text-xs text-slate-400 font-mono ml-auto">
@@ -632,6 +693,20 @@ export function LessonViewerPage({ lessonId, onNavigate, onOpenCheckout }: Lesso
       <AcademyAuthModal
         isOpen={authModalOpen}
         onClose={() => setAuthModalOpen(false)}
+      />
+
+      {/* Free Course Gentle Email Tracking Modal */}
+      <FreeCourseEmailModal
+        isOpen={emailModalOpen}
+        onClose={() => setEmailModalOpen(false)}
+        onEmailSubmitted={(email) => {
+          setTrackingEmail(email);
+          syncProgressToServer(completedLessonIds);
+        }}
+        onSkip={() => {
+          // Handled inside modal, localStorage updated
+        }}
+        onOpenAuthModal={() => setAuthModalOpen(true)}
       />
     </div>
   );

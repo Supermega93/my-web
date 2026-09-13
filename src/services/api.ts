@@ -236,6 +236,19 @@ export const api = {
       method: 'POST',
     });
   },
+
+  // AI Strategy Architect
+  async interpretStrategyAi(payload: {
+    buildType: 'EA' | 'Indicator';
+    description: string;
+    conversation?: Array<{ role: 'user' | 'assistant'; content: string }>;
+    platform?: 'MT5' | 'MT4' | 'cTrader';
+  }): Promise<any> {
+    return request('/api/strategy/interpret-ai', {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    });
+  },
 };
 
 export interface StrategySubmission {

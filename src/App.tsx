@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { ActiveView, Product } from './types.ts';
 import { api } from './services/api.ts';
 import { useAuth, AuthProvider } from './context/AuthContext.tsx';
+import { CurrencyProvider } from './context/CurrencyContext.tsx';
 import { Navbar } from './components/common/Navbar.tsx';
 import { Footer } from './components/common/Footer.tsx';
 import { HomePage } from './components/home/HomePage.tsx';
@@ -86,6 +87,9 @@ function AppContent() {
       setCurrentView('free-ebook');
     } else if (path === '/trading-eas') {
       setCurrentView('eas');
+    } else if (path === '/eas/adaptive-liquidity-pro' || path === '/liquidity-pro-ea') {
+      setSelectedProductId('prod_ea_adaptive_liquidity');
+      setCurrentView('ea-detail');
     } else if (path === '/ebooks') {
       setCurrentView('ebooks');
     } else if (path === '/custom-ea') {
@@ -133,6 +137,9 @@ function AppContent() {
         setCurrentView('free-ebook');
       } else if (currentPath === '/trading-eas') {
         setCurrentView('eas');
+      } else if (currentPath === '/eas/adaptive-liquidity-pro' || currentPath === '/liquidity-pro-ea') {
+        setSelectedProductId('prod_ea_adaptive_liquidity');
+        setCurrentView('ea-detail');
       } else if (currentPath === '/ebooks') {
         setCurrentView('ebooks');
       } else if (currentPath === '/login') {
@@ -187,6 +194,10 @@ function AppContent() {
       window.history.pushState(null, '', '/free-guide');
     } else if (view === 'eas') {
       window.history.pushState(null, '', '/trading-eas');
+    } else if (view === 'ea-detail') {
+      const eaId = extraId || 'prod_ea_adaptive_liquidity';
+      setSelectedProductId(eaId);
+      window.history.pushState(null, '', '/eas/adaptive-liquidity-pro');
     } else if (view === 'ebooks') {
       window.history.pushState(null, '', '/ebooks');
     } else if (view === 'login') {
@@ -458,7 +469,9 @@ function AppContent() {
 export function App() {
   return (
     <AuthProvider>
-      <AppContent />
+      <CurrencyProvider>
+        <AppContent />
+      </CurrencyProvider>
     </AuthProvider>
   );
 }

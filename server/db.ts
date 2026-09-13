@@ -136,6 +136,14 @@ export function initDatabase() {
       created_at TEXT NOT NULL
     );
 
+    CREATE TABLE IF NOT EXISTS academy_progress (
+      email TEXT PRIMARY KEY,
+      completed_lesson_ids TEXT NOT NULL,
+      quiz_scores TEXT,
+      last_lesson_id TEXT,
+      updated_at TEXT NOT NULL
+    );
+
     CREATE TABLE IF NOT EXISTS strategy_submissions (
       id TEXT PRIMARY KEY,
       user_id TEXT,
@@ -536,80 +544,101 @@ function seedInitialData() {
   // Always keep prod_ea_adaptive_liquidity and prod_ebook_ai_prompt in sync with latest copy and pricing
   try {
     const eaMetadataSync = JSON.stringify({
-      version: '1.0.0',
-      timeframes: ['M15', 'H1', 'H4'],
-      compatibleMarkets: ['Forex', 'XAUUSD (Gold)'],
+      version: '13.0.0 (V13 Institutional)',
+      author: 'M. Dinga',
+      timeframes: ['M15', 'H1', 'H4', 'D1'],
+      compatibleMarkets: ['XAUUSD (Gold - Native Algorithmic Engine)', 'Forex / Global Metals'],
       supportedPlatform: {
-        platform: 'MetaTrader 5',
-        os: 'Windows/PC',
-        instruments: 'Forex and XAUUSD',
-        flexibility: 'Configurable for different symbols and market conditions'
+        platform: 'MetaTrader 5 (MQL5)',
+        os: 'Windows/PC / VPS',
+        instruments: 'XAUUSD (Gold) Optimized',
+        flexibility: 'Configurable for volatile metals and institutional order flows'
       },
-      strategyType: 'Adaptive Liquidity & Market Structure Automation',
+      strategyType: 'Dual-Engine Institutional Liquidity Hunting & Trap Evasion',
+      corePhilosophy: 'Designed specifically to exploit the liquidity cycles of Gold (XAUUSD). Engineered through extensive data-mining analyzing historical anomalies (such as May Macro Explosions and February Spaghetti Chop). Operates on Liquidity Hunting & Trap Evasion: waits for institutional algorithms to sweep retail stop-losses at key daily and weekly structural levels, engaging only when genuine momentum is mathematically confirmed.',
+      dualEngines: {
+        engineA: 'The Dynamic Breakout Engine: Tracks Previous Day High/Low with a Dynamic Entry Buffer calculated as % of ADR (Average Daily Range) pushing price deep into Expansion Territory (e.g. 7% of ADR past daily high) before triggering trades, dodging 80% of standard liquidity sweeps. Filtered by 50 EMA & 200 EMA macro alignment.',
+        engineB: 'The Weekly Squeeze Mean-Reversion Engine (The Trap): Maps Weekly High/Low and tracks rejections touching weekly levels while above 50 EMA. When a level fails 2+ times with H1/H4 RSI showing extreme exhaustion (>70), the EA declares an Institutional Trap, completely blocks Breakout Buys, and triggers a violent Mean-Reversion Sell once an H1 candle closes back below the 50 EMA.'
+      },
+      advancedMechanics: [
+        'Profit Recycling (Immediate Stacking): Risks 1%, moves SL to Break-Even at 1.5R ($0 risk), and uses house money to dynamically open a Follower trade compounding momentum.',
+        'Stacking Distance Delay: Enforces a minimum structural buffer (+0.5R past Break-Even) before executing Follower trade to eliminate whipsaws.',
+        'Dynamic Volatility Risk Routing: 4-Day ADR adjusts SL, TP, and Entry Buffers in real-time to match Gold market conditions.',
+        'Prop Firm Consistency Protector: Monitors daily profits vs challenge targets, preventing single-day profit cap violations (e.g. 30% cap) by dynamically scaling TP.',
+        '1:6 Risk-to-Reward Hardcoded Geometric Math: Anchors TP to ADR limits, widens SL with entry buffer, multiplying final SL by RR ratio.'
+      ],
+      backtestResults: {
+        dataset: '100% Real Ticks on FxPro MT5 (Jan - Sep 2026)',
+        baseCapital: '$100,000.00',
+        runs: [
+          { name: '5% Risk Run (Aggressive Compounding)', netProfit: '$1,144,903.72 (+1,144%)', maxDrawdown: '19.55%', profitFactor: '2.97', winRate: '52.73%' },
+          { name: '3.5% Risk Run (Prop Firm Aggressive)', netProfit: '$934,539.60 (+934%)', maxDrawdown: '19.61%', profitFactor: '2.73', winRate: '51.8%' },
+          { name: '2.5% Risk Run (Optimal Balance)', netProfit: '+450% to +500% Expected', maxDrawdown: '12.0% - 14.0%', profitFactor: '2.55', winRate: '50.5%' },
+          { name: '1% Risk Run (Prop Firm Safe Mode)', netProfit: '+120% to +180% Expected', maxDrawdown: '4.2% - 6.0%', profitFactor: '2.40', winRate: '50.0%' }
+        ]
+      },
       coreFeatures: [
-        'Adaptive liquidity-based trading logic',
-        'Breakout and fake-breakout detection',
-        'RSI extreme filtering and directional trade blocking',
-        '50/200 EMA trend-alignment filtering',
-        '50 EMA reversal/adoption logic',
-        'ADR/ATR volatility filtering',
-        'Dynamic risk management',
-        'Configurable risk per trade',
-        'Stop Loss and Take Profit management',
-        '1:5 risk-to-reward framework',
-        'Break-even and trailing-stop management',
-        'Trading-session controls',
-        'Profit-recycling functionality',
-        'Prop-firm risk controls',
-        'Daily risk/loss controls',
-        'Market-specific configuration presets',
-        'Backtesting and optimisation support',
-        'Customisable EA parameters'
+        'Dual-Engine Architecture: Dynamic Breakout Engine + Weekly Squeeze Mean-Reversion',
+        'Institutional Liquidity Hunting & Trap Evasion on XAUUSD (Gold)',
+        'Dynamic Entry Buffer (% of ADR) dodging 80% of retail liquidity sweeps',
+        'Weekly Squeeze Mean-Reversion with RSI exhaustion (>70) & violent 50 EMA flip',
+        'Profit Recycling: 1% initial risk -> 1.5R Break-Even -> Follower compounding on house money',
+        'Stacking Distance Delay preventing whipsaws on volatile gold expansions',
+        'Dynamic Volatility Risk Routing based on 4-Day Average Daily Range',
+        'Prop Firm Consistency Protector with dynamic daily profit & TP scaling',
+        '1:6 Geometric Risk-to-Reward framework with mathematical ADR anchor',
+        'Zero Martingale / Zero Toxic Grid — Strict mathematical stop-losses on every execution',
+        'Interactive Dual-Screen GUI: 3D Control Panel & Real-Time Diagnostic Dashboard',
+        'Tested across 100% Real Ticks on FxPro MT5 with verified algorithmic stability'
       ],
       features: [
-        'Adaptive liquidity-based trading logic & market structure',
-        'Breakout & fake-breakout detection with ADR/ATR volatility filtering',
-        'RSI extreme filtering & directional trade blocking',
-        '50/200 EMA trend-alignment & 50 EMA reversal/adoption logic',
-        '1:5 risk-to-reward framework with dynamic risk management',
-        'Prop-firm risk controls & daily loss limit safeguards'
+        'INSTITUTIONAL Adaptive Liquidity Pro V13 for XAUUSD (Gold) by M. Dinga',
+        'Dual-Engine Architecture: Dynamic Breakout + Weekly Squeeze Mean-Reversion Trap Evasion',
+        'Profit Recycling & Stacking Distance Delay compounding on house money with $0 risk',
+        'Dynamic Volatility Risk Routing & Prop Firm Consistency Protector with TP scaling',
+        '100% Real Tick verified: +1,144% ($1.14M profit on $100k) with sub-20% drawdown',
+        'Prop Firm Safe mode calibrated for FTMO and institutional evaluations (4-6% max DD)'
       ],
       pricingTiers: [
         { id: 'pc', name: 'PC Version', price: 199, currency: 'USD', displayPrice: '$199', license: 'Standard License: Single user/account' },
-        { id: 'propfirm', name: 'Professional/Propfirm Version', price: 249, currency: 'USD', displayPrice: '$249', license: 'Professional License: Full professional feature set' },
+        { id: 'propfirm', name: 'Professional/Propfirm Version', price: 249, currency: 'USD', displayPrice: '$249', license: 'Professional License: Full professional feature set + Prop Firm Consistency Protector' },
         { id: 'source_code', name: 'With Source Code', price: 349, currency: 'USD', displayPrice: '$349', license: 'Multi-Account License + Complete MQL5 Source Code' }
       ],
       marketplaceStructure: [
-        { title: 'Standard License', desc: 'Single user/account' },
-        { title: 'Professional License', desc: 'Full professional feature set' },
-        { title: 'Multi-Account License', desc: 'For users managing multiple trading accounts' },
+        { title: 'Standard License', desc: 'Single user/account on MetaTrader 5' },
+        { title: 'Professional License', desc: 'Full professional feature set with Prop Firm Consistency Protector' },
+        { title: 'Multi-Account License', desc: 'For users managing multiple trading accounts or prop-firm challenges' },
         { title: 'Lifetime License', desc: 'One-time purchase for lifetime access to the licensed version' },
         { title: 'Future Upgrade/Update Options', desc: 'Available according to the marketplace licensing system' }
       ],
-      tradingLogic: 'Adaptive Liquidity Pro is a professional automated trading system developed for MetaTrader 5 (MT5). It is designed to automate structured trading strategies using liquidity, market structure, momentum, volatility, trend alignment and risk-management conditions.',
-      riskManagement: 'Dynamic risk management, configurable risk per trade, stop loss and take profit management, 1:5 risk-to-reward framework, break-even and trailing-stop management, prop-firm risk controls, and daily risk/loss controls.',
+      tradingLogic: 'INSTITUTIONAL Adaptive Liquidity Pro V13 is an advanced algorithmic trading engine for XAUUSD (Gold) developed by M. Dinga. It exploits institutional liquidity cycles via a Dual-Engine strategy: Engine A (Dynamic Breakout with ADR buffers & EMA alignment) and Engine B (Weekly Squeeze Mean-Reversion Trap Evasion with RSI exhaustion and 50 EMA flip).',
+      riskManagement: 'Universal money management with dynamic volatility risk routing (4-Day ADR), profit recycling with 1.5R breakeven protection, stacking distance delay, prop firm consistency protector, and 1:6 geometric risk-to-reward ratio.',
       stats: {
-        winRate: '68.4%',
-        profitFactor: '2.14',
-        maxHistoricalDrawdown: '6.8%',
-        backtestSpan: '2021 - 2026 (Tick Data Suite 99.9% Modelling Quality)'
+        winRate: '52.73%',
+        profitFactor: '2.97',
+        maxHistoricalDrawdown: '19.55%',
+        backtestSpan: '100% Real Ticks on FxPro MT5 (Jan - Sep 2026, $100k Capital: $1,144,903.72 Net Profit)'
       },
       faq: [
         {
           q: 'Which MetaTrader platform is supported?',
-          a: 'Adaptive Liquidity Pro is built natively for MetaTrader 5 on Windows/PC.'
+          a: 'INSTITUTIONAL Adaptive Liquidity Pro V13 is built natively for MetaTrader 5 (MQL5) on Windows/PC and VPS.'
         },
         {
-          q: 'Which markets can I trade?',
-          a: 'Forex pairs and XAUUSD (Gold), fully configurable for different symbols and market conditions.'
+          q: 'Which market was this EA specifically engineered for?',
+          a: 'It was engineered specifically for XAUUSD (Gold), capturing high-volatility liquidity sweeps and avoiding institutional traps. It can also be adapted to other high-liquidity instruments.'
         },
         {
-          q: 'Can I use this on Prop Firm challenge accounts?',
-          a: 'Yes. The Professional/Propfirm Version includes dedicated prop-firm risk controls, daily loss limits, and customizable risk per trade.'
+          q: 'Can I use this on Prop Firm challenge accounts (FTMO, etc.)?',
+          a: 'Yes. The Professional/Propfirm Version includes dedicated Prop Firm Consistency Protectors, daily profit capping to satisfy challenge rules, and a 1% Risk Prop Firm Safe mode maintaining 4-6% max drawdown.'
+        },
+        {
+          q: 'Does it use Martingale or Grid?',
+          a: 'Zero Martingale and Zero Grid. Every position has an immediate algorithmic Stop Loss placed upon entry and manages exposure with strict mathematical geometric risk.'
         },
         {
           q: 'Is source code available?',
-          a: 'Yes. The With Source Code option ($349) provides complete access to the editable MQL5 source code alongside multi-account usage.'
+          a: 'Yes. The With Source Code tier ($349) provides the full editable MQL5 (.mq5) source code alongside a Multi-Account license.'
         }
       ]
     });
@@ -619,12 +648,12 @@ function seedInitialData() {
       SET name = ?, description = ?, short_description = ?, price = ?, currency = ?, platform = ?, metadata = ?
       WHERE id = 'prod_ea_adaptive_liquidity'
     `).run(
-      'Adaptive Liquidity Pro V1.0',
-      'Adaptive Liquidity Pro is a professional automated trading system developed for MetaTrader 5 (MT5). It is designed to automate structured trading strategies using liquidity, market structure, momentum, volatility, trend alignment and risk-management conditions.',
-      'Professional automated trading system for MetaTrader 5 (MT5) utilizing liquidity, market structure, momentum, volatility, and trend alignment.',
+      'INSTITUTIONAL Adaptive Liquidity Pro V13',
+      'An Advanced Algorithmic Trading Engine for XAUUSD (Gold) Developed by M. Dinga. Exploits institutional liquidity cycles through a Dual-Engine architecture (Dynamic Breakout & Weekly Squeeze Mean-Reversion), Profit Recycling, and Prop Firm Consistency Protection.',
+      'Institutional algorithmic trading engine for XAUUSD (Gold) developed by M. Dinga. Dual-engine architecture with profit recycling and prop firm consistency protector.',
       199.00,
       'USD',
-      'MetaTrader 5 (Windows/PC)',
+      'MetaTrader 5 (Windows / VPS)',
       eaMetadataSync
     );
 
@@ -1225,6 +1254,52 @@ export const dbQueries = {
       eaSales,
       ebookSales,
       customProjects
+    };
+  },
+
+  // Academy Student Progress Tracking
+  saveAcademyProgress(data: {
+    email: string;
+    completedLessonIds: string[];
+    quizScores?: Record<string, number>;
+    lastLessonId?: string;
+  }) {
+    const now = new Date().toISOString();
+    const cleanEmail = data.email.trim().toLowerCase();
+    const completedStr = JSON.stringify(data.completedLessonIds || []);
+    const scoresStr = data.quizScores ? JSON.stringify(data.quizScores) : null;
+    const lastLesson = data.lastLessonId || null;
+
+    db.prepare(`
+      INSERT INTO academy_progress (email, completed_lesson_ids, quiz_scores, last_lesson_id, updated_at)
+      VALUES (?, ?, ?, ?, ?)
+      ON CONFLICT(email) DO UPDATE SET
+        completed_lesson_ids = excluded.completed_lesson_ids,
+        quiz_scores = COALESCE(excluded.quiz_scores, academy_progress.quiz_scores),
+        last_lesson_id = COALESCE(excluded.last_lesson_id, academy_progress.last_lesson_id),
+        updated_at = excluded.updated_at
+    `).run(cleanEmail, completedStr, scoresStr, lastLesson, now);
+
+    return {
+      email: cleanEmail,
+      completedLessonIds: data.completedLessonIds || [],
+      quizScores: data.quizScores || {},
+      lastLessonId: lastLesson,
+      updatedAt: now
+    };
+  },
+
+  getAcademyProgress(email: string) {
+    if (!email) return null;
+    const cleanEmail = email.trim().toLowerCase();
+    const row = db.prepare('SELECT * FROM academy_progress WHERE email = ?').get(cleanEmail) as any;
+    if (!row) return null;
+    return {
+      email: row.email,
+      completedLessonIds: JSON.parse(row.completed_lesson_ids || '[]'),
+      quizScores: row.quiz_scores ? JSON.parse(row.quiz_scores) : {},
+      lastLessonId: row.last_lesson_id,
+      updatedAt: row.updated_at
     };
   }
 };

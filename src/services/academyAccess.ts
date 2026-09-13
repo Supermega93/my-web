@@ -272,3 +272,36 @@ export function isLessonUnlockedForTier(
   // Free tier only unlocks lessons marked as is_free
   return Boolean(lesson.is_free);
 }
+
+/**
+ * Checks if the user is a paid MEGA Ecosystem member (has purchased products,
+ * has paid student tier, is an administrator, or holds an active ecosystem membership).
+ */
+export function isEcosystemMember(user?: User | null, isAdmin?: boolean): boolean {
+  if (typeof window === 'undefined') return false;
+  if (isAdmin || user?.role === 'admin' || user?.role === 'developer') return true;
+  if (localStorage.getItem('mega_ecosystem_member') === 'true') return true;
+  if (localStorage.getItem(TIER_STORAGE_KEY) === 'paid') return true;
+
+  try {
+    const orders = JSON.parse(localStorage.getItem('user_orders') || '[]');
+    if (Array.isArray(orders) && orders.some((o: any) => o.payment_status === 'paid')) {
+      return true;
+    }
+  } catch {
+    // ignore
+  }
+
+  return false;
+}
+
+export function setEcosystemMember(unlocked: boolean): void {
+  if (typeof window === 'undefined') return;
+  if (unlocked) {
+    localStorage.setItem('mega_ecosystem_member', 'true');
+  } else {
+    localStorage.removeItem('mega_ecosystem_member');
+  }
+  window.dispatchEvent(new CustomEvent('mega-ecosystem-change', { detail: { unlocked } }));
+}
+

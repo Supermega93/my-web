@@ -16,7 +16,7 @@ export function AuthModal({
   onClose,
   defaultMode = 'login',
 }: AuthModalProps) {
-  const { login, register, quickLogin } = useAuth();
+  const { login, register } = useAuth();
   const [mode, setMode] = useState<'login' | 'register'>(defaultMode);
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
@@ -45,19 +45,6 @@ export function AuthModal({
     }
   };
 
-  const handleQuickRole = async (r: UserRole) => {
-    setError('');
-    setLoading(true);
-    try {
-      await quickLogin(r);
-      onClose();
-    } catch (err: any) {
-      setError(err.message || 'Quick login failed');
-    } finally {
-      setLoading(false);
-    }
-  };
-
   return (
     <Modal
       isOpen={isOpen}
@@ -72,48 +59,6 @@ export function AuthModal({
             {error}
           </div>
         )}
-
-        {/* Quick Demo Role Switcher for seamless Phase 1 evaluation */}
-        <div className="bg-slate-950 p-3.5 rounded-xl border border-slate-800/80 space-y-2">
-          <div className="flex items-center justify-between">
-            <span className="text-[10px] uppercase font-mono text-emerald-400 font-bold flex items-center gap-1">
-              <Sparkles className="w-3 h-3" />
-              1-Click Demo Profiles (Phase 1 Testing)
-            </span>
-          </div>
-          <p className="text-[11px] text-slate-400">
-            Instantly switch between roles to test RBAC security and dedicated dashboards:
-          </p>
-          <div className="grid grid-cols-3 gap-2 pt-1">
-            <button
-              type="button"
-              onClick={() => handleQuickRole('customer')}
-              className="px-2 py-1.5 rounded bg-slate-900 border border-slate-800 text-emerald-400 hover:border-emerald-500 font-mono text-[11px] transition-colors"
-            >
-              Customer
-            </button>
-            <button
-              type="button"
-              onClick={() => handleQuickRole('developer')}
-              className="px-2 py-1.5 rounded bg-slate-900 border border-slate-800 text-cyan-400 hover:border-cyan-500 font-mono text-[11px] transition-colors"
-            >
-              Developer
-            </button>
-            <button
-              type="button"
-              onClick={() => handleQuickRole('admin')}
-              className="px-2 py-1.5 rounded bg-slate-900 border border-slate-800 text-purple-400 hover:border-purple-500 font-mono text-[11px] transition-colors"
-            >
-              Admin
-            </button>
-          </div>
-        </div>
-
-        <div className="relative flex py-1 items-center">
-          <div className="flex-grow border-t border-slate-800"></div>
-          <span className="flex-shrink mx-3 text-slate-500 font-mono text-[10px] uppercase">Or standard credentials</span>
-          <div className="flex-grow border-t border-slate-800"></div>
-        </div>
 
         <form onSubmit={handleSubmit} className="space-y-3.5">
           {mode === 'register' && (

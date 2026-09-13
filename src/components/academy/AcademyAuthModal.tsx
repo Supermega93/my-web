@@ -9,7 +9,6 @@ import {
   CheckCircle2, 
   AlertCircle, 
   Sparkles,
-  Zap,
   ArrowRight
 } from 'lucide-react';
 import { Button } from '../common/Button.tsx';
@@ -21,7 +20,7 @@ interface AcademyAuthModalProps {
 }
 
 export function AcademyAuthModal({ isOpen, onClose, onSuccess }: AcademyAuthModalProps) {
-  const { login, register, loginWithGoogle, quickLogin, user } = useAuth();
+  const { login, register, loginWithGoogle, user } = useAuth();
   const [mode, setMode] = useState<'login' | 'register'>('login');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -38,13 +37,13 @@ export function AcademyAuthModal({ isOpen, onClose, onSuccess }: AcademyAuthModa
     try {
       const result = await loginWithGoogle();
       if (!result.success) {
-        setErrorMsg('Google Sign-In is opening or requires external configuration. You can also sign in via Email or use the 1-Click Demo Account below.');
+        setErrorMsg('Google Sign-In is opening or requires external configuration. You can also sign in via Email below.');
       } else {
         if (onSuccess) onSuccess();
         onClose();
       }
     } catch (err: any) {
-      setErrorMsg(err.message || 'Google authentication error. Try 1-Click Demo login below.');
+      setErrorMsg(err.message || 'Google authentication error.');
     } finally {
       setLoading(false);
     }
@@ -88,19 +87,6 @@ export function AcademyAuthModal({ isOpen, onClose, onSuccess }: AcademyAuthModa
       }
     } catch (err: any) {
       setErrorMsg(err.message || 'An unexpected error occurred');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleQuickDemo = async (role: 'customer' | 'admin') => {
-    setLoading(true);
-    try {
-      await quickLogin(role);
-      if (onSuccess) onSuccess();
-      onClose();
-    } catch {
-      // ignore
     } finally {
       setLoading(false);
     }
@@ -242,31 +228,6 @@ export function AcademyAuthModal({ isOpen, onClose, onSuccess }: AcademyAuthModa
             )}
           </Button>
         </form>
-
-        {/* 1-Click Instant Demo Login */}
-        <div className="mt-5 pt-4 border-t border-slate-800/80 text-center">
-          <div className="text-[10px] font-mono uppercase text-slate-500 mb-2.5 flex items-center justify-center gap-1.5">
-            <Zap className="w-3 h-3 text-amber-400" />
-            <span>Instant Demo Sign-In (1-Click)</span>
-          </div>
-
-          <div className="grid grid-cols-2 gap-2">
-            <button
-              type="button"
-              onClick={() => handleQuickDemo('customer')}
-              className="px-3 py-2 rounded-lg bg-slate-950 hover:bg-slate-800 border border-slate-800 text-[11px] font-medium text-slate-300 hover:text-white transition-colors cursor-pointer"
-            >
-              Demo Student
-            </button>
-            <button
-              type="button"
-              onClick={() => handleQuickDemo('admin')}
-              className="px-3 py-2 rounded-lg bg-slate-950 hover:bg-slate-800 border border-slate-800 text-[11px] font-medium text-emerald-400 hover:text-emerald-300 transition-colors cursor-pointer"
-            >
-              Demo Admin (Full)
-            </button>
-          </div>
-        </div>
 
         {/* Toggle Mode */}
         <div className="mt-4 text-center">

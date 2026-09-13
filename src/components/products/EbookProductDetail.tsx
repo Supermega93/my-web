@@ -3,6 +3,7 @@ import { motion } from 'motion/react';
 import { Product } from '../../types.ts';
 import { STOREFRONT_MEDIA } from '../../constants/media.ts';
 import { Button } from '../common/Button.tsx';
+import { useCurrency } from '../../context/CurrencyContext.tsx';
 import { CoverUploader } from '../common/CoverUploader.tsx';
 import { 
   ArrowLeft, 
@@ -32,6 +33,7 @@ export function EbookProductDetail({
   onBuyNow,
   onTriggerBuildMyEa,
 }: EbookProductDetailProps) {
+  const { formatPrice, currentCurrency } = useCurrency();
   const isPromptHandbook = product.id === 'prod_ebook_ai_prompt';
   const defaultCover = isPromptHandbook
     ? STOREFRONT_MEDIA.paidEbook2.coverUrl
@@ -146,9 +148,9 @@ export function EbookProductDetail({
             <div className="pt-4 flex flex-col sm:flex-row sm:items-center gap-6">
               <div>
                 <div className="text-4xl font-black text-white font-mono">
-                  ${product.price.toFixed(2)}
+                  {formatPrice(product.price, 'USD')}
                 </div>
-                <div className="text-xs text-slate-400 font-mono">Instant download • Includes code templates</div>
+                <div className="text-xs text-slate-400 font-mono">{currentCurrency.code} • Instant download • Includes code templates</div>
               </div>
 
               <div className="flex flex-wrap items-center gap-3">

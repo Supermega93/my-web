@@ -3,6 +3,7 @@ import { motion } from 'motion/react';
 import { Product, ActiveView } from '../../types.ts';
 import { STOREFRONT_MEDIA } from '../../constants/media.ts';
 import { Button } from '../common/Button.tsx';
+import { useCurrency } from '../../context/CurrencyContext.tsx';
 import { 
   BookOpen, 
   ArrowRight, 
@@ -28,6 +29,7 @@ export function EbooksPage({
   onBuyNow,
   onTriggerBuildMyEa,
 }: EbooksPageProps) {
+  const { formatPrice, currentCurrency } = useCurrency();
   const ebookProducts = products.filter(p => p.type === 'ebook' && p.active === 1);
 
   return (
@@ -178,9 +180,11 @@ export function EbooksPage({
               <div className="pt-8 mt-8 border-t border-slate-100 flex items-center justify-between gap-4">
                 <div>
                   <div className="text-3xl font-black text-slate-900 font-mono">
-                    ${ebook.price.toFixed(2)}
+                    {formatPrice(ebook.price, 'USD')}
                   </div>
-                  <div className="text-[11px] text-slate-400 font-mono">DRM-Free • Lifetime Access</div>
+                  <div className="text-[11px] text-slate-400 font-mono">
+                    {currentCurrency.code} • DRM-Free • Lifetime Access
+                  </div>
                 </div>
 
                 <div className="flex items-center gap-3">

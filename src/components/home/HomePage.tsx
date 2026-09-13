@@ -3,6 +3,7 @@ import { motion } from 'motion/react';
 import { Product, ActiveView } from '../../types.ts';
 import { STOREFRONT_MEDIA } from '../../constants/media.ts';
 import { Button } from '../common/Button.tsx';
+import { useCurrency } from '../../context/CurrencyContext.tsx';
 import { StudioLaptopMockup } from './StudioLaptopMockup.tsx';
 import { HomeFreeAcademySection } from './HomeFreeAcademySection.tsx';
 import { 
@@ -44,9 +45,11 @@ export function HomePage({
   const featuredEa = products.find(p => p.type === 'ea' && p.active === 1) || products[0];
   const featuredEbook = products.find(p => p.type === 'ebook' && p.active === 1);
 
+  const { formatPrice: formatCurrencyPrice, currentCurrency } = useCurrency();
+
   const formatPrice = (price?: number, currency: string = 'USD') => {
     if (!price) return '$0.00';
-    return `$${price.toFixed(2)}`;
+    return formatCurrencyPrice(price, currency);
   };
 
   const processSteps = [
@@ -515,27 +518,35 @@ export function HomePage({
                   </h3>
 
                   <p className="text-slate-600 text-sm leading-relaxed">
-                    {featuredEa.short_description || 'Institutional liquidity sweep and order flow EA for MetaTrader 5 with strict risk control.'}
+                    Institutional liquidity-based trading system for MetaTrader 5 (PC). Features breakout and fake-breakout detection, RSI and 50/200 EMA trend filtering, ADR/ATR volatility controls, dynamic risk management, and prop-firm compliance. Pre-configured for Forex and XAUUSD.
                   </p>
                 </div>
 
-                {/* Key Features List */}
+                {/* Key Features List from Document */}
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5 text-xs text-slate-700">
                   <div className="flex items-center gap-2.5">
                     <Check className="w-4 h-4 text-emerald-600 shrink-0" />
-                    <span>Smart Money liquidity void sweeps</span>
+                    <span>Adaptive liquidity & breakout detection</span>
                   </div>
                   <div className="flex items-center gap-2.5">
                     <Check className="w-4 h-4 text-emerald-600 shrink-0" />
-                    <span>Zero Martingale / Zero Grid</span>
+                    <span>RSI & 50/200 EMA trend filtering</span>
                   </div>
                   <div className="flex items-center gap-2.5">
                     <Check className="w-4 h-4 text-emerald-600 shrink-0" />
-                    <span>Strict 1.5% max daily risk cap</span>
+                    <span>Prop-firm risk & daily loss limits</span>
                   </div>
                   <div className="flex items-center gap-2.5">
                     <Check className="w-4 h-4 text-emerald-600 shrink-0" />
-                    <span>Instant single-terminal license key</span>
+                    <span>1:5 risk-to-reward & trailing stops</span>
+                  </div>
+                  <div className="flex items-center gap-2.5">
+                    <Check className="w-4 h-4 text-emerald-600 shrink-0" />
+                    <span>ADR/ATR volatility filtering</span>
+                  </div>
+                  <div className="flex items-center gap-2.5">
+                    <Check className="w-4 h-4 text-emerald-600 shrink-0" />
+                    <span>Forex & XAUUSD optimized set files</span>
                   </div>
                 </div>
 
@@ -543,9 +554,11 @@ export function HomePage({
                 <div className="pt-6 border-t border-slate-200 flex flex-wrap items-center justify-between gap-4">
                   <div>
                     <div className="text-3xl font-black text-slate-900 font-mono">
-                      {formatPrice(featuredEa.price, featuredEa.currency)}
+                      {formatPrice(featuredEa.price, 'USD')}
                     </div>
-                    <div className="text-[11px] text-slate-500">One-time purchase • {featuredEa.currency || 'USD'} • Lifetime updates</div>
+                    <div className="text-[11px] text-slate-500">
+                      From {formatPrice(199, 'USD')} PC • Up to {formatPrice(349, 'USD')} Source Code
+                    </div>
                   </div>
 
                   <div className="flex items-center gap-3">

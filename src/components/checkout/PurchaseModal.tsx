@@ -3,6 +3,7 @@ import { Product } from '../../types.ts';
 import { Modal } from '../common/Modal.tsx';
 import { Button } from '../common/Button.tsx';
 import { useAuth } from '../../context/AuthContext.tsx';
+import { useCurrency } from '../../context/CurrencyContext.tsx';
 import { api } from '../../services/api.ts';
 import { 
   CheckCircle2, 
@@ -30,6 +31,7 @@ export function PurchaseModal({
   onPurchaseSuccess,
 }: PurchaseModalProps) {
   const { user } = useAuth();
+  const { currentCurrency, formatPrice: formatCurrencyPrice } = useCurrency();
   const [customerName, setCustomerName] = useState(user?.name || '');
   const [customerEmail, setCustomerEmail] = useState(user?.email || '');
   const [paymentMethod, setPaymentMethod] = useState<'card' | 'crypto'>('card');
@@ -44,10 +46,6 @@ export function PurchaseModal({
   const [copiedKey, setCopiedKey] = useState(false);
 
   if (!product) return null;
-
-  const formatPrice = (price: number, currency: string = 'USD') => {
-    return `$${price.toFixed(2)}`;
-  };
 
   const handleCheckout = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -185,7 +183,7 @@ export function PurchaseModal({
       ) : (
         <form onSubmit={handleCheckout} className="space-y-4 text-xs">
           {/* Order Summary Summary Box */}
-          <div className="bg-slate-950 p-3 rounded-lg border border-slate-800 flex items-center justify-between">
+          <div className="bg-slate-950 p-3.5 rounded-xl border border-slate-800 flex items-center justify-between">
             <div>
               <span className="text-slate-200 font-bold block">{product.name}</span>
               <span className="text-slate-400 font-mono text-[11px]">
@@ -193,8 +191,14 @@ export function PurchaseModal({
               </span>
             </div>
             <div className="text-right font-mono">
-              <span className="text-lg font-bold text-emerald-400">{formatPrice(product.price, product.currency)}</span>
-              <span className="text-[10px] text-slate-400 block uppercase">{product.currency || 'USD'}</span>
+              <span className="text-lg font-bold text-emerald-400">
+                {formatCurrencyPrice(product.price, 'USD')}
+              </span>
+              {currentCurrency.code !== 'USD' && (
+                <span className="text-[10px] text-slate-400 block font-mono">
+                  Settled as ${product.price.toFixed(2)} USD
+                </span>
+              )}
             </div>
           </div>
 
@@ -273,6 +277,12 @@ export function PurchaseModal({
             </label>
           </div>
 
+          {currentCurrency.code !== 'USD' && (
+            <p className="text-[10px] text-slate-500 font-mono text-center">
+              Processed in USD (${product.price.toFixed(2)}). Your card/bank will convert to ~{formatCurrencyPrice(product.price, 'USD')} at standard network rates.
+            </p>
+          )}
+
           {/* Buttons */}
           <div className="pt-3 border-t border-slate-800 flex justify-end gap-3">
             <Button
@@ -291,7 +301,11 @@ export function PurchaseModal({
               disabled={loading || !agreedToTerms}
               icon={<ShieldCheck className="w-3.5 h-3.5 text-slate-950" />}
             >
-              {loading ? 'Authorizing...' : `Confirm & Pay $${product.price.toFixed(2)}`}
+              {loading
+                ? 'Authorizing...'
+                : currentCurrency.code !== 'USD'
+                ? `Confirm & Pay ${formatCurrencyPrice(product.price, 'USD')}`
+                : `Confirm & Pay $${product.price.toFixed(2)} USD`}
             </Button>
           </div>
         </form>

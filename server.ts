@@ -8,6 +8,7 @@ import { createClient } from '@supabase/supabase-js';
 import { initDatabase, dbQueries } from './server/db.ts';
 import { MEGA_AI_MASTER_SYSTEM_PROMPT } from './server/megaAiPrompt.ts';
 import { sendStrategySubmissionNotifications } from './server/emailService.ts';
+import { interpretStrategyWithGemini } from './server/strategyAiService.ts';
 
 const SUPABASE_URL = process.env.VITE_SUPABASE_URL || 'https://xbrhalmcvpxutxojemoj.supabase.co';
 const SUPABASE_ANON_KEY = process.env.VITE_SUPABASE_ANON_KEY || 'sb_publishable_7UqK_UbkxtEDg_i_drYesw_9pdbJS0c';
@@ -1172,6 +1173,50 @@ app.get('/api/admin/email-logs', requireAuth, requireRole(['admin']), (req, res)
 });
 
 // -------------------------------------------------------------
+// Free Academy Student Progress Tracking (Gentle Email Tracking)
+// -------------------------------------------------------------
+
+app.post('/api/academy/progress', (req, res) => {
+  try {
+    const { email, completedLessonIds, quizScores, lastLessonId } = req.body;
+    if (!email || typeof email !== 'string' || !email.includes('@')) {
+      return res.status(400).json({ error: 'A valid email address is required to track progress.' });
+    }
+
+    const saved = dbQueries.saveAcademyProgress({
+      email,
+      completedLessonIds: Array.isArray(completedLessonIds) ? completedLessonIds : [],
+      quizScores: quizScores || {},
+      lastLessonId: lastLessonId || undefined
+    });
+
+    res.json({ success: true, progress: saved });
+  } catch (err: any) {
+    console.error('Error saving academy progress:', err);
+    res.status(500).json({ error: err.message || 'Failed to save progress.' });
+  }
+});
+
+app.get('/api/academy/progress', (req, res) => {
+  try {
+    const email = req.query.email as string;
+    if (!email) {
+      return res.status(400).json({ error: 'Email query parameter is required.' });
+    }
+
+    const progress = dbQueries.getAcademyProgress(email);
+    if (!progress) {
+      return res.json({ found: false, progress: null });
+    }
+
+    res.json({ found: true, progress });
+  } catch (err: any) {
+    console.error('Error fetching academy progress:', err);
+    res.status(500).json({ error: err.message || 'Failed to fetch progress.' });
+  }
+});
+
+// -------------------------------------------------------------
 // MEGA AI Assistant — Master System Prompt API
 // -------------------------------------------------------------
 
@@ -1241,6 +1286,35 @@ app.post('/api/mega-ai/chat', async (req, res) => {
       fallback: true,
       error: err.message || 'Gemini generation error',
       reply: null
+    });
+  }
+});
+
+// -------------------------------------------------------------
+// Strategy Architect — Truly AI-Driven Interpretation API
+// -------------------------------------------------------------
+
+app.post('/api/strategy/interpret-ai', async (req, res) => {
+  try {
+    const { buildType = 'EA', description, conversation = [], platform = 'MT5' } = req.body;
+    if (!description || typeof description !== 'string') {
+      return res.status(400).json({ error: 'A valid strategy description is required.' });
+    }
+
+    const ai = getGenAI();
+    const result = await interpretStrategyWithGemini(ai, {
+      buildType: buildType === 'Indicator' ? 'Indicator' : 'EA',
+      description,
+      conversation,
+      platform,
+    });
+
+    res.json(result);
+  } catch (err: any) {
+    console.error('Error in /api/strategy/interpret-ai:', err);
+    res.status(500).json({
+      success: false,
+      error: err.message || 'Strategy interpretation failed',
     });
   }
 });

@@ -8,6 +8,7 @@
  */
 
 export interface StructuredStrategyData {
+  buildType?: 'EA' | 'Indicator';
   primaryDescription: string;
   instrument: string;
   timeframe: string;
@@ -34,6 +35,13 @@ export interface StructuredStrategyData {
   positionSizing: string;
   maxExposure: string;
   entryTriggerType?: 'Candle Close' | 'Instant Tick Touch' | 'Retest / Limit' | 'Not specified';
+  // Indicator-specific fields
+  indicatorPlots?: string;
+  alertTypes?: string;
+  calculationMethod?: string;
+  windowType?: 'Chart Window' | 'Separate Subwindow' | 'Not specified';
+  repaintPolicy?: 'Strict Non-Repainting (Bar Close)' | 'Real-time Bar 0 (Forming)' | 'Not specified';
+  maxBarsCalculate?: string;
 }
 
 export interface ClarificationItem {
@@ -57,10 +65,13 @@ export interface StrategyExtractionResult {
  */
 export function extractTechnicalDetailsFromDescription(
   text: string,
-  existingOverrides?: Partial<StructuredStrategyData>
+  existingOverrides?: Partial<StructuredStrategyData>,
+  buildTypeOverride?: 'EA' | 'Indicator'
 ): StrategyExtractionResult {
   const desc = text || '';
   const lower = desc.toLowerCase();
+  const buildType: 'EA' | 'Indicator' = existingOverrides?.buildType || buildTypeOverride || 'EA';
+  const isIndicator = buildType === 'Indicator';
 
   // 1. INSTRUMENTS
   let instrument = existingOverrides?.instrument || '';
@@ -113,9 +124,9 @@ export function extractTechnicalDetailsFromDescription(
     else if (lower.includes('long') && lower.includes('short')) direction = 'Long & Short';
   }
 
-  // 5. RISK PER TRADE
-  let riskPerTrade = existingOverrides?.riskPerTrade || '';
-  if (!riskPerTrade || riskPerTrade === 'Not specified') {
+  // 5. RISK & TRADE MANAGEMENT (EA ONLY vs INDICATOR)
+  let riskPerTrade = isIndicator ? 'N/A - Technical Indicator' : (existingOverrides?.riskPerTrade || '');
+  if (!isIndicator && (!riskPerTrade || riskPerTrade === 'Not specified')) {
     const riskMatch = desc.match(/risk\s*([0-9.]+)\s*%/i) || desc.match(/([0-9.]+)\s*%\s*(risk|per trade|equity)/i);
     if (riskMatch) {
       riskPerTrade = `${riskMatch[1]}%`;
@@ -128,8 +139,8 @@ export function extractTechnicalDetailsFromDescription(
   }
 
   // 6. STOP LOSS
-  let stopLoss = existingOverrides?.stopLoss || '';
-  if (!stopLoss || stopLoss === 'Not specified') {
+  let stopLoss = isIndicator ? 'N/A - Technical Indicator' : (existingOverrides?.stopLoss || '');
+  if (!isIndicator && (!stopLoss || stopLoss === 'Not specified')) {
     if (lower.includes('below the sweep') || lower.includes('below sweep')) {
       stopLoss = 'Below liquidity sweep';
     } else if (lower.includes('above the sweep') || lower.includes('above sweep')) {
@@ -146,9 +157,9 @@ export function extractTechnicalDetailsFromDescription(
   }
 
   // 7. TAKE PROFIT / RISK REWARD
-  let takeProfit = existingOverrides?.takeProfit || '';
-  let riskReward = existingOverrides?.riskReward || '';
-  if (!takeProfit || takeProfit === 'Not specified') {
+  let takeProfit = isIndicator ? 'N/A - Technical Indicator' : (existingOverrides?.takeProfit || '');
+  let riskReward = isIndicator ? 'N/A - Technical Indicator' : (existingOverrides?.riskReward || '');
+  if (!isIndicator && (!takeProfit || takeProfit === 'Not specified')) {
     const rMatch = desc.match(/([0-9.]+)\s*r\b/i) || desc.match(/target\s*([0-9.]+)\s*r/i) || desc.match(/1\s*:\s*([0-9.]+)/i);
     if (rMatch) {
       takeProfit = `${rMatch[1]}R Multiple`;
@@ -161,43 +172,86 @@ export function extractTechnicalDetailsFromDescription(
     }
   }
 
-  // 8. SETUP & ENTRY RULES
+  // 8. SETUP & ENTRY / SIGNAL RULES
   let entryRules = existingOverrides?.entryRules || '';
   let setup = existingOverrides?.setup || '';
   if (!entryRules || entryRules === 'Not specified') {
     const entryMatches: string[] = [];
     if (lower.includes('sweep') || lower.includes('liquidity')) entryMatches.push('Wait for liquidity sweep of session high/low');
     if (lower.includes('displacement')) entryMatches.push('Confirm strong displacement candle');
-    if (lower.includes('fair value gap') || lower.includes('fvg')) entryMatches.push('Enter upon mitigation of Fair Value Gap (FVG)');
-    if (lower.includes('market structure shift') || lower.includes('mss')) entryMatches.push('Confirm Market Structure Shift (MSS)');
-    if (lower.includes('ema') && lower.includes('cross')) entryMatches.push('Wait for moving average crossover confirmation');
-    if (lower.includes('breakout')) entryMatches.push('Identify breakout beyond key range or level');
+    if (lower.includes('fair value gap') || lower.includes('fvg')) entryMatches.push('Detect mitigation of Fair Value Gap (FVG)');
+    if (lower.includes('market structure shift') || lower.includes('mss') || lower.includes('choch')) entryMatches.push('Confirm Market Structure Shift (MSS / CHoCH)');
+    if (lower.includes('ema') && lower.includes('cross')) entryMatches.push('Moving average crossover confirmation');
+    if (lower.includes('breakout')) entryMatches.push('Breakout beyond key range or high/low');
+    if (lower.includes('rsi') && lower.includes('divergence')) entryMatches.push('RSI Divergence signal detection');
 
     if (entryMatches.length > 0) {
       entryRules = entryMatches.join('; ');
       setup = entryMatches[0];
     } else if (desc.trim().length > 15) {
       entryRules = desc.split('.')[0]?.trim() || 'Described in primary strategy';
-      setup = 'Custom client price-action setup';
+      setup = isIndicator ? 'Custom Indicator Technical Model' : 'Custom Price-Action Setup';
     } else {
       entryRules = 'Not specified';
       setup = 'Not specified';
     }
   }
 
-  // 9. EXIT RULES
+  // 9. EXIT / INVALIDATION RULES
   let exitRules = existingOverrides?.exitRules || '';
   if (!exitRules || exitRules === 'Not specified') {
-    const exitParts: string[] = [];
-    if (stopLoss !== 'Not specified') exitParts.push(`Stop Loss: ${stopLoss}`);
-    if (takeProfit !== 'Not specified') exitParts.push(`Take Profit: ${takeProfit}`);
-    if (lower.includes('opposite signal') || lower.includes('reverse signal')) exitParts.push('Close position on opposite signal');
-    exitRules = exitParts.length > 0 ? exitParts.join(' | ') : 'Not specified';
+    if (isIndicator) {
+      exitRules = lower.includes('mitigat')
+        ? 'Remove / gray-out zone when price penetrates through buffer'
+        : 'Invalidate signal marker on opposite bar trigger or timeframe close';
+    } else {
+      const exitParts: string[] = [];
+      if (stopLoss !== 'Not specified') exitParts.push(`Stop Loss: ${stopLoss}`);
+      if (takeProfit !== 'Not specified') exitParts.push(`Take Profit: ${takeProfit}`);
+      if (lower.includes('opposite signal') || lower.includes('reverse signal')) exitParts.push('Close position on opposite signal');
+      exitRules = exitParts.length > 0 ? exitParts.join(' | ') : 'Not specified';
+    }
   }
 
-  // 10. TRADE MANAGEMENT (Break Even, Trailing Stop)
-  let breakEven = existingOverrides?.breakEven || '';
-  if (!breakEven || breakEven === 'Not specified') {
+  // 10. INDICATOR-SPECIFIC SIGNALS & BUFFERS
+  let windowType = existingOverrides?.windowType || 'Not specified';
+  if (isIndicator && (windowType === 'Not specified')) {
+    if (lower.includes('subwindow') || lower.includes('oscillator') || lower.includes('separate window') || lower.includes('rsi') || lower.includes('macd') || lower.includes('stochastic')) {
+      windowType = 'Separate Subwindow';
+    } else {
+      windowType = 'Chart Window';
+    }
+  }
+
+  let indicatorPlots = existingOverrides?.indicatorPlots || '';
+  if (isIndicator && !indicatorPlots) {
+    const plots: string[] = [];
+    if (lower.includes('arrow')) plots.push('Signal Arrows (Wingdings: Buy #233 / Sell #234)');
+    if (lower.includes('fvg') || lower.includes('box') || lower.includes('zone') || lower.includes('block')) plots.push('Dynamic Retest Zones & Shaded Rectangles (DRAW_FILLING)');
+    if (lower.includes('line') || lower.includes('ema') || lower.includes('ma')) plots.push('Multi-Color Indicator Lines (DRAW_COLOR_LINE)');
+    if (lower.includes('histogram')) plots.push('Dual-State Histogram (DRAW_HISTOGRAM)');
+    if (lower.includes('dot') || lower.includes('marker')) plots.push('High/Low Pivot Dots');
+    indicatorPlots = plots.length > 0 ? plots.join(', ') : 'Signal Arrows & Chart Overlay Zones';
+  }
+
+  let alertTypes = existingOverrides?.alertTypes || '';
+  if (isIndicator && !alertTypes) {
+    const alerts: string[] = [];
+    if (lower.includes('push') || lower.includes('mobile') || lower.includes('phone')) alerts.push('MT5 Mobile Push Notification');
+    if (lower.includes('sound') || lower.includes('audio') || lower.includes('chime')) alerts.push('Sound Alert (Chime)');
+    if (lower.includes('popup') || lower.includes('dialog') || lower.includes('alert')) alerts.push('Terminal Popup Alert');
+    if (lower.includes('email') || lower.includes('mail')) alerts.push('Email Alert');
+    alertTypes = alerts.length > 0 ? alerts.join(', ') : 'Terminal Popup, Sound Alert, MT5 Mobile Push';
+  }
+
+  let repaintPolicy = existingOverrides?.repaintPolicy || 'Not specified';
+  if (isIndicator && repaintPolicy === 'Not specified') {
+    repaintPolicy = 'Strict Non-Repainting (Bar Close)';
+  }
+
+  // 11. TRADE MANAGEMENT (EA ONLY)
+  let breakEven = isIndicator ? 'N/A - Technical Indicator' : (existingOverrides?.breakEven || '');
+  if (!isIndicator && (!breakEven || breakEven === 'Not specified')) {
     if (lower.includes('break even') || lower.includes('breakeven') || lower.includes('move stop to be')) {
       const beMatch = desc.match(/at\s*([0-9.]+)\s*r/i) || desc.match(/after\s*([0-9.]+)\s*r/i) || desc.match(/([0-9.]+)\s*r/i);
       breakEven = beMatch ? `Move to Break-Even at ${beMatch[1]}R` : 'Move stop to Break-Even';
@@ -206,8 +260,8 @@ export function extractTechnicalDetailsFromDescription(
     }
   }
 
-  let trailingStop = existingOverrides?.trailingStop || '';
-  if (!trailingStop || trailingStop === 'Not specified') {
+  let trailingStop = isIndicator ? 'N/A - Technical Indicator' : (existingOverrides?.trailingStop || '');
+  if (!isIndicator && (!trailingStop || trailingStop === 'Not specified')) {
     if (lower.includes('trail') || lower.includes('trailing')) {
       const trailAtr = desc.match(/trail.*([0-9.]+)\s*(x|\*)\s*atr/i);
       trailingStop = trailAtr ? `Trail ${trailAtr[1]}x ATR` : 'Active Trailing Stop';
@@ -216,36 +270,36 @@ export function extractTechnicalDetailsFromDescription(
     }
   }
 
-  // 11. RISK CONSTRAINTS (Max daily loss, consecutive losses, trade counts)
-  let maxDailyLoss = existingOverrides?.maxDailyLoss || '';
-  if (!maxDailyLoss || maxDailyLoss === 'Not specified') {
+  // 12. RISK CONSTRAINTS (EA ONLY)
+  let maxDailyLoss = isIndicator ? 'N/A - Technical Indicator' : (existingOverrides?.maxDailyLoss || '');
+  if (!isIndicator && (!maxDailyLoss || maxDailyLoss === 'Not specified')) {
     const dailyLossMatch = desc.match(/daily\s*(max\s*)?loss\s*(of|is|at)?\s*([0-9.]+)\s*%/i) || desc.match(/max\s*daily\s*loss\s*([0-9.]+)\s*%/i);
     maxDailyLoss = dailyLossMatch ? `${dailyLossMatch[dailyLossMatch.length - 1]}%` : 'Not specified';
   }
 
-  let consecutiveLossProtection = existingOverrides?.consecutiveLossProtection || '';
-  if (!consecutiveLossProtection || consecutiveLossProtection === 'Not specified') {
+  let consecutiveLossProtection = isIndicator ? 'N/A - Technical Indicator' : (existingOverrides?.consecutiveLossProtection || '');
+  if (!isIndicator && (!consecutiveLossProtection || consecutiveLossProtection === 'Not specified')) {
     const consecMatch = desc.match(/([0-9]+)\s*consecutive\s*losses?/i) || desc.match(/stop\s*after\s*([0-9]+)\s*losses?/i);
     consecutiveLossProtection = consecMatch ? `Stop trading after ${consecMatch[1]} consecutive losses` : 'Not specified';
   }
 
-  let maxTradesPerDay = existingOverrides?.maxTradesPerDay || '';
-  if (!maxTradesPerDay || maxTradesPerDay === 'Not specified') {
+  let maxTradesPerDay = isIndicator ? 'N/A - Technical Indicator' : (existingOverrides?.maxTradesPerDay || '');
+  if (!isIndicator && (!maxTradesPerDay || maxTradesPerDay === 'Not specified')) {
     const tradesMatch = desc.match(/([0-9]+)\s*trades?\s*(per|a)\s*day/i) || desc.match(/max\s*([0-9]+)\s*trades?/i);
     maxTradesPerDay = tradesMatch ? `${tradesMatch[1]} trades/day` : 'Not specified';
   }
 
-  let maxOpenPositions = existingOverrides?.maxOpenPositions || '';
-  if (!maxOpenPositions || maxOpenPositions === 'Not specified') {
+  let maxOpenPositions = isIndicator ? 'N/A - Technical Indicator' : (existingOverrides?.maxOpenPositions || '');
+  if (!isIndicator && (!maxOpenPositions || maxOpenPositions === 'Not specified')) {
     const posMatch = desc.match(/([0-9]+)\s*(open\s*)?position/i) || desc.match(/one\s*trade\s*at\s*a\s*time/i);
     maxOpenPositions = posMatch ? (posMatch[1] ? `${posMatch[1]} position(s)` : '1 position max') : 'Not specified';
   }
 
-  // 12. CONDITIONS & FILTERS
+  // 13. CONDITIONS & FILTERS
   let newsFilter = existingOverrides?.newsFilter || '';
   if (!newsFilter || newsFilter === 'Not specified') {
     if (lower.includes('news') || lower.includes('nfp') || lower.includes('cpi') || lower.includes('fomc')) {
-      newsFilter = 'Pause execution during high-impact economic news events';
+      newsFilter = isIndicator ? 'Display high-impact news marker on chart' : 'Pause execution during high-impact economic news events';
     } else {
       newsFilter = 'Not specified';
     }
@@ -260,40 +314,71 @@ export function extractTechnicalDetailsFromDescription(
   const tradingDays = existingOverrides?.tradingDays || ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'];
   const additionalRules = existingOverrides?.additionalRules || (desc.length > 200 ? 'Refer to primary description for full details' : 'Not specified');
 
-  // 13. IDENTIFY GENUINE AMBIGUITIES / CLARIFICATIONS (Only when necessary)
+  // 14. SEPARATE CLARIFICATIONS FOR EA vs INDICATOR
   const clarifications: ClarificationItem[] = [];
 
-  // Check Entry Trigger Precision
-  if (
-    (lower.includes('breakout') || lower.includes('sweep') || lower.includes('cross')) &&
-    !lower.includes('candle close') &&
-    !lower.includes('bar close') &&
-    !lower.includes('tick') &&
-    !lower.includes('limit order')
-  ) {
+  if (isIndicator) {
     clarifications.push({
-      id: 'clarify-entry-trigger',
-      topic: 'ENTRY TRIGGER EXECUTION',
-      question: 'Does execution occur immediately on touch of the level, or after the candle closes?',
+      id: 'clarify-indicator-repaint',
+      topic: 'REPAINT & SIGNAL CONFIRMATION',
+      question: 'Should signals calculate and alert strictly on candle close (guaranteed non-repainting) or on live forming ticks?',
       status: 'REQUIRES CLARIFICATION',
-      suggestedOptions: ['On Candle Close (Conservative)', 'Instant Tick Touch (Aggressive)', 'Limit Order Retest'],
+      suggestedOptions: ['Bar Close (Non-Repainting - Recommended)', 'Instant Live Bar (Early signal, potential repaint)'],
     });
-  }
 
-  // Check Stop Loss Precision if left completely unspecified
-  if (stopLoss === 'Not specified' && desc.length > 20) {
-    clarifications.push({
-      id: 'clarify-stop-loss',
-      topic: 'STOP LOSS PLACEMENT',
-      question: 'No explicit stop loss rule detected. Where should the protective stop be placed?',
-      status: 'REQUIRES CLARIFICATION',
-      suggestedOptions: ['Recent Swing High/Low', 'Fixed Pips', 'ATR Multiplier'],
-    });
+    if (!lower.includes('push') && !lower.includes('popup') && !lower.includes('sound')) {
+      clarifications.push({
+        id: 'clarify-indicator-alerts',
+        topic: 'ALERT NOTIFICATION CHANNELS',
+        question: 'Which notification channels should activate when a valid setup is detected?',
+        status: 'REQUIRES CLARIFICATION',
+        suggestedOptions: ['Popup + Audio + MT5 Mobile Push', 'Popup Alert Only', 'Sound Alert Only'],
+      });
+    }
+
+    if (windowType === 'Not specified') {
+      clarifications.push({
+        id: 'clarify-indicator-window',
+        topic: 'CHART WINDOW TARGET',
+        question: 'Should the indicator plot on the main price chart or in a separate oscillator subwindow?',
+        status: 'REQUIRES CLARIFICATION',
+        suggestedOptions: ['Main Price Chart Window', 'Separate Subwindow Below Chart'],
+      });
+    }
+  } else {
+    // Check Entry Trigger Precision
+    if (
+      (lower.includes('breakout') || lower.includes('sweep') || lower.includes('cross')) &&
+      !lower.includes('candle close') &&
+      !lower.includes('bar close') &&
+      !lower.includes('tick') &&
+      !lower.includes('limit order')
+    ) {
+      clarifications.push({
+        id: 'clarify-entry-trigger',
+        topic: 'ENTRY TRIGGER EXECUTION',
+        question: 'Does execution occur immediately on touch of the level, or after the candle closes?',
+        status: 'REQUIRES CLARIFICATION',
+        suggestedOptions: ['On Candle Close (Conservative)', 'Instant Tick Touch (Aggressive)', 'Limit Order Retest'],
+      });
+    }
+
+    // Check Stop Loss Precision if left completely unspecified
+    if (stopLoss === 'Not specified' && desc.length > 20) {
+      clarifications.push({
+        id: 'clarify-stop-loss',
+        topic: 'STOP LOSS PLACEMENT',
+        question: 'No explicit stop loss rule detected. Where should the protective stop be placed?',
+        status: 'REQUIRES CLARIFICATION',
+        suggestedOptions: ['Recent Swing High/Low', 'Fixed Pips', 'ATR Multiplier'],
+      });
+    }
   }
 
   const status = clarifications.length > 0 ? 'CLARIFICATION REQUIRED' : 'STRATEGY READY FOR REVIEW';
 
   const structured: StructuredStrategyData = {
+    buildType,
     primaryDescription: desc,
     instrument,
     timeframe,
@@ -317,15 +402,23 @@ export function extractTechnicalDetailsFromDescription(
     maxSpread,
     additionalRules,
     consecutiveLossProtection,
-    positionSizing: riskPerTrade !== 'Not specified' ? `Calculated from ${riskPerTrade}` : 'Not specified',
+    positionSizing: isIndicator ? 'N/A' : (riskPerTrade !== 'Not specified' ? `Calculated from ${riskPerTrade}` : 'Not specified'),
     maxExposure: existingOverrides?.maxExposure || 'Not specified',
+    indicatorPlots,
+    alertTypes,
+    calculationMethod: isIndicator ? (existingOverrides?.calculationMethod || 'OnCalculate array scanning with prev_calculated optimization') : 'OnTick state machine',
+    windowType,
+    repaintPolicy,
+    maxBarsCalculate: existingOverrides?.maxBarsCalculate || '1000 Bars',
   };
 
   return {
     structured,
     clarifications,
     status,
-    confidenceSummary: `Extracted from client's strategy description. ${clarifications.length > 0 ? `${clarifications.length} item(s) require clarification.` : 'All core parameters successfully mapped.'}`,
+    confidenceSummary: isIndicator
+      ? `Extracted indicator parameters from client description. ${clarifications.length} visual/signal parameter(s) mapped.`
+      : `Extracted EA execution rules from client description. ${clarifications.length > 0 ? `${clarifications.length} execution item(s) require confirmation.` : 'All core parameters successfully mapped.'}`,
   };
 }
 
@@ -335,6 +428,10 @@ export function extractTechnicalDetailsFromDescription(
  * STRICTLY reflects the client's rules without redesigning or inventing.
  */
 export function buildDevPrompt(data: StructuredStrategyData): string {
+  if (data.buildType === 'Indicator') {
+    return buildIndicatorDevPrompt(data);
+  }
+
   return `==================================================
 AI DEVELOPMENT PROMPT — EXPERT ADVISOR SPECIFICATION
 ==================================================
@@ -409,11 +506,73 @@ Automate the client's specified trading logic into a deterministic, robust Exper
 }
 
 /**
+ * Representation 1B: INDICATOR AI DEVELOPMENT PROMPT
+ * Structured, professional prompt for an AI indicator coder / engineer.
+ */
+export function buildIndicatorDevPrompt(data: StructuredStrategyData): string {
+  return `==================================================
+AI DEVELOPMENT PROMPT — TECHNICAL INDICATOR SPECIFICATION
+==================================================
+
+[ROLE]
+You are a senior MQL5 Quantitative Indicator Architect. Your task is to develop a zero-repainting, highly optimized technical indicator strictly adhering to the visual, mathematical, and alert specifications below.
+
+[CONTEXT & ORIGINAL CLIENT DESCRIPTION]
+${data.primaryDescription || 'No description provided.'}
+
+[INDICATOR OBJECTIVE]
+Develop a high-performance visual scanner & signal indicator designed for ${data.instrument} on the ${data.timeframe} timeframe.
+
+[WINDOW TARGET & PROPERTIES]
+• Window Location: ${data.windowType === 'Separate Subwindow' ? '#property indicator_separate_window' : '#property indicator_chart_window'}
+• Calculation Engine: ${data.calculationMethod || 'OnCalculate buffer array scanning with prev_calculated optimization'}
+• Max Historical Calculation Depth: ${data.maxBarsCalculate || '1000 Bars (for CPU efficiency)'}
+
+[VISUAL PLOTS & BUFFERS]
+• Visual Elements: ${data.indicatorPlots || 'Signal Arrows & Chart Overlay Zones'}
+• Target Direction: ${data.direction}
+• Buffer Architecture:
+  - Dynamic Index Buffers mapped with SetIndexBuffer()
+  - ArraySetAsSeries() applied to all price and indicator arrays
+  - Color palettes and line widths exposed as customizable input properties
+
+[SIGNAL FORMULA & LOGIC]
+• Setup Concept: ${data.setup}
+• Detection Rules: ${data.entryRules}
+• Invalidation / Cleanup: ${data.exitRules}
+
+[REPAINT & CONFIRMATION GUARANTEE]
+• Repaint Policy: ${data.repaintPolicy || 'Strict Non-Repainting (Bar Close)'}
+• Bar Evaluation:
+  - Strict Mode: Calculate signals on bar index 1 after bar 0 closes. Never recalculate or alter historical bars.
+  - Zero-Repaint Guarantee: Once a marker/arrow prints on a closed candle, it MUST remain fixed permanently.
+
+[MULTI-CHANNEL ALERT SUITE]
+• Configured Channels: ${data.alertTypes || 'Terminal Popup, Sound Alert, MT5 Mobile Push'}
+• Alert Debounce: Dispatch exactly 1 alert per candle upon close; prevent multiple sound/push spam on repeated ticks.
+• Format: "[Symbol] [Timeframe] - Signal Triggered at [Price]".
+
+[OPERATIONAL FILTERS]
+• Permitted Sessions: ${data.sessions}
+• Active Trading Days: ${data.tradingDays.join(', ')}
+• News Awareness: ${data.newsFilter}
+
+[COMPILATION & PERFORMANCE STANDARDS]
+• Zero errors and zero warnings in MetaEditor MQL5 compiler.
+• Zero chart lag: Use prev_calculated in OnCalculate() to ensure only newly closed bars are processed on subsequent ticks.
+`;
+}
+
+/**
  * Representation 2: VIEW AS CLEAR STRATEGY
  * Simple human-readable explanation of exactly what the client's strategy does.
  * Allows the client to verify: "Yes, this is exactly what I meant."
  */
 export function buildClearStrategy(data: StructuredStrategyData): string {
+  if (data.buildType === 'Indicator') {
+    return buildIndicatorClearStrategy(data);
+  }
+
   return `STRATEGY OVERVIEW
 The automated system trades ${data.instrument} on the ${data.timeframe} timeframe${data.sessions !== 'Not specified' ? ` during ${data.sessions}` : ''}.
 
@@ -451,6 +610,47 @@ TRADING CONDITIONS:
 
 ADDITIONAL RULES:
 ${data.additionalRules !== 'Not specified' ? data.additionalRules : 'No additional custom rules specified.'}
+`;
+}
+
+/**
+ * Representation 2B: INDICATOR CLEAR STRATEGY
+ * Simple human-readable explanation for an Indicator build.
+ */
+export function buildIndicatorClearStrategy(data: StructuredStrategyData): string {
+  return `INDICATOR SPECIFICATION OVERVIEW
+Technical Indicator designed for ${data.instrument} on the ${data.timeframe} timeframe${data.sessions !== 'Not specified' ? ` during ${data.sessions}` : ''}.
+
+CHART WINDOW TARGET:
+${data.windowType || 'Main Price Chart Window'}
+
+SIGNAL DIRECTION:
+${data.direction}
+
+VISUAL PLOTS & BUFFERS:
+${data.indicatorPlots || 'Signal Arrows & Chart Overlay Zones'}
+
+DETECTION LOGIC & FORMULA:
+${formatRulesList(data.entryRules)}
+
+INVALIDATION / EXPIRATION:
+${data.exitRules}
+
+REPAINT & CONFIRMATION POLICY:
+• Repaint Model: ${data.repaintPolicy || 'Strict Non-Repainting (Bar Close)'}
+• Calculation Engine: ${data.calculationMethod || 'OnCalculate buffer optimization'}
+• Lookback Depth: ${data.maxBarsCalculate || '1000 Bars'}
+
+ALERT NOTIFICATION SUITE:
+${data.alertTypes || 'Terminal Popup, Sound Alert, MT5 Mobile Push'}
+
+OPERATIONAL CONDITIONS:
+• Active Sessions: ${data.sessions}
+• Trading Days: ${data.tradingDays.join(', ')}
+• News Filter: ${data.newsFilter}
+
+ADDITIONAL NOTES:
+${data.additionalRules !== 'Not specified' ? data.additionalRules : 'Calculates non-repainting buffer signals with zero chart lag.'}
 `;
 }
 

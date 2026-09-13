@@ -3,6 +3,7 @@ import { motion } from 'motion/react';
 import { Product, ActiveView } from '../../types.ts';
 import { STOREFRONT_MEDIA } from '../../constants/media.ts';
 import { Button } from '../common/Button.tsx';
+import { useCurrency } from '../../context/CurrencyContext.tsx';
 import { 
   ArrowRight, 
   Cpu, 
@@ -37,8 +38,10 @@ export function TradingEasPage({
   const featuredEa = eaProducts.find(p => p.id === 'prod_ea_adaptive_liquidity') || eaProducts[0];
   const otherEas = eaProducts.filter(p => p.id !== featuredEa?.id);
 
+  const { formatPrice: formatCurrencyPrice, currentCurrency } = useCurrency();
+
   const formatPrice = (price: number, currency: string = 'USD') => {
-    return `$${price.toFixed(2)}`;
+    return formatCurrencyPrice(price, currency);
   };
 
   const scrollToCatalog = () => {
@@ -277,7 +280,7 @@ export function TradingEasPage({
                   <div className="text-xl font-bold text-slate-900 font-mono">
                     {formatPrice(ea.price, ea.currency)}
                   </div>
-                  <div className="text-[10px] text-slate-400">{ea.currency || 'USD'} (Lifetime)</div>
+                  <div className="text-[10px] text-slate-400">{currentCurrency.code} (Lifetime)</div>
                 </div>
 
                 <div className="flex items-center gap-2">

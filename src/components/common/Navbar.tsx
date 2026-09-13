@@ -13,6 +13,7 @@ import {
   Sparkles
 } from 'lucide-react';
 import { MegAiLogoIcon } from './MegAiLogo.tsx';
+import { CurrencySelector } from './CurrencySelector.tsx';
 
 interface NavbarProps {
   currentView?: ActiveView;
@@ -30,7 +31,7 @@ export function Navbar({
   onTriggerBuildMyEa,
 }: NavbarProps) {
   const current = currentView || activeView || 'home';
-  const { user, logout, quickLogin, isAdmin } = useAuth();
+  const { user, logout, isAdmin } = useAuth();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
 
@@ -42,22 +43,25 @@ export function Navbar({
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
-  const navItems: Array<{ label: string; view: ActiveView; badge?: string }> = [
+  const navItems: Array<{ label: string; view: ActiveView; badge?: string; productId?: string }> = [
     { label: 'Home', view: 'home' },
     { label: 'FREE ACADEMY', view: 'academy', badge: 'FREE' },
     { label: 'BOOKS', view: 'ebooks' },
     { label: 'FREE TOOLS', view: 'prompt-architect' },
     { label: 'CUSTOM EA', view: 'custom-ea' },
+    { label: 'LIQUIDITY PRO EA', view: 'ea-detail', productId: 'prod_ea_adaptive_liquidity' },
     { label: 'ABOUT', view: 'about' },
   ];
 
-  const handleNavClick = (view: ActiveView) => {
-    onNavigate(view);
+  const handleNavClick = (item: { label: string; view: ActiveView; productId?: string }) => {
+    onNavigate(item.view, item.productId);
     setMobileMenuOpen(false);
   };
 
-  const isItemActive = (item: { label: string; view: ActiveView }) => {
+  const isItemActive = (item: { label: string; view: ActiveView; productId?: string }) => {
     if (item.view === 'home' && current === 'home') return true;
+    if (item.view === 'ea-detail' && (current === 'ea-detail' || current === 'eas')) return true;
+    if (item.view === 'eas' && (current === 'eas' || current === 'ea-detail')) return true;
     if (item.view === 'academy' && (current === 'academy' || current === 'level-hub' || current === 'lesson-detail')) return true;
     if (item.view === 'ebooks' && (current === 'ebooks' || current === 'ebook-detail' || current === 'free-ebook' || current === 'ai-prompt-handbook')) return true;
     if (item.view === 'prompt-architect' && current === 'prompt-architect') return true;
@@ -78,7 +82,7 @@ export function Navbar({
         }`}>
           {/* Brand Logo */}
           <div 
-            onClick={() => handleNavClick('home')}
+            onClick={() => handleNavClick({ label: 'Home', view: 'home' })}
             className="flex items-center gap-2.5 cursor-pointer group select-none shrink-0"
           >
             <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-gradient-to-b from-slate-900 via-[#0A101D] to-slate-950 border border-slate-700/70 text-white flex items-center justify-center shadow-md shadow-slate-950/20 group-hover:border-cyan-500/60 group-hover:shadow-[0_0_15px_rgba(6,182,212,0.25)] group-hover:scale-105 transition-all">
@@ -110,7 +114,7 @@ export function Navbar({
               return (
                 <button
                   key={item.label}
-                  onClick={() => handleNavClick(item.view)}
+                  onClick={() => handleNavClick(item)}
                   className={`relative px-3.5 py-1.5 rounded-full text-xs xl:text-sm font-semibold tracking-tight transition-all duration-200 flex items-center gap-1.5 cursor-pointer ${
                     active
                       ? 'bg-emerald-50 text-emerald-800 border border-emerald-200/80 shadow-xs'
@@ -135,45 +139,10 @@ export function Navbar({
             })}
           </nav>
 
-          {/* Right Actions (CTA + Account + Role Tester) */}
+          {/* Right Actions (CTA + Account + Role Tester + Currency Selector) */}
           <div className="hidden lg:flex items-center gap-3">
-            {/* Quick Role Tester Pill for testing without disrupting preview */}
-            <div className="hidden xl:flex items-center gap-1 bg-slate-50 border border-slate-200 px-2 py-1 rounded-full text-[10px] font-mono">
-              <span className="text-slate-400 mr-0.5">Role:</span>
-              <button
-                onClick={() => quickLogin('customer')}
-                className={`px-1.5 py-0.5 rounded-full transition-colors ${
-                  user?.role === 'customer'
-                    ? 'bg-emerald-600 text-white font-bold'
-                    : 'text-slate-500 hover:text-slate-800'
-                }`}
-                title="Switch to customer demo role"
-              >
-                Cust
-              </button>
-              <button
-                onClick={() => quickLogin('developer')}
-                className={`px-1.5 py-0.5 rounded-full transition-colors ${
-                  user?.role === 'developer'
-                    ? 'bg-emerald-600 text-white font-bold'
-                    : 'text-slate-500 hover:text-slate-800'
-                }`}
-                title="Switch to developer demo role"
-              >
-                Dev
-              </button>
-              <button
-                onClick={() => quickLogin('admin')}
-                className={`px-1.5 py-0.5 rounded-full transition-colors ${
-                  user?.role === 'admin'
-                    ? 'bg-emerald-600 text-white font-bold'
-                    : 'text-slate-500 hover:text-slate-800'
-                }`}
-                title="Switch to admin demo role"
-              >
-                Admin
-              </button>
-            </div>
+            {/* Shopify-Style Region-Aware Currency Selector */}
+            <CurrencySelector />
 
             {/* Login or Account Portal */}
             {!user ? (
@@ -262,7 +231,7 @@ export function Navbar({
                   return (
                     <button
                       key={item.label}
-                      onClick={() => handleNavClick(item.view)}
+                      onClick={() => handleNavClick(item)}
                       className={`text-left px-4 py-3 rounded-2xl text-sm font-semibold transition-all flex items-center justify-between ${
                         active 
                           ? 'bg-emerald-50 text-emerald-800 border border-emerald-200/80'
@@ -318,14 +287,10 @@ export function Navbar({
                   </div>
                 )}
 
-                {/* Role Switcher in Mobile */}
-                <div className="pt-2 text-[11px] font-mono text-slate-500 flex items-center justify-between bg-slate-50 p-2.5 rounded-xl border border-slate-200">
-                  <span>Role Switcher:</span>
-                  <div className="flex gap-1.5">
-                    <button onClick={() => quickLogin('customer')} className="px-2 py-0.5 rounded-full bg-white border border-slate-200 text-xs text-slate-700">Cust</button>
-                    <button onClick={() => quickLogin('developer')} className="px-2 py-0.5 rounded-full bg-white border border-slate-200 text-xs text-slate-700">Dev</button>
-                    <button onClick={() => quickLogin('admin')} className="px-2 py-0.5 rounded-full bg-white border border-slate-200 text-xs text-slate-700">Admin</button>
-                  </div>
+                {/* Currency Selector for Mobile */}
+                <div className="pt-2 flex items-center justify-between bg-slate-50 p-2.5 rounded-xl border border-slate-200">
+                  <span className="text-[11px] font-mono text-slate-500">Currency:</span>
+                  <CurrencySelector />
                 </div>
               </div>
             </motion.div>
