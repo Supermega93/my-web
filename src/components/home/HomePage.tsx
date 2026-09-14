@@ -6,6 +6,8 @@ import { Button } from '../common/Button.tsx';
 import { useCurrency } from '../../context/CurrencyContext.tsx';
 import { StudioLaptopMockup } from './StudioLaptopMockup.tsx';
 import { HomeFreeAcademySection } from './HomeFreeAcademySection.tsx';
+import { FuturisticRobotHero } from './FuturisticRobotHero.tsx';
+import { PillIconBadge } from '../common/PillIconBadge.tsx';
 import { 
   ArrowRight, 
   Sparkles, 
@@ -107,53 +109,14 @@ export function HomePage({
         className="absolute inset-0 bg-[linear-gradient(to_right,#e2e8f040_1px,transparent_1px),linear-gradient(to_bottom,#e2e8f040_1px,transparent_1px)] bg-[size:4rem_4rem] [mask-image:radial-gradient(ellipse_70%_50%_at_50%_0%,#000_70%,transparent_100%)] pointer-events-none" 
       />
 
-      {/* 1. HERO SECTION: Clean, High-Contrast Display & Interactive Centerpiece */}
-      <section className="relative pt-24 pb-14 md:pt-28 md:pb-16 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-        
-        {/* Top Eyebrow */}
-        <motion.div
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5 }}
-          className="flex items-center justify-center gap-3 text-emerald-800 text-xs sm:text-sm font-semibold tracking-widest uppercase mb-4"
-        >
-          <span className="w-8 sm:w-12 h-[1px] bg-emerald-300" />
-          <span className="px-3 py-1 rounded-full bg-emerald-50 border border-emerald-200/80 font-mono text-emerald-800">
-            Professional
-          </span>
-          <span className="w-8 sm:w-12 h-[1px] bg-emerald-300" />
-        </motion.div>
+      {/* 1. HERO SECTION: Full-Width Futuristic MEG.AI LABS Robot (Images 1 & 2) */}
+      <FuturisticRobotHero
+        onNavigate={onNavigate}
+        onTriggerBuildMyEa={onTriggerBuildMyEa}
+      />
 
-        {/* Big Display Title */}
-        <motion.h1 
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.55, delay: 0.1 }}
-          className="text-4xl sm:text-6xl md:text-7xl lg:text-8xl font-black tracking-tight text-slate-900 leading-[1.08]"
-        >
-          Algorithmic Trading <br />
-          <span className="text-transparent bg-clip-text bg-gradient-to-r from-emerald-800 via-emerald-700 to-teal-800">
-            Architecture
-          </span>
-        </motion.h1>
-
-        {/* Subtitle */}
-        <motion.p 
-          initial={{ opacity: 0, y: 15 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.55, delay: 0.2 }}
-          className="text-base sm:text-lg md:text-xl text-slate-600 max-w-2xl mx-auto mt-4 font-normal leading-relaxed"
-        >
-          Modern Curriculum & Quantitative Systems for Systematic Traders & Developers
-        </motion.p>
-
-        {/* Subtle Glowing Pill Divider */}
-        <div className="flex items-center justify-center gap-2.5 mt-5 mb-10">
-          <div className="w-12 sm:w-16 h-[1px] bg-slate-200" />
-          <div className="w-6 h-1.5 rounded-full bg-emerald-600 shadow-[0_0_12px_rgba(5,150,105,0.4)]" />
-          <div className="w-12 sm:w-16 h-[1px] bg-slate-200" />
-        </div>
-
+      {/* 2. INTERACTIVE STUDIO CENTERPIECE & CURRICULUM PREVIEW */}
+      <section className="relative pt-12 pb-14 md:pt-16 md:pb-16 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
         {/* Laptop 3D Mockup Centerpiece */}
         <motion.div
           initial={{ opacity: 0, y: 35 }}
@@ -166,7 +129,7 @@ export function HomePage({
           />
         </motion.div>
 
-        {/* 4 Floating Level Cards */}
+        {/* 4 Floating Level Cards (Styled with attached Image 3 pill badges) */}
         <div className="max-w-5xl mx-auto grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mt-8">
           {/* Card 1: Level 1: Preschool */}
           <div 
@@ -176,11 +139,13 @@ export function HomePage({
             }}
             className="p-5 rounded-3xl bg-white hover:bg-slate-50 border border-slate-200/90 shadow-sm hover:shadow-md transition-all duration-300 flex flex-col justify-between text-left group cursor-pointer"
           >
-            <div className="space-y-2">
-              <div className="w-10 h-10 rounded-2xl bg-emerald-50 border border-emerald-200/70 flex items-center justify-center text-emerald-800 shadow-xs group-hover:scale-110 transition-transform">
-                <BookOpen className="w-5 h-5" />
-              </div>
-              <div className="text-[10px] font-mono text-emerald-700 font-bold uppercase">4 Free Lessons</div>
+            <div className="space-y-3">
+              <PillIconBadge
+                icon={BookOpen}
+                label="4 FREE LESSONS"
+                variant="emerald"
+                size="sm"
+              />
               <h3 className="text-base font-bold text-slate-900 group-hover:text-emerald-800 transition-colors">
                 Level 1: Preschool
               </h3>
@@ -203,11 +168,13 @@ export function HomePage({
             }}
             className="p-5 rounded-3xl bg-gradient-to-br from-emerald-900 via-emerald-800 to-teal-950 border border-emerald-700/60 shadow-xl shadow-emerald-950/20 transition-all duration-300 flex flex-col justify-between text-left group cursor-pointer text-white transform hover:-translate-y-1"
           >
-            <div className="space-y-2">
-              <div className="w-10 h-10 rounded-2xl bg-white/15 border border-white/25 flex items-center justify-center text-white shadow-inner group-hover:scale-110 transition-transform">
-                <TrendingUp className="w-5 h-5 text-emerald-300" />
-              </div>
-              <div className="text-[10px] font-mono text-emerald-300 font-bold uppercase">Active Free Track</div>
+            <div className="space-y-3">
+              <PillIconBadge
+                icon={TrendingUp}
+                label="ACTIVE FREE TRACK"
+                variant="green"
+                size="sm"
+              />
               <h3 className="text-base font-bold text-white">
                 Level 2: Kindergarten
               </h3>
@@ -230,11 +197,13 @@ export function HomePage({
             }}
             className="p-5 rounded-3xl bg-white hover:bg-slate-50 border border-slate-200/90 shadow-sm hover:shadow-md transition-all duration-300 flex flex-col justify-between text-left group cursor-pointer"
           >
-            <div className="space-y-2">
-              <div className="w-10 h-10 rounded-2xl bg-emerald-50 border border-emerald-200/70 flex items-center justify-center text-emerald-800 shadow-xs group-hover:scale-110 transition-transform">
-                <Cpu className="w-5 h-5" />
-              </div>
-              <div className="text-[10px] font-mono text-emerald-700 font-bold uppercase">3 Free Lessons</div>
+            <div className="space-y-3">
+              <PillIconBadge
+                icon={Cpu}
+                label="3 FREE LESSONS"
+                variant="blue"
+                size="sm"
+              />
               <h3 className="text-base font-bold text-slate-900 group-hover:text-emerald-800 transition-colors">
                 Level 3: Elementary
               </h3>
@@ -254,11 +223,13 @@ export function HomePage({
             onClick={() => onNavigate('academy')}
             className="p-5 rounded-3xl bg-white hover:bg-slate-50 border border-slate-200/90 shadow-sm hover:shadow-md transition-all duration-300 flex flex-col justify-between text-left group cursor-pointer"
           >
-            <div className="space-y-2">
-              <div className="w-10 h-10 rounded-2xl bg-emerald-50 border border-emerald-200/70 flex items-center justify-center text-emerald-800 shadow-xs group-hover:scale-110 transition-transform">
-                <ShieldCheck className="w-5 h-5" />
-              </div>
-              <div className="text-[10px] font-mono text-emerald-700 font-bold uppercase">15 Pro Lessons</div>
+            <div className="space-y-3">
+              <PillIconBadge
+                icon={ShieldCheck}
+                label="15 PRO LESSONS"
+                variant="purple"
+                size="sm"
+              />
               <h3 className="text-base font-bold text-slate-900 group-hover:text-emerald-800 transition-colors">
                 Levels 4–8: Pro Track
               </h3>
@@ -298,38 +269,29 @@ export function HomePage({
               </div>
             </div>
 
-            {/* Glowing Deep Emerald Pill Button */}
+            {/* Glowing Deep Emerald Pill Button with White Circular Disc Icon */}
             <button
               onClick={() => {
                 const el = document.getElementById('free-academy');
                 if (el) el.scrollIntoView({ behavior: 'smooth' });
                 else onNavigate('academy');
               }}
-              className="px-6 py-3 rounded-full bg-gradient-to-r from-emerald-800 via-emerald-700 to-teal-700 text-white font-bold text-xs shadow-md shadow-emerald-900/20 hover:shadow-lg hover:shadow-emerald-900/30 transition-all flex items-center gap-2 cursor-pointer border border-emerald-600/40"
+              className="pl-2 pr-6 py-2 rounded-full bg-gradient-to-r from-emerald-800 via-emerald-700 to-teal-700 text-white font-bold text-xs shadow-md shadow-emerald-900/20 hover:shadow-lg hover:shadow-emerald-900/30 transition-all flex items-center gap-3 cursor-pointer border border-emerald-600/40 group"
             >
-              <span>Start Free Academy</span>
-              <ArrowRight className="w-4 h-4" />
+              <span className="w-7 h-7 rounded-full bg-white text-emerald-700 flex items-center justify-center shadow-xs shrink-0 group-hover:scale-105 transition-transform">
+                <BookOpen className="w-3.5 h-3.5" />
+              </span>
+              <span className="tracking-wider uppercase">Start Free Academy</span>
+              <ArrowRight className="w-4 h-4 ml-0.5 group-hover:translate-x-0.5 transition-transform" />
             </button>
           </div>
 
-          {/* Pill tagline underneath dock */}
-          <div className="flex items-center justify-center gap-4 text-xs font-mono text-slate-500 mt-4">
-            <span className="flex items-center gap-1.5">
-              <span className="w-1.5 h-1.5 rounded-full bg-emerald-600 shadow-xs" />
-              Modern
-            </span>
-            <span className="flex items-center gap-1.5">
-              <span className="w-1.5 h-1.5 rounded-full bg-emerald-600 shadow-xs" />
-              Fast
-            </span>
-            <span className="flex items-center gap-1.5">
-              <span className="w-1.5 h-1.5 rounded-full bg-emerald-600 shadow-xs" />
-              Secure
-            </span>
-            <span className="flex items-center gap-1.5">
-              <span className="w-1.5 h-1.5 rounded-full bg-emerald-600 shadow-xs" />
-              Scalable
-            </span>
+          {/* Pill tags underneath dock (matching Image 3 pill style) */}
+          <div className="flex flex-wrap items-center justify-center gap-2.5 sm:gap-3 mt-4">
+            <PillIconBadge icon={Check} label="MODERN" variant="emerald" size="sm" />
+            <PillIconBadge icon={Zap} label="FAST" variant="blue" size="sm" />
+            <PillIconBadge icon={Shield} label="SECURE" variant="indigo" size="sm" />
+            <PillIconBadge icon={TrendingUp} label="SCALABLE" variant="teal" size="sm" />
           </div>
         </div>
       </section>
@@ -418,10 +380,12 @@ export function HomePage({
 
             {/* Right: Section Copy & CTA */}
             <div className="lg:col-span-7 space-y-6">
-              <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs font-mono uppercase font-bold tracking-wider">
-                <Sparkles className="w-3.5 h-3.5 text-emerald-700" />
-                <span>FREE GUIDE — INSTANT ACCESS</span>
-              </div>
+              <PillIconBadge
+                icon={Sparkles}
+                label="FREE GUIDE — INSTANT ACCESS"
+                variant="emerald"
+                size="md"
+              />
 
               <h2 className="text-3xl sm:text-4xl md:text-5xl font-black text-slate-900 tracking-tight uppercase">
                 Is Your Strategy Ready For Automation?
@@ -446,10 +410,12 @@ export function HomePage({
                   href={STOREFRONT_MEDIA.freeEbook.downloadUrl}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="w-full sm:w-auto px-8 py-4 rounded-xl bg-gradient-to-r from-emerald-800 via-emerald-700 to-teal-700 text-white font-extrabold text-base shadow-md shadow-emerald-900/20 hover:shadow-lg hover:shadow-emerald-900/30 transition-all flex items-center justify-center gap-2 cursor-pointer"
+                  className="w-full sm:w-auto pl-2 pr-7 py-2.5 rounded-full bg-gradient-to-r from-emerald-800 via-emerald-700 to-teal-700 text-white font-extrabold text-sm shadow-md shadow-emerald-900/20 hover:shadow-lg hover:shadow-emerald-900/30 transition-all flex items-center justify-center gap-3 cursor-pointer group"
                 >
-                  <Download className="w-5 h-5" />
-                  <span>Get free eBook</span>
+                  <span className="w-8 h-8 rounded-full bg-white text-emerald-700 flex items-center justify-center shadow-xs shrink-0 group-hover:scale-105 transition-transform">
+                    <Download className="w-4 h-4" />
+                  </span>
+                  <span className="tracking-wider uppercase">Download Free eBook</span>
                 </a>
 
                 <Button
@@ -508,10 +474,12 @@ export function HomePage({
               {/* Product Details */}
               <div className="lg:col-span-7 p-8 sm:p-12 flex flex-col justify-between space-y-8">
                 <div className="space-y-4">
-                  <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs font-mono font-semibold">
-                    <Activity className="w-3.5 h-3.5 text-emerald-700" />
-                    <span>Prop-Firm Verified Architecture</span>
-                  </div>
+                  <PillIconBadge
+                    icon={Activity}
+                    label="Prop-Firm Verified Architecture"
+                    variant="blue"
+                    size="md"
+                  />
 
                   <h3 className="text-3xl sm:text-4xl font-extrabold text-slate-900 tracking-tight">
                     {featuredEa.name}
@@ -588,10 +556,12 @@ export function HomePage({
       {/* 6. CUSTOM EA DEVELOPMENT SECTION: "YOUR STRATEGY. YOUR EA." */}
       <section className="py-20 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 border-t border-slate-200/80">
         <div className="text-center max-w-3xl mx-auto space-y-4 mb-16">
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs font-mono font-semibold uppercase">
-            <Code2 className="w-3.5 h-3.5 text-emerald-700" />
-            <span>Proprietary Engineering</span>
-          </div>
+          <PillIconBadge
+            icon={Code2}
+            label="Proprietary Engineering"
+            variant="cyan"
+            size="md"
+          />
           <h2 className="text-3xl sm:text-4xl md:text-5xl font-black text-slate-900 tracking-tight uppercase">
             Your Strategy. Your EA.
           </h2>
@@ -642,9 +612,12 @@ export function HomePage({
       {/* 7. PRICING SECTION (REFLECTING ACTUAL E-BOOK, TRADING ROBOT, AND CUSTOM EA) */}
       <section className="py-20 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 border-t border-slate-200/80">
         <div className="text-center max-w-3xl mx-auto space-y-3 mb-16">
-          <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs font-mono font-semibold uppercase">
-            <span>TRANSPARENT SYSTEM PRICING</span>
-          </div>
+          <PillIconBadge
+            icon={Zap}
+            label="Transparent System Pricing"
+            variant="purple"
+            size="md"
+          />
           <h2 className="text-3xl sm:text-4xl md:text-5xl font-black text-slate-900 tracking-tight">
             Transparent Pricing For Every Trader
           </h2>
@@ -893,10 +866,12 @@ export function HomePage({
       {/* 8. TESTIMONIALS SECTION (MATCHING REFERENCE INSPIRATION) */}
       <section className="py-20 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 border-t border-slate-200/80">
         <div className="text-center max-w-3xl mx-auto space-y-3 mb-16">
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs font-mono font-semibold uppercase">
-            <Star className="w-3.5 h-3.5 fill-emerald-600 text-emerald-600" />
-            <span>VERIFIED TRADER EXPERIENCES</span>
-          </div>
+          <PillIconBadge
+            icon={Star}
+            label="Verified Trader Experiences"
+            variant="amber"
+            size="md"
+          />
           <h2 className="text-3xl sm:text-4xl md:text-5xl font-black text-slate-900 tracking-tight">
             Trusted by Quantitative & Prop-Firm Traders
           </h2>
@@ -1082,16 +1057,17 @@ function InteractiveServiceCard({
     >
       <div className="space-y-4">
         <div className="flex items-center justify-between">
-          <span className={`text-[11px] font-mono px-2.5 py-1 rounded-full uppercase tracking-wider font-semibold border ${
-            isComingSoon 
-              ? 'bg-purple-50 text-purple-700 border-purple-200'
-              : 'bg-emerald-50 text-emerald-800 border-emerald-200'
-          }`}>
-            {tag}
-          </span>
+          <PillIconBadge
+            icon={isComingSoon ? Sparkles : ShieldCheck}
+            label={tag}
+            variant={isComingSoon ? 'purple' : 'emerald'}
+            size="sm"
+          />
 
-          <div className="w-12 h-12 rounded-2xl bg-slate-50 border border-slate-200 flex items-center justify-center group-hover:scale-110 group-hover:bg-emerald-50 group-hover:border-emerald-200 transition-all duration-300">
-            {icon}
+          <div className="w-12 h-12 rounded-full bg-slate-900 border border-slate-700/60 p-1 flex items-center justify-center group-hover:scale-105 transition-all duration-300 shadow-sm">
+            <div className="w-8 h-8 rounded-full bg-white flex items-center justify-center shadow-xs">
+              {icon}
+            </div>
           </div>
         </div>
 

@@ -101,15 +101,13 @@ export function EbooksPage({
           </div>
 
           <div className="flex flex-col sm:flex-row items-center gap-3 shrink-0 relative z-10">
-            <a
-              href={STOREFRONT_MEDIA.freeEbook.downloadUrl}
-              target="_blank"
-              rel="noopener noreferrer"
+            <button
+              onClick={() => onNavigate('free-ebook')}
               className="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-gradient-to-r from-emerald-800 via-emerald-700 to-teal-700 hover:from-emerald-700 hover:to-teal-600 text-white font-bold text-sm shadow-md shadow-emerald-900/20 transition-all cursor-pointer"
             >
               <Download className="w-4 h-4" />
-              <span>Get free eBook</span>
-            </a>
+              <span>Get Free eBook</span>
+            </button>
             <Button
               variant="outline"
               size="lg"

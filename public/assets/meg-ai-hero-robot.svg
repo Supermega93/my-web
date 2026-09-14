@@ -1,0 +1,492 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1920 1080" width="100%" height="100%" preserveAspectRatio="xMidYMid slice">
+  <defs>
+    <!-- 1. Background Environmental Gradients -->
+    <linearGradient id="bgChamber" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#02050d" />
+      <stop offset="35%" stop-color="#040a18" />
+      <stop offset="70%" stop-color="#061226" />
+      <stop offset="100%" stop-color="#02040a" />
+    </linearGradient>
+
+    <!-- Floor Gradient (Reflective Wet Concrete/Epoxy) -->
+    <linearGradient id="floorGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#040b17" />
+      <stop offset="25%" stop-color="#07152b" />
+      <stop offset="60%" stop-color="#030814" />
+      <stop offset="100%" stop-color="#010307" />
+    </linearGradient>
+
+    <!-- Wall Recessed Panel Gradient -->
+    <linearGradient id="wallPanelBg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#050d1d" />
+      <stop offset="50%" stop-color="#08152b" />
+      <stop offset="100%" stop-color="#040a17" />
+    </linearGradient>
+
+    <!-- Carbon Fiber Pattern for Android Cranium -->
+    <pattern id="carbonFiberPattern" width="10" height="10" patternUnits="userSpaceOnUse">
+      <rect width="10" height="10" fill="#111827" />
+      <rect x="0" y="0" width="5" height="5" fill="#1f293d" />
+      <rect x="5" y="5" width="5" height="5" fill="#1f293d" />
+      <rect x="0" y="0" width="4.5" height="4.5" fill="#0f172a" />
+      <rect x="5" y="5" width="4.5" height="4.5" fill="#0f172a" />
+      <path d="M 0,2.5 L 2.5,0 M 2.5,5 L 5,2.5 M 5,7.5 L 7.5,5 M 7.5,10 L 10,7.5" stroke="#334155" stroke-width="0.75" opacity="0.6" />
+    </pattern>
+
+    <!-- Metallic 3D Chrome Shaders -->
+    <linearGradient id="chromeBevel" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#cbd5e1" />
+      <stop offset="15%" stop-color="#94a3b8" />
+      <stop offset="48%" stop-color="#475569" />
+      <stop offset="52%" stop-color="#1e293b" />
+      <stop offset="85%" stop-color="#38bdf8" />
+      <stop offset="100%" stop-color="#0f172a" />
+    </linearGradient>
+
+    <linearGradient id="chromeSteel" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#94a3b8" />
+      <stop offset="30%" stop-color="#475569" />
+      <stop offset="70%" stop-color="#1e293b" />
+      <stop offset="100%" stop-color="#0f172a" />
+    </linearGradient>
+
+    <linearGradient id="pistonSteel" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#0f172a" />
+      <stop offset="25%" stop-color="#64748b" />
+      <stop offset="45%" stop-color="#e2e8f0" />
+      <stop offset="70%" stop-color="#334155" />
+      <stop offset="100%" stop-color="#090d16" />
+    </linearGradient>
+
+    <!-- Android Synthetic Skin Gradient -->
+    <linearGradient id="synthSkin" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#94a3b8" />
+      <stop offset="25%" stop-color="#64748b" />
+      <stop offset="60%" stop-color="#475569" />
+      <stop offset="85%" stop-color="#334155" />
+      <stop offset="100%" stop-color="#1e293b" />
+    </linearGradient>
+
+    <linearGradient id="faceHighlight" x1="0%" y1="0%" x2="100%" y2="50%">
+      <stop offset="0%" stop-color="#e2e8f0" stop-opacity="0.9" />
+      <stop offset="35%" stop-color="#94a3b8" stop-opacity="0.4" />
+      <stop offset="100%" stop-color="#334155" stop-opacity="0" />
+    </linearGradient>
+
+    <!-- Neon Cyan & Electric Glow Gradients -->
+    <linearGradient id="neonGlowGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#00f0ff" />
+      <stop offset="50%" stop-color="#00aaff" />
+      <stop offset="100%" stop-color="#0055ff" />
+    </linearGradient>
+
+    <linearGradient id="neonCyanVibrant" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#38bdf8" />
+      <stop offset="50%" stop-color="#0284c7" />
+      <stop offset="100%" stop-color="#0369a1" />
+    </linearGradient>
+
+    <!-- Volumetric Glow Filters -->
+    <filter id="intenseNeon" x="-60%" y="-60%" width="220%" height="220%">
+      <feGaussianBlur stdDeviation="5" result="blur1" />
+      <feGaussianBlur stdDeviation="16" result="blur2" />
+      <feGaussianBlur stdDeviation="36" result="blur3" />
+      <feMerge>
+        <feMergeNode in="blur3" />
+        <feMergeNode in="blur2" />
+        <feMergeNode in="blur1" />
+        <feMergeNode in="SourceGraphic" />
+      </feMerge>
+    </filter>
+
+    <filter id="softBlueAtmosphere" x="-50%" y="-50%" width="200%" height="200%">
+      <feGaussianBlur stdDeviation="30" result="blur" />
+      <feMerge>
+        <feMergeNode in="blur" />
+        <feMergeNode in="SourceGraphic" />
+      </feMerge>
+    </filter>
+
+    <filter id="bloomWide" x="-100%" y="-100%" width="300%" height="300%">
+      <feGaussianBlur stdDeviation="50" result="blur" />
+      <feColorMatrix type="matrix" values="0 0 0 0 0  0 0 0 0 0.8  0 0 0 0 1  0 0 0 0.8 0" />
+      <feMerge>
+        <feMergeNode />
+        <feMergeNode in="SourceGraphic" />
+      </feMerge>
+    </filter>
+
+    <filter id="floorReflectionBlur" x="-30%" y="-30%" width="160%" height="160%">
+      <feGaussianBlur stdDeviation="14" result="blur" />
+      <feMerge>
+        <feMergeNode in="blur" />
+      </feMerge>
+    </filter>
+  </defs>
+
+  <!-- 1. BASE BACKGROUND & SCI-FI ROOM -->
+  <rect width="1920" height="1080" fill="url(#bgChamber)" />
+
+  <!-- Far Left Ceiling Overhead Lighting Module -->
+  <g transform="translate(0, 0)">
+    <rect x="0" y="0" width="240" height="220" fill="#020610" />
+    <path d="M 0,160 L 220,160 L 250,110 L 0,110 Z" fill="#071328" stroke="#0e2244" stroke-width="2" />
+    <!-- Downward glowing LED light fixtures -->
+    <rect x="20" y="152" width="18" height="6" fill="#38bdf8" filter="url(#intenseNeon)" />
+    <rect x="70" y="152" width="18" height="6" fill="#38bdf8" filter="url(#intenseNeon)" />
+    <rect x="120" y="152" width="18" height="6" fill="#38bdf8" filter="url(#intenseNeon)" />
+    <rect x="170" y="152" width="18" height="6" fill="#38bdf8" filter="url(#intenseNeon)" />
+  </g>
+
+  <!-- Far Right Sci-Fi Structural Column with Vertical Neon Light Bar -->
+  <g transform="translate(1780, 0)">
+    <!-- Column Structure -->
+    <rect x="0" y="0" width="140" height="1080" fill="#030814" stroke="#0b1a33" stroke-width="2" />
+    <!-- Vertical Cyan Neon Tube (Exactly matching right edge of Image) -->
+    <line x1="20" y1="0" x2="20" y2="780" stroke="#00d2ff" stroke-width="6" opacity="0.9" filter="url(#intenseNeon)" />
+    <line x1="20" y1="0" x2="20" y2="780" stroke="#ffffff" stroke-width="2" opacity="0.95" />
+    
+    <line x1="90" y1="400" x2="90" y2="780" stroke="#0088ff" stroke-width="4" opacity="0.8" filter="url(#intenseNeon)" />
+    <line x1="90" y1="400" x2="90" y2="780" stroke="#ffffff" stroke-width="1.5" opacity="0.9" />
+
+    <!-- Diagonal Neon Bar at Top Right -->
+    <line x1="-120" y1="0" x2="60" y2="280" stroke="#00d2ff" stroke-width="5" opacity="0.8" filter="url(#intenseNeon)" />
+    <line x1="-120" y1="0" x2="60" y2="280" stroke="#ffffff" stroke-width="1.8" opacity="0.95" />
+  </g>
+
+  <!-- Far Left Futuristic City Windows / Server Racks in Background Depth -->
+  <g opacity="0.25" transform="translate(20, 320)">
+    <rect x="0" y="0" width="80" height="380" fill="#030914" />
+    <line x1="15" y1="0" x2="15" y2="380" stroke="#38bdf8" stroke-dasharray="3,12" stroke-width="1.5" />
+    <line x1="35" y1="0" x2="35" y2="380" stroke="#38bdf8" stroke-dasharray="4,8" stroke-width="1.5" />
+    <line x1="55" y1="0" x2="55" y2="380" stroke="#38bdf8" stroke-dasharray="2,14" stroke-width="1.5" />
+  </g>
+
+  <!-- 2. THE RECESSED ILLUMINATED "MEG.AI LABS" WALL SIGN (EXACT REPLICATION) -->
+  <g id="megAiWallSign" transform="translate(140, 240)">
+    
+    <!-- Outer Recessed Wall Chamfer / Bevel Cutout -->
+    <path d="M 0,460 L 100,530 L 920,530 L 920,0 L 0,0 Z" fill="#030712" stroke="#0d1b33" stroke-width="3" />
+    <path d="M 0,460 L 100,530" stroke="#00d2ff" stroke-width="4" filter="url(#intenseNeon)" opacity="0.85" />
+    <path d="M 0,460 L 100,530" stroke="#ffffff" stroke-width="1.5" opacity="0.9" />
+
+    <!-- Main Metallic Wall Panel (Brushed Dark Steel) -->
+    <rect x="18" y="16" width="874" height="480" rx="10" fill="url(#wallPanelBg)" stroke="#0e1d38" stroke-width="2" />
+
+    <!-- Radiant Glowing Cyan / Blue Neon Border Frame -->
+    <!-- Outer Glow Layer -->
+    <rect x="18" y="16" width="874" height="480" rx="10" fill="none" stroke="#00d2ff" stroke-width="5" filter="url(#intenseNeon)" opacity="0.9" />
+    <!-- Bright White Core Neon Wire -->
+    <rect x="18" y="16" width="874" height="480" rx="10" fill="none" stroke="#e0f2fe" stroke-width="2" opacity="0.95" />
+
+    <!-- Volumetric Blue Ambient Bloom inside Panel -->
+    <ellipse cx="440" cy="240" rx="360" ry="220" fill="#0088ff" opacity="0.2" filter="url(#bloomWide)" />
+    <ellipse cx="680" cy="220" rx="200" ry="180" fill="#00f0ff" opacity="0.18" filter="url(#softBlueAtmosphere)" />
+
+    <!-- 3D METALLIC SIGNAGE: "MEG.AI" -->
+    <g transform="translate(70, 100)">
+      <!-- Drop Shadow for 3D Relief -->
+      <text x="0" y="170" font-family="'Inter', system-ui, -apple-system, sans-serif" font-weight="900" font-size="142" fill="#01040a" letter-spacing="4" filter="drop-shadow(0 15px 25px rgba(0,0,0,0.95))">MEG</text>
+      
+      <!-- Primary 3D Metallic "MEG" Lettering with Bevel -->
+      <text x="0" y="168" font-family="'Inter', system-ui, -apple-system, sans-serif" font-weight="900" font-size="142" fill="url(#chromeBevel)" letter-spacing="4">MEG</text>
+      <!-- Top Chrome Specular Highlight Edge -->
+      <text x="0" y="168" font-family="'Inter', system-ui, -apple-system, sans-serif" font-weight="900" font-size="142" fill="none" stroke="#e2e8f0" stroke-width="1.5" opacity="0.85" letter-spacing="4">MEG</text>
+      <!-- Blue Ambient Rim Reflection on MEG -->
+      <text x="0" y="168" font-family="'Inter', system-ui, -apple-system, sans-serif" font-weight="900" font-size="142" fill="none" stroke="#38bdf8" stroke-width="0.8" opacity="0.9" letter-spacing="4">MEG</text>
+
+      <!-- The Glowing Dot between MEG and AI -->
+      <circle cx="395" y="148" r="16" fill="#031530" stroke="#00d2ff" stroke-width="3" filter="url(#intenseNeon)" />
+      <circle cx="395" y="148" r="11" fill="#00f0ff" filter="url(#intenseNeon)" />
+      <circle cx="395" y="148" r="6" fill="#ffffff" />
+
+      <!-- THE "AI" GLYPH WITH CYBERNETIC HUMAN EYE EMBLEM (EXACT MATCH) -->
+      <g id="aiEyeEmblem" transform="translate(425, 0)">
+        <!-- Outer Glowing Ambient Aura behind Eye -->
+        <ellipse cx="140" cy="115" rx="110" ry="85" fill="#00aaff" opacity="0.25" filter="url(#softBlueAtmosphere)" />
+
+        <!-- 3D Metallic Letter "A" Shape -->
+        <!-- Left Leg of A -->
+        <path d="M 95,20 L 15,170 L 65,170 L 115,65 L 140,20 Z" fill="url(#chromeBevel)" filter="drop-shadow(0 10px 18px rgba(0,0,0,0.9))" />
+        <path d="M 95,20 L 15,170 L 65,170 L 115,65 L 140,20 Z" fill="none" stroke="#e2e8f0" stroke-width="1.2" opacity="0.85" />
+        
+        <!-- Right Leg of A and angled "I" -->
+        <path d="M 125,20 L 220,170 L 170,170 L 110,65 Z" fill="url(#chromeBevel)" />
+        <path d="M 190,55 L 265,170 L 225,170 L 165,70 Z" fill="url(#chromeSteel)" />
+        <path d="M 190,55 L 265,170" stroke="#38bdf8" stroke-width="2" opacity="0.8" />
+
+        <!-- Horizontal Bar of A (Supports the Eye) -->
+        <path d="M 60,120 L 180,120 L 170,135 L 70,135 Z" fill="#0a182e" stroke="#38bdf8" stroke-width="1" />
+
+        <!-- THE CYBERNETIC HUMAN EYE (DETAILED) -->
+        <g id="cyberEyeInA" transform="translate(138, 105)">
+          <!-- Outer Eye Socket / Sclera Oval -->
+          <ellipse cx="0" cy="0" rx="60" ry="34" fill="#05152d" stroke="#00d2ff" stroke-width="3" filter="url(#intenseNeon)" />
+          
+          <!-- Sclera White/Pale Blue Tone -->
+          <ellipse cx="0" cy="0" rx="56" ry="30" fill="#0a2246" />
+          
+          <!-- Deep Blue Iris with Radial Fiber Shading -->
+          <circle cx="0" cy="0" r="24" fill="#0284c7" filter="drop-shadow(0 0 10px rgba(0,210,255,0.8))" />
+          <circle cx="0" cy="0" r="22" fill="#0369a1" />
+          <circle cx="0" cy="0" r="18" fill="#00f0ff" opacity="0.8" />
+
+          <!-- Pupil (Black with sharp pinpoint reflection) -->
+          <circle cx="0" cy="0" r="10" fill="#010612" />
+          <!-- Specular Glint Highlight on Iris (Human/Gynoid Eye Reflection) -->
+          <circle cx="-5" cy="-5" r="4.5" fill="#ffffff" opacity="0.95" />
+          <circle cx="4" cy="3" r="2" fill="#ffffff" opacity="0.8" />
+
+          <!-- Eyelid Contours (Upper and Lower organic curves) -->
+          <path d="M -56,0 Q 0,-34 56,0" fill="none" stroke="#38bdf8" stroke-width="2.5" />
+          <path d="M -56,0 Q 0,34 56,0" fill="none" stroke="#0284c7" stroke-width="2" />
+          
+          <!-- Outer Arch / Egyptian Horus Flare -->
+          <path d="M -70,-2 Q 0,-50 70,-2 Q 85,15 90,30" fill="none" stroke="#00d2ff" stroke-width="3" opacity="0.9" filter="url(#intenseNeon)" />
+          <path d="M -70,-2 Q 0,-50 70,-2 Q 85,15 90,30" fill="none" stroke="#ffffff" stroke-width="1.2" opacity="0.9" />
+        </g>
+      </g>
+
+      <!-- UNDERNEATH: "LABS" IN WIDE-TRACKED FUTURISTIC TYPOGRAPHY -->
+      <g transform="translate(0, 245)">
+        <!-- Left Horizontal Neon Line -->
+        <line x1="30" y1="0" x2="270" y2="0" stroke="#00d2ff" stroke-width="4.5" filter="url(#intenseNeon)" />
+        <line x1="30" y1="0" x2="270" y2="0" stroke="#ffffff" stroke-width="1.8" />
+
+        <!-- "LABS" Text -->
+        <text x="375" y="12" font-family="'Inter', system-ui, -apple-system, sans-serif" font-weight="900" font-size="44" fill="#e2e8f0" letter-spacing="24" text-anchor="middle" filter="drop-shadow(0 4px 10px rgba(0,0,0,0.9))">LABS</text>
+        <text x="375" y="12" font-family="'Inter', system-ui, -apple-system, sans-serif" font-weight="900" font-size="44" fill="none" stroke="#38bdf8" stroke-width="1" opacity="0.8" letter-spacing="24" text-anchor="middle">LABS</text>
+
+        <!-- Right Horizontal Neon Line -->
+        <line x1="490" y1="0" x2="730" y2="0" stroke="#00d2ff" stroke-width="4.5" filter="url(#intenseNeon)" />
+        <line x1="490" y1="0" x2="730" y2="0" stroke="#ffffff" stroke-width="1.8" />
+      </g>
+    </g>
+  </g>
+
+  <!-- 3. WET REFLECTIVE FLOOR WITH SPECULAR GLOW & SIGN REFLECTIONS -->
+  <g id="reflectiveFloor">
+    <!-- Floor Base Polygon -->
+    <polygon points="0,760 1920,760 1920,1080 0,1080" fill="url(#floorGrad)" />
+    <!-- Floor Horizon Edge Seam -->
+    <line x1="0" y1="760" x2="1920" y2="760" stroke="#0b1b36" stroke-width="3" />
+    <line x1="140" y1="760" x2="1080" y2="760" stroke="#00d2ff" stroke-width="1.5" opacity="0.4" />
+
+    <!-- Distorted Specular Floor Reflection of the Neon Sign -->
+    <g transform="translate(200, 770) scale(1, -0.4)" opacity="0.35" filter="url(#floorReflectionBlur)">
+      <rect x="0" y="0" width="760" height="300" fill="none" stroke="#00d2ff" stroke-width="8" />
+      <text x="100" y="150" font-family="sans-serif" font-weight="900" font-size="120" fill="#0284c7">MEG.AI</text>
+    </g>
+
+    <!-- Broad Horizontal Cyan Light Pools on Wet Floor -->
+    <ellipse cx="550" cy="840" rx="420" ry="18" fill="#00d2ff" opacity="0.35" filter="url(#softBlueAtmosphere)" />
+    <ellipse cx="600" cy="870" rx="300" ry="12" fill="#38bdf8" opacity="0.4" filter="url(#intenseNeon)" />
+    <ellipse cx="480" cy="920" rx="380" ry="20" fill="#0284c7" opacity="0.25" filter="url(#softBlueAtmosphere)" />
+    
+    <!-- Floor reflection under android figure -->
+    <ellipse cx="1480" cy="850" rx="360" ry="22" fill="#0088ff" opacity="0.28" filter="url(#softBlueAtmosphere)" />
+    <ellipse cx="1460" cy="890" rx="280" ry="14" fill="#00d2ff" opacity="0.35" filter="url(#intenseNeon)" />
+    <ellipse cx="1520" cy="940" rx="220" ry="10" fill="#00f0ff" opacity="0.3" filter="url(#intenseNeon)" />
+
+    <!-- Floor specular horizontal streaks -->
+    <line x1="280" y1="835" x2="850" y2="835" stroke="#38bdf8" stroke-width="2" opacity="0.6" filter="url(#intenseNeon)" />
+    <line x1="380" y1="875" x2="720" y2="875" stroke="#ffffff" stroke-width="1.5" opacity="0.7" />
+    <line x1="1260" y1="845" x2="1680" y2="845" stroke="#38bdf8" stroke-width="2.5" opacity="0.65" filter="url(#intenseNeon)" />
+    <line x1="1340" y1="885" x2="1620" y2="885" stroke="#ffffff" stroke-width="1.8" opacity="0.75" />
+  </g>
+
+  <!-- 4. THE MASTERPIECE CYBERNETIC FEMALE ANDROID (PROFILE FACING LEFT) -->
+  <g id="cyberneticFemaleAndroid" transform="translate(1080, 130)">
+    
+    <!-- Volumetric Blue Halo Silhouette Behind Robot -->
+    <ellipse cx="400" cy="420" rx="360" ry="460" fill="#0088ff" opacity="0.2" filter="url(#bloomWide)" />
+    <ellipse cx="380" cy="380" rx="240" ry="280" fill="#00f0ff" opacity="0.15" filter="url(#softBlueAtmosphere)" />
+
+    <!-- BACK TORSO & SHOULDER ARMOR (Dark Gunmetal Titanium Plates) -->
+    <g id="shoulderAndChest">
+      <!-- Main Upper Torso & Rib Plate Base -->
+      <path d="M 280,680 
+               C 330,640 430,610 540,620 
+               C 660,630 760,700 800,820 
+               L 800,950 L 180,950 
+               C 210,840 250,730 280,680 Z" 
+            fill="url(#chromeSteel)" stroke="#0f172a" stroke-width="3" />
+      
+      <!-- Shoulder Armor Plate Contours & Bevel Highlights -->
+      <path d="M 310,700 C 400,640 520,630 620,660 C 560,740 480,820 420,950" fill="none" stroke="#475569" stroke-width="4" />
+      <path d="M 360,700 C 450,650 560,645 660,680" fill="none" stroke="#38bdf8" stroke-width="2" opacity="0.7" filter="url(#intenseNeon)" />
+      
+      <!-- Upper Chest Armor Segment (Front Facing) -->
+      <path d="M 280,680 C 230,730 200,810 180,920 L 320,950 C 340,840 330,750 280,680 Z" fill="#1e293b" stroke="#0a0f1d" stroke-width="2" />
+      <circle cx="270" cy="740" r="14" fill="#0b1329" stroke="#38bdf8" stroke-width="2" />
+      <circle cx="270" cy="740" r="6" fill="#00d2ff" filter="url(#intenseNeon)" />
+    </g>
+
+    <!-- INTRICATE MECHANICAL VERTEBRAE & HYDRAULIC NECK CABLES -->
+    <g id="neckAnatomy">
+      <!-- Main Spine Column / Vertebrae (Dark Chrome Discs) -->
+      <g id="spineDiscs">
+        <path d="M 400,430 C 440,510 470,600 480,680 L 430,680 C 410,590 380,510 360,430 Z" fill="#090d16" />
+        <!-- Individual Segmented Cervical Vertebrae Discs -->
+        <rect x="365" y="440" width="60" height="14" rx="4" fill="url(#pistonSteel)" stroke="#1e293b" />
+        <rect x="375" y="465" width="65" height="14" rx="4" fill="url(#pistonSteel)" stroke="#1e293b" />
+        <rect x="385" y="490" width="70" height="14" rx="4" fill="url(#pistonSteel)" stroke="#1e293b" />
+        <rect x="395" y="515" width="75" height="14" rx="4" fill="url(#pistonSteel)" stroke="#1e293b" />
+        <rect x="405" y="540" width="80" height="14" rx="4" fill="url(#pistonSteel)" stroke="#1e293b" />
+        <rect x="415" y="565" width="85" height="14" rx="4" fill="url(#pistonSteel)" stroke="#1e293b" />
+        <rect x="425" y="590" width="90" height="14" rx="4" fill="url(#pistonSteel)" stroke="#1e293b" />
+        <rect x="435" y="615" width="95" height="14" rx="4" fill="url(#pistonSteel)" stroke="#1e293b" />
+      </g>
+
+      <!-- Bundled Hydraulic Cylinders & Steel Pistons -->
+      <!-- Piston 1 (Anterior Throat) -->
+      <path d="M 285,450 C 310,520 330,600 340,680" stroke="#02060f" stroke-width="14" fill="none" />
+      <path d="M 285,450 C 310,520 330,600 340,680" stroke="#475569" stroke-width="4" stroke-dasharray="6,4" fill="none" />
+
+      <!-- Piston 2 (Mid Neck Hydraulic Rod) -->
+      <path d="M 315,440 C 350,530 380,610 395,675" stroke="#0b1324" stroke-width="16" fill="none" />
+      <path d="M 315,440 C 350,530 380,610 395,675" stroke="url(#pistonSteel)" stroke-width="8" fill="none" />
+      <path d="M 315,440 C 350,530 380,610 395,675" stroke="#38bdf8" stroke-width="1.8" opacity="0.75" fill="none" />
+
+      <!-- Flexible Black Ribbed Cable Conduits -->
+      <path d="M 345,430 C 390,520 430,600 450,675" stroke="#000000" stroke-width="14" fill="none" />
+      <path d="M 345,430 C 390,520 430,600 450,675" stroke="#64748b" stroke-width="3" stroke-dasharray="3,3" fill="none" />
+      
+      <!-- Illuminated Data Fiber (Cyan Light Strand) -->
+      <path d="M 330,440 C 368,525 398,605 415,675" stroke="#00f0ff" stroke-width="2.5" fill="none" opacity="0.9" filter="url(#intenseNeon)" />
+      <path d="M 330,440 C 368,525 398,605 415,675" stroke="#ffffff" stroke-width="1" opacity="0.95" fill="none" />
+    </g>
+
+    <!-- SYNTHETIC HUMAN-LIKE FACE PROFILE (FACING LEFT - ELEGANT & PHOTOREALISTIC) -->
+    <g id="syntheticFace">
+      <!-- Profile Silhouette: Forehead -> Brow -> Nose -> Upper Lip -> Mouth Part -> Lower Lip -> Chin -> Jaw -->
+      <path d="M 185,185 
+               C 160,225 142,275 138,310 
+               C 134,335 125,355 105,375 
+               C 98,382 100,388 112,390 
+               C 126,392 135,402 130,416 
+               C 124,426 134,435 140,440 
+               C 145,445 136,460 128,475 
+               C 120,492 126,502 148,512 
+               C 175,524 235,530 295,490 
+               C 345,455 365,410 375,370 
+               C 385,290 365,220 310,175 Z" 
+            fill="url(#synthSkin)" stroke="#334155" stroke-width="2" />
+
+      <!-- Left Rim Light / Key Studio Lighting on Forehead, Nose & Chin -->
+      <path d="M 138,310 C 134,335 125,355 105,375 C 114,380 126,392 130,416 C 134,435 140,440 128,475 C 135,488 152,510 185,518 C 145,485 140,440 148,390 Z" 
+            fill="url(#faceHighlight)" opacity="0.85" />
+
+      <!-- Realistic Eyebrow Ridge & Dark Eyebrow Hair -->
+      <path d="M 148,300 C 170,290 195,294 218,302" stroke="#1e293b" stroke-width="4.5" stroke-linecap="round" fill="none" />
+      <path d="M 152,302 C 172,294 195,298 215,305" stroke="#0f172a" stroke-width="2.5" stroke-linecap="round" fill="none" />
+
+      <!-- Eyelid, Long Lashes & Focused Human-like Eye -->
+      <path d="M 158,318 C 178,320 195,330 205,336" stroke="#090d16" stroke-width="3.5" stroke-linecap="round" fill="none" />
+      <path d="M 155,325 C 172,328 188,335 198,340" stroke="#1e293b" stroke-width="2" fill="none" />
+      <!-- Subtle Cybernetic Seam Line Under Eye -->
+      <path d="M 160,342 C 190,355 220,350 240,344" stroke="#38bdf8" stroke-width="1" opacity="0.6" fill="none" />
+
+      <!-- Feminine Lips & Parted Mouth Shadow -->
+      <path d="M 128,420 C 142,423 158,421 168,416" stroke="#0f172a" stroke-width="3" stroke-linecap="round" fill="none" />
+      <path d="M 132,434 C 146,435 158,432 166,426" stroke="#090d16" stroke-width="2.5" stroke-linecap="round" fill="none" />
+
+      <!-- Sculpted Cheekbone & Jawline Shadow -->
+      <path d="M 160,360 C 200,390 230,420 250,470" stroke="#1e293b" stroke-width="1.5" opacity="0.4" fill="none" />
+      <path d="M 148,512 C 195,525 240,510 270,480" stroke="#090d16" stroke-width="3" opacity="0.7" fill="none" />
+    </g>
+
+    <!-- CYBERNETIC CRANIUM & SKULL PLATES (CARBON FIBER WEAVE + TITANIUM BEZEL) -->
+    <g id="cyberCranium">
+      <!-- Main Cranium Dome -->
+      <path d="M 185,185 
+               C 220,130 290,80 390,80 
+               C 510,80 615,160 645,280 
+               C 665,370 625,470 535,530 
+               C 475,570 425,550 385,510 
+               C 375,470 365,400 365,350 
+               C 365,270 305,200 185,185 Z" 
+            fill="#0b1326" stroke="#0f172a" stroke-width="3" />
+
+      <!-- Carbon Fiber Woven Texture Fill on Cranium Plates -->
+      <path d="M 215,175 C 250,125 320,95 400,95 C 490,95 570,140 605,230 C 530,225 450,210 365,240 C 290,220 235,185 215,175 Z" 
+            fill="url(#carbonFiberPattern)" opacity="0.85" />
+      <path d="M 430,220 C 530,225 595,290 610,380 C 580,440 520,490 440,500 C 475,420 460,310 430,220 Z" 
+            fill="url(#carbonFiberPattern)" opacity="0.75" />
+
+      <!-- Segmented Titanium Cranial Seams & Geometric Expansion Joints -->
+      <path d="M 260,115 C 340,165 410,155 470,145 C 530,135 570,105 580,100" stroke="#38bdf8" stroke-width="1.8" fill="none" opacity="0.7" filter="url(#intenseNeon)" />
+      <path d="M 310,165 C 400,235 520,215 575,195" stroke="#090d16" stroke-width="3.5" fill="none" />
+      <path d="M 430,155 C 540,275 560,395 570,450" stroke="#090d16" stroke-width="3.5" fill="none" />
+      
+      <!-- Polished Chrome Specular Highlight Arch on Skull Top -->
+      <path d="M 230,145 C 310,108 410,102 500,122" stroke="#e2e8f0" stroke-width="3" fill="none" opacity="0.9" />
+      <path d="M 230,145 C 310,108 410,102 500,122" stroke="#38bdf8" stroke-width="6" fill="none" opacity="0.6" filter="url(#intenseNeon)" />
+    </g>
+
+    <!-- THE ICONIC CYBERNETIC EAR DISK & ILLUMINATED CHEVRON (EXACT PROFILE CENTERPIECE) -->
+    <g id="earAudioDisk" transform="translate(365, 365)">
+      <!-- Outer Dark Titanium Bezel with Recessed Lip -->
+      <circle cx="0" cy="0" r="112" fill="#070e1c" stroke="#1e293b" stroke-width="6" filter="drop-shadow(0 15px 35px rgba(0,0,0,0.95))" />
+      <circle cx="0" cy="0" r="102" fill="#040914" stroke="#334155" stroke-width="3" />
+      <circle cx="0" cy="0" r="92" fill="#02060f" />
+
+      <!-- Radial Micro-Calibrated Ticks on Outer Ring -->
+      <circle cx="0" cy="-96" r="2.5" fill="#38bdf8" />
+      <circle cx="96" cy="0" r="2.5" fill="#38bdf8" />
+      <circle cx="0" cy="96" r="2.5" fill="#38bdf8" />
+      <circle cx="-96" cy="0" r="2.5" fill="#38bdf8" />
+      <circle cx="68" cy="68" r="2" fill="#38bdf8" opacity="0.8" />
+      <circle cx="-68" cy="68" r="2" fill="#38bdf8" opacity="0.8" />
+      <circle cx="68" cy="-68" r="2" fill="#38bdf8" opacity="0.8" />
+      <circle cx="-68" cy="-68" r="2" fill="#38bdf8" opacity="0.8" />
+
+      <!-- Radiant Electric Neon-Blue Glowing Circular Ring (Primary Ear Focus) -->
+      <!-- Wide Diffuse Cyan Aura -->
+      <circle cx="0" cy="0" r="76" fill="none" stroke="#00aaff" stroke-width="12" opacity="0.4" filter="url(#softBlueAtmosphere)" />
+      <!-- Intense Neon Ring -->
+      <circle cx="0" cy="0" r="76" fill="none" stroke="#00d2ff" stroke-width="7" filter="url(#intenseNeon)" />
+      <!-- White Core Hotspot Line -->
+      <circle cx="0" cy="0" r="76" fill="none" stroke="#ffffff" stroke-width="2.5" opacity="0.95" />
+
+      <!-- Inner Recessed Core Capsule -->
+      <circle cx="0" cy="0" r="56" fill="#030814" stroke="#0284c7" stroke-width="2" />
+      <circle cx="0" cy="0" r="42" fill="#01040a" />
+
+      <!-- THE GLOWING NEON CYAN CHEVRON / "A" LOGO IN CENTER (EXACT MATCH) -->
+      <g filter="url(#intenseNeon)">
+        <!-- Upward Pointing Chevron "^" / Stylized Apex A -->
+        <path d="M 0,-26 L 22,18 L 12,18 L 0,-2 L -12,18 L -22,18 Z" fill="#00f0ff" />
+        <!-- Horizontal Inner Accent Bar -->
+        <line x1="-8" y1="8" x2="8" y2="8" stroke="#00f0ff" stroke-width="3" stroke-linecap="round" />
+        <!-- Center Illuminated Dot -->
+        <circle cx="0" cy="-6" r="3" fill="#ffffff" />
+      </g>
+      <!-- Crisp White Foreground Core -->
+      <path d="M 0,-26 L 22,18 L 12,18 L 0,-2 L -12,18 L -22,18 Z" fill="#ffffff" opacity="0.92" />
+      <line x1="-8" y1="8" x2="8" y2="8" stroke="#ffffff" stroke-width="2" stroke-linecap="round" opacity="0.95" />
+    </g>
+
+    <!-- VOLUMETRIC BLUE NEON RIM LIGHTING TRACING THE ROBOT SILHOUETTE (EXACT IMAGE LIGHTING) -->
+    <path d="M 270,105 
+             C 390,75 520,105 620,205 
+             C 680,275 670,405 630,505 
+             C 590,595 510,675 460,735" 
+          stroke="#00d2ff" stroke-width="10" fill="none" opacity="0.9" filter="url(#intenseNeon)" />
+    <path d="M 270,105 
+             C 390,75 520,105 620,205 
+             C 680,275 670,405 630,505 
+             C 590,595 510,675 460,735" 
+          stroke="#ffffff" stroke-width="3" fill="none" opacity="0.95" />
+  </g>
+
+  <!-- 5. LIGHT BALANCING SCRIM (Subtle gradient so text is 100% readable without obscuring the background sign) -->
+  <linearGradient id="textBalancedOverlay" x1="0%" y1="0%" x2="100%" y2="0%">
+    <stop offset="0%" stop-color="#020612" stop-opacity="0.82" />
+    <stop offset="28%" stop-color="#020612" stop-opacity="0.65" />
+    <stop offset="52%" stop-color="#030816" stop-opacity="0.25" />
+    <stop offset="75%" stop-color="#030816" stop-opacity="0.0" />
+    <stop offset="100%" stop-color="#030816" stop-opacity="0.0" />
+  </linearGradient>
+  <rect x="0" y="0" width="1920" height="1080" fill="url(#textBalancedOverlay)" />
+</svg>
