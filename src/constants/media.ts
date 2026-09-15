@@ -6,14 +6,15 @@ export const SUPABASE_STOREFRONT_BUCKET =
 
 export const STOREFRONT_MEDIA = {
   // 1. FREE EBOOK LEAD MAGNET (The Trader's Guide...)
+  // Protected server-side asset: Download URL is strictly generated after verified email submission.
   freeEbook: {
     id: 'free_lead_magnet_traders_guide',
     title: "The Trader's Guide to Understanding Strategy Automation",
     author: 'M. Dinga',
     // Exact Supabase Image src
     coverUrl: `${SUPABASE_STOREFRONT_BUCKET}/Gemini_Generated_Image_yxy52byxy52byxy5.jfif`,
-    // Exact Supabase Download href (Opens in new tab target="_blank")
-    downloadUrl: `${SUPABASE_STOREFRONT_BUCKET}/The%20Trader's%20Guide%20to%20Understanding%20Strategy%20Automation.pdf`,
+    // Protected server-side asset (requires email verification)
+    isProtected: true,
   },
 
   // 2. PAID EBOOK 1 (Build Trading Bots with AI & MQL5)

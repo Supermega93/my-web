@@ -85,15 +85,32 @@ export interface Download {
   created_at: string;
 }
 
+export type LicenseStatus = 'active' | 'suspended' | 'expired' | 'revoked' | 'pending';
+export type LicenseDeliveryStatus = 'pending' | 'processing' | 'delivered' | 'revoked';
+
 export interface License {
   id: string;
   user_id: string;
   product_id: string;
+  order_id?: string | null;
   license_key: string;
   license_type: string;
-  status: 'active' | 'revoked' | 'expired';
-  created_at: string;
+  status: LicenseStatus;
+  delivery_status?: LicenseDeliveryStatus;
+  delivery_notes?: string | null;
+  starts_at?: string | null;
   expires_at?: string | null;
+  created_at: string;
+  updated_at?: string | null;
+  user_name?: string;
+  user_email?: string;
+  product_name?: string;
+  product_platform?: string;
+  product_type?: string;
+  payment_status?: string;
+  order_amount?: number;
+  order_currency?: string;
+  transaction_id?: string;
 }
 
 export interface EAProject {
@@ -126,7 +143,18 @@ export interface AdminStats {
 
 export interface CustomerDashboardData {
   orders: Order[];
-  eas: Array<Product & { license_key?: string; license_status?: string; license_type?: string; download_url?: string; download_count?: number; purchased_at?: string }>;
+  eas: Array<Product & { 
+    license_key?: string; 
+    license_status?: string; 
+    license_type?: string; 
+    download_url?: string; 
+    download_count?: number; 
+    purchased_at?: string;
+    starts_at?: string | null;
+    expires_at?: string | null;
+    delivery_status?: LicenseDeliveryStatus;
+    delivery_notes?: string | null;
+  }>;
   ebooks: Array<Product & { download_url?: string; download_count?: number; purchased_at?: string }>;
   projects: EAProject[];
 }

@@ -107,10 +107,10 @@ export const FuturisticRobotHero: React.FC<FuturisticRobotHeroProps> = ({
               <ArrowRight className="w-4 h-4 sm:w-4.5 sm:h-4.5 transition-transform group-hover:translate-x-1" />
             </button>
 
-            {/* Button 2: Download free eBook (Dark Glass Pill with Play/Book circle disc matching Image 2 "WATCH VIDEO", links to books page) */}
+            {/* Button 2: Download free eBook (Links directly to Free Guide & Checklist page) */}
             <button
               id="hero-btn-download-free-ebook"
-              onClick={() => onNavigate('ebooks')}
+              onClick={() => onNavigate('free-ebook')}
               className="inline-flex items-center justify-center gap-2.5 px-6 sm:px-7 py-3.5 sm:py-4 rounded-full bg-slate-900/80 hover:bg-slate-800/90 text-white border border-slate-700/80 hover:border-cyan-500/50 font-medium text-sm sm:text-base tracking-wide backdrop-blur-md transition-all hover:scale-[1.02] active:scale-[0.98] cursor-pointer shadow-lg group"
             >
               <span className="w-6 h-6 rounded-full bg-cyan-500/20 text-cyan-300 flex items-center justify-center shrink-0 group-hover:bg-cyan-500 group-hover:text-black transition-colors">

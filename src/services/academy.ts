@@ -408,3 +408,124 @@ export async function fetchLessonsForLevel(
     lessons: filtered.length > 0 ? filtered : FALLBACK_LESSONS.slice(0, 3),
   };
 }
+
+// ==============================================================================
+// SUPABASE USER PROGRESS PERSISTENCE (user_progress table)
+// ==============================================================================
+
+/**
+ * Loads completed lesson IDs for a specific user ID directly from Supabase user_progress table.
+ */
+export async function fetchUserProgressFromSupabase(userId: string): Promise<string[]> {
+  if (!userId) return [];
+  try {
+    const { data, error } = await supabase
+      .from('user_progress')
+      .select('lesson_id, is_completed')
+      .eq('user_id', userId)
+      .eq('is_completed', true);
+
+    if (error) {
+      console.warn('[Supabase Progress] Query returned notice:', error.message);
+      return [];
+    }
+
+    if (!data || data.length === 0) return [];
+
+    const completedIds: string[] = [];
+    for (const row of data) {
+      const uuid = row.lesson_id;
+      // Match UUID against authoritative lessons
+      const matched = FALLBACK_LESSONS.find(
+        (l) => getLessonUuid(l) === uuid || l.id === uuid || l.uuid === uuid
+      );
+      if (matched) {
+        completedIds.push(matched.id);
+      } else {
+        completedIds.push(uuid);
+      }
+    }
+    return completedIds;
+  } catch (err) {
+    console.warn('[Supabase Progress] Network notice fetching progress:', err);
+    return [];
+  }
+}
+
+/**
+ * Persists lesson completion status by user ID in Supabase user_progress table.
+ */
+export async function saveUserLessonProgressToSupabase(
+  userId: string,
+  lessonId: string,
+  isCompleted: boolean = true
+): Promise<boolean> {
+  if (!userId || !lessonId) return false;
+  try {
+    const matched = FALLBACK_LESSONS.find((l) => l.id === lessonId || l.uuid === lessonId);
+    const lessonUuid = matched ? getLessonUuid(matched) : (/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(lessonId) ? lessonId : null);
+
+    if (!lessonUuid) {
+      console.warn('[Supabase Progress] Invalid lesson identifier for UUID mapping:', lessonId);
+      return false;
+    }
+
+    if (isCompleted) {
+      // Upsert into Supabase user_progress
+      const { error } = await supabase
+        .from('user_progress')
+        .upsert(
+          {
+            user_id: userId,
+            lesson_id: lessonUuid,
+            is_completed: true,
+            completed_at: new Date().toISOString(),
+          },
+          { onConflict: 'user_id,lesson_id' }
+        );
+
+      if (error) {
+        // If unique constraint is on different columns, try insert directly
+        if (error.code === '42P10' || error.message?.includes('constraint')) {
+          await supabase.from('user_progress').insert({
+            user_id: userId,
+            lesson_id: lessonUuid,
+            is_completed: true,
+            completed_at: new Date().toISOString(),
+          });
+        } else {
+          console.warn('[Supabase Progress] Upsert notice:', error.message);
+        }
+      }
+      return true;
+    } else {
+      // Remove or mark incomplete
+      const { error } = await supabase
+        .from('user_progress')
+        .delete()
+        .eq('user_id', userId)
+        .eq('lesson_id', lessonUuid);
+
+      if (error) {
+        console.warn('[Supabase Progress] Delete notice:', error.message);
+      }
+      return true;
+    }
+  } catch (err) {
+    console.warn('[Supabase Progress] Sync exception:', err);
+    return false;
+  }
+}
+
+/**
+ * Batch synchronizes all locally cached completed lessons to Supabase user_progress for a user.
+ */
+export async function syncAllProgressToSupabase(userId: string, lessonIds: string[]): Promise<number> {
+  if (!userId || !lessonIds || lessonIds.length === 0) return 0;
+  let count = 0;
+  for (const id of lessonIds) {
+    const success = await saveUserLessonProgressToSupabase(userId, id, true);
+    if (success) count++;
+  }
+  return count;
+}

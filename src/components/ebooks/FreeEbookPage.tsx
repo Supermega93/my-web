@@ -5,6 +5,8 @@ import { STOREFRONT_MEDIA } from '../../constants/media.ts';
 import { Button } from '../common/Button.tsx';
 import { CoverUploader } from '../common/CoverUploader.tsx';
 import { useAuth } from '../../context/AuthContext.tsx';
+import { requestFreeEbookDownload } from '../../services/ebookService.ts';
+import confetti from 'canvas-confetti';
 import { 
   ArrowLeft, 
   ArrowRight, 
@@ -21,7 +23,9 @@ import {
   FileText, 
   Layers,
   AlertCircle,
-  ExternalLink
+  ExternalLink,
+  Clock,
+  Loader2
 } from 'lucide-react';
 
 interface FreeEbookPageProps {
@@ -34,7 +38,9 @@ export function FreeEbookPage({ onNavigate, onTriggerBuildMyEa }: FreeEbookPageP
   const [email, setEmail] = useState(user?.email || '');
   const [firstName, setFirstName] = useState(user?.name ? user.name.split(' ')[0] : '');
   const [downloadReady, setDownloadReady] = useState(false);
+  const [signedDownloadUrl, setSignedDownloadUrl] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [errorMessage, setErrorMessage] = useState('');
   const [coverUrl, setCoverUrl] = useState<string>(STOREFRONT_MEDIA.freeEbook.coverUrl);
 
   // Interactive 5-Question Automation-Ready Checklist state
@@ -84,20 +90,45 @@ export function FreeEbookPage({ onNavigate, onTriggerBuildMyEa }: FreeEbookPageP
   const answeredCount = Object.values(checklistAnswers).filter(v => v !== null).length;
   const yesCount = Object.values(checklistAnswers).filter(v => v === true).length;
 
-  const handleGetDownload = (e: React.FormEvent) => {
+  const handleGetDownload = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!email) return;
-    setLoading(true);
-    setTimeout(() => {
-      setLoading(false);
-      setDownloadReady(true);
-      triggerDirectFileDownload();
-    }, 600);
-  };
+    setErrorMessage('');
+    const cleanEmail = email.trim();
+    if (!cleanEmail || !cleanEmail.includes('@') || !cleanEmail.includes('.')) {
+      setErrorMessage('Please enter a valid email address.');
+      return;
+    }
 
-  const triggerDirectFileDownload = () => {
-    // Open the official PDF lead magnet stored directly in Supabase in a new tab for instant download
-    window.open(STOREFRONT_MEDIA.freeEbook.downloadUrl, '_blank', 'noopener,noreferrer');
+    setLoading(true);
+    try {
+      const res = await requestFreeEbookDownload(cleanEmail, firstName);
+      if (res.success && res.downloadUrl) {
+        setSignedDownloadUrl(res.downloadUrl);
+        setDownloadReady(true);
+
+        try {
+          confetti({
+            particleCount: 50,
+            spread: 60,
+            origin: { y: 0.6 },
+          });
+        } catch (_) {}
+
+        // Automatically trigger browser download
+        const tempLink = document.createElement('a');
+        tempLink.href = res.downloadUrl;
+        tempLink.setAttribute('download', 'The-Traders-Guide-to-Understanding-Strategy-Automation.pdf');
+        document.body.appendChild(tempLink);
+        tempLink.click();
+        document.body.removeChild(tempLink);
+      } else {
+        setErrorMessage(res.error || 'Failed to authorize download. Please try again.');
+      }
+    } catch (err: any) {
+      setErrorMessage(err.message || 'An error occurred while authorizing your download.');
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -256,22 +287,35 @@ export function FreeEbookPage({ onNavigate, onTriggerBuildMyEa }: FreeEbookPageP
                     </div>
                   </div>
 
-                  <div className="pt-2 space-y-3">
-                    <a
-                      href={STOREFRONT_MEDIA.freeEbook.downloadUrl}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="w-full py-4 px-6 rounded-xl bg-gradient-to-r from-emerald-800 via-emerald-700 to-teal-700 hover:from-emerald-700 hover:to-teal-600 text-white font-extrabold text-sm shadow-md shadow-emerald-900/20 transition-all flex items-center justify-center gap-2 cursor-pointer"
-                    >
-                      <Download className="w-4 h-4" />
-                      <span>Get free eBook</span>
-                      <ExternalLink className="w-4 h-4 ml-1 opacity-70" />
-                    </a>
+                  {errorMessage && (
+                    <div className="p-3 rounded-xl bg-red-50 border border-red-200 text-red-700 text-xs font-medium">
+                      {errorMessage}
+                    </div>
+                  )}
 
-                    <div className="text-center">
-                      <span className="text-[11px] text-slate-400 font-mono">
-                        Instant direct access • Opens official PDF in a new tab
-                      </span>
+                  <div className="pt-2 space-y-3">
+                    <button
+                      type="submit"
+                      disabled={loading}
+                      className="w-full py-4 px-6 rounded-xl bg-gradient-to-r from-emerald-800 via-emerald-700 to-teal-700 hover:from-emerald-700 hover:to-teal-600 text-white font-extrabold text-sm shadow-md shadow-emerald-900/20 transition-all flex items-center justify-center gap-2 cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed group"
+                    >
+                      {loading ? (
+                        <>
+                          <Loader2 className="w-4 h-4 animate-spin" />
+                          <span>Verifying & Generating Secure Access...</span>
+                        </>
+                      ) : (
+                        <>
+                          <Download className="w-4 h-4 group-hover:scale-105 transition-transform" />
+                          <span>Get Free eBook</span>
+                          <ArrowRight className="w-4 h-4 ml-1 opacity-70" />
+                        </>
+                      )}
+                    </button>
+
+                    <div className="text-center flex items-center justify-center gap-1.5 text-[11px] text-slate-500 font-mono">
+                      <ShieldCheck className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+                      <span>Authorized server delivery • No password required</span>
                     </div>
                   </div>
                 </form>
@@ -284,21 +328,27 @@ export function FreeEbookPage({ onNavigate, onTriggerBuildMyEa }: FreeEbookPageP
                     <div>
                       <h3 className="text-base font-bold text-slate-900">Your Free Guide Is Ready</h3>
                       <p className="text-xs text-slate-600">
-                        The download has started. You can also re-download anytime below.
+                        Authorized download unlocked for <span className="font-semibold text-slate-800">{email}</span>.
                       </p>
                     </div>
                   </div>
 
+                  <div className="flex items-center gap-1.5 text-xs text-slate-500 font-mono">
+                    <Clock className="w-3.5 h-3.5 text-emerald-600" />
+                    <span>Temporary authorized link valid for 15 minutes</span>
+                  </div>
+
                   <div className="flex flex-wrap gap-3 pt-2">
-                    <a
-                      href={STOREFRONT_MEDIA.freeEbook.downloadUrl}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-gradient-to-r from-emerald-800 to-teal-700 hover:from-emerald-700 hover:to-teal-600 text-white font-bold text-xs shadow-sm transition-all cursor-pointer"
-                    >
-                      <Download className="w-3.5 h-3.5" />
-                      <span>Download PDF Again</span>
-                    </a>
+                    {signedDownloadUrl && (
+                      <a
+                        href={signedDownloadUrl}
+                        download="The-Traders-Guide-to-Understanding-Strategy-Automation.pdf"
+                        className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-gradient-to-r from-emerald-800 to-teal-700 hover:from-emerald-700 hover:to-teal-600 text-white font-bold text-xs shadow-sm transition-all cursor-pointer"
+                      >
+                        <Download className="w-3.5 h-3.5" />
+                        <span>Download PDF Again</span>
+                      </a>
+                    )}
                     <Button
                       variant="outline"
                       size="sm"

@@ -1,10 +1,12 @@
 import React, { useState, useEffect } from 'react';
-import { AdminStats, Product, Order, User, ProductType } from '../../types.ts';
+import { AdminStats, Product, Order, User, ProductType, License } from '../../types.ts';
 import { api, StrategySubmission } from '../../services/api.ts';
 import { useAuth } from '../../context/AuthContext.tsx';
 import { Button } from '../common/Button.tsx';
 import { StatusBadge } from '../common/StatusBadge.tsx';
 import { Modal } from '../common/Modal.tsx';
+import { LicenseManagementTab } from './LicenseManagementTab.tsx';
+import { EditLicenseModal } from './EditLicenseModal.tsx';
 import { 
   ShieldAlert, 
   DollarSign, 
@@ -33,7 +35,8 @@ import {
   Eye,
   X,
   CheckCircle,
-  Search
+  Search,
+  Key
 } from 'lucide-react';
 import { checkSupabaseLessonsSync, syncLessonsToSupabase } from '../../services/academy.ts';
 import { 
@@ -64,9 +67,12 @@ export function AdminDashboard({ onBackToHome }: AdminDashboardProps) {
   });
   const [products, setProducts] = useState<Product[]>([]);
   const [orders, setOrders] = useState<Order[]>([]);
+  const [licenses, setLicenses] = useState<License[]>([]);
+  const [editingLicense, setEditingLicense] = useState<License | null>(null);
+  const [isLicenseModalOpen, setIsLicenseModalOpen] = useState(false);
   const [usersList, setUsersList] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState<'products' | 'orders' | 'users' | 'strategy-submissions' | 'supabase-sync'>('products');
+  const [activeTab, setActiveTab] = useState<'products' | 'orders' | 'licenses' | 'users' | 'strategy-submissions' | 'supabase-sync'>('products');
   const [submissions, setSubmissions] = useState<StrategySubmission[]>([]);
   const [selectedSubmission, setSelectedSubmission] = useState<StrategySubmission | null>(null);
   const [retryingEmailId, setRetryingEmailId] = useState<string | null>(null);
@@ -207,18 +213,20 @@ export function AdminDashboard({ onBackToHome }: AdminDashboardProps) {
     if (!isAdmin) return;
     try {
       setLoading(true);
-      const [statsRes, productsRes, ordersRes, usersRes, submissionsRes] = await Promise.all([
+      const [statsRes, productsRes, ordersRes, usersRes, submissionsRes, licensesRes] = await Promise.all([
         api.getAdminStats(),
         api.getAdminProducts(),
         api.getAdminOrders(),
         api.getAdminUsers(),
         api.getStrategySubmissions().catch(() => []),
+        api.getAdminLicenses().catch(() => []),
       ]);
       setStats(statsRes);
       setProducts(productsRes);
       setOrders(ordersRes);
       setUsersList(usersRes);
       setSubmissions(submissionsRes);
+      setLicenses(licensesRes);
       checkSync();
     } catch (err) {
       console.error('Failed to load admin telemetry:', err);
@@ -452,6 +460,17 @@ export function AdminDashboard({ onBackToHome }: AdminDashboardProps) {
             Order Management ({orders.length})
           </button>
           <button
+            onClick={() => setActiveTab('licenses')}
+            className={`px-4 py-2 text-xs font-semibold rounded-t-lg transition-colors border-b-2 flex items-center gap-1.5 ${
+              activeTab === 'licenses'
+                ? 'border-purple-400 text-purple-300 bg-slate-900/50'
+                : 'border-transparent text-slate-400 hover:text-slate-200'
+            }`}
+          >
+            <Key className="w-3.5 h-3.5 text-emerald-400" />
+            EA License Controls ({licenses.length})
+          </button>
+          <button
             onClick={() => setActiveTab('users')}
             className={`px-4 py-2 text-xs font-semibold rounded-t-lg transition-colors border-b-2 ${
               activeTab === 'users'
@@ -624,6 +643,18 @@ export function AdminDashboard({ onBackToHome }: AdminDashboardProps) {
               </table>
             </div>
           </div>
+        )}
+
+        {/* TAB: EA LICENSE CONTROLS */}
+        {activeTab === 'licenses' && (
+          <LicenseManagementTab
+            licenses={licenses}
+            onRefresh={loadAdminData}
+            onEditLicense={(lic) => {
+              setEditingLicense(lic);
+              setIsLicenseModalOpen(true);
+            }}
+          />
         )}
 
         {/* TAB 3: USERS */}
@@ -1505,6 +1536,24 @@ export function AdminDashboard({ onBackToHome }: AdminDashboardProps) {
               </div>
             </div>
           </Modal>
+        )}
+
+        {/* Modal: Edit EA License & Delivery Governance */}
+        {isLicenseModalOpen && editingLicense && (
+          <EditLicenseModal
+            isOpen={isLicenseModalOpen}
+            onClose={() => {
+              setIsLicenseModalOpen(false);
+              setEditingLicense(null);
+            }}
+            license={editingLicense}
+            onSaveSuccess={async (updated) => {
+              setLicenses((prev) =>
+                prev.map((l) => (l.id === updated.id ? { ...l, ...updated } : l))
+              );
+              await loadAdminData();
+            }}
+          />
         )}
       </div>
     </div>

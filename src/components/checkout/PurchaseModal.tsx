@@ -137,9 +137,14 @@ export function PurchaseModal({
           {/* License Key Box (for EAs) */}
           {orderResult.licenseKey && (
             <div className="bg-slate-950 p-4 rounded-xl border border-emerald-900/60 space-y-2">
-              <span className="text-[10px] uppercase font-mono text-emerald-400 font-bold block">
-                Your Single Terminal License Key:
-              </span>
+              <div className="flex items-center justify-between">
+                <span className="text-[10px] uppercase font-mono text-emerald-400 font-bold block">
+                  Your Single Terminal License Key:
+                </span>
+                <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-amber-500/10 text-amber-400 border border-amber-500/30">
+                  Manual Delivery Pending
+                </span>
+              </div>
               <div className="flex items-center justify-between gap-2 bg-slate-900 px-3 py-2 rounded-lg border border-slate-800">
                 <span className="font-mono text-xs font-bold text-slate-100 truncate">
                   {orderResult.licenseKey}
@@ -153,26 +158,47 @@ export function PurchaseModal({
                 </button>
               </div>
               <p className="text-[11px] text-slate-400">
-                Enter this key into your EA input parameter <code className="text-emerald-400 font-mono">InpLicenseKey</code> inside MetaTrader 5.
+                This license key is linked to your order and verified in your account.
               </p>
             </div>
           )}
 
-          {/* Download CTA */}
-          <div className="space-y-3">
-            <Button
-              variant="primary"
-              size="lg"
-              fullWidth
-              onClick={handleDownload}
-              icon={<Download className="w-4 h-4 text-slate-950" />}
-            >
-              Download Package Now (.EX5 / PDF)
-            </Button>
-            <p className="text-[11px] text-slate-500 text-center font-mono">
-              This package is also permanently archived in your Customer Dashboard.
-            </p>
-          </div>
+          {/* Institutional Binary Protection Notice (Strict: EAs are NEVER automatically downloadable) */}
+          {product.type === 'ea' ? (
+            <div className="bg-slate-900/90 border border-amber-500/30 rounded-xl p-4 space-y-2 text-xs">
+              <div className="flex items-center gap-2 text-amber-400 font-semibold">
+                <ShieldCheck className="w-4 h-4 text-amber-400 shrink-0" />
+                <span>Manual Binary Delivery & Account Provisioning</span>
+              </div>
+              <p className="text-slate-300 text-[11px] leading-relaxed">
+                To protect algorithmic intellectual property and verify broker terminal compatibility, 
+                <strong> Expert Advisor binaries (.EX5) are compiled and delivered manually by our administrative team.</strong> 
+                The EA executable is never automatically downloadable.
+              </p>
+              <div className="text-[10px] text-slate-400 font-mono pt-1 border-t border-slate-800 flex items-center justify-between">
+                <span>Status: <span className="text-amber-400">Pending Admin Provisioning</span></span>
+                <span>Dual Persistence: <span className="text-emerald-400">SQLite + Supabase</span></span>
+              </div>
+            </div>
+          ) : (
+            /* Non-EA Digital Download CTA (e.g. eBooks) */
+            orderResult.downloadUrl && (
+              <div className="space-y-3">
+                <Button
+                  variant="primary"
+                  size="lg"
+                  fullWidth
+                  onClick={handleDownload}
+                  icon={<Download className="w-4 h-4 text-slate-950" />}
+                >
+                  Download E-Book (.PDF) Now
+                </Button>
+                <p className="text-[11px] text-slate-500 text-center font-mono">
+                  This package is also permanently archived in your Customer Dashboard.
+                </p>
+              </div>
+            )
+          )}
 
           <div className="pt-2 flex justify-center">
             <Button variant="outline" size="sm" onClick={handleModalClose}>

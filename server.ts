@@ -7,8 +7,24 @@ import { GoogleGenAI } from '@google/genai';
 import { createClient } from '@supabase/supabase-js';
 import { initDatabase, dbQueries } from './server/db.ts';
 import { MEGA_AI_MASTER_SYSTEM_PROMPT } from './server/megaAiPrompt.ts';
-import { sendStrategySubmissionNotifications } from './server/emailService.ts';
+import { sendStrategySubmissionNotifications, sendOrderNotification } from './server/emailService.ts';
+import {
+  persistOrderToSupabase,
+  persistLicenseToSupabase,
+  syncAcademyProgressToSupabase,
+  checkSupabaseOrdersLicensesHealth,
+  batchSyncLicensesToSupabase,
+  SUPABASE_ORDERS_LICENSES_SCHEMA_SQL
+} from './server/supabaseSync.ts';
 import { interpretStrategyWithGemini } from './server/strategyAiService.ts';
+import {
+  ensureProtectedPdfExists,
+  isValidEmail,
+  generateSignedToken,
+  verifySignedToken,
+  processEmailLead,
+  getProtectedPdfPath,
+} from './server/ebookProtection.ts';
 
 const SUPABASE_URL = process.env.VITE_SUPABASE_URL || 'https://xbrhalmcvpxutxojemoj.supabase.co';
 const SUPABASE_ANON_KEY = process.env.VITE_SUPABASE_ANON_KEY || 'sb_publishable_7UqK_UbkxtEDg_i_drYesw_9pdbJS0c';
@@ -81,6 +97,19 @@ const PORT = 3000;
 app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ extended: true, limit: '50mb' }));
 
+// SECURITY ENFORCEMENT: Strictly block direct public/static PDF access.
+// All eBook downloads MUST go through the authorized server-side signed URL flow (/api/ebooks/download).
+app.use((req, res, next) => {
+  const p = req.path.toLowerCase();
+  if ((p.endsWith('.pdf') || p.includes('.pdf')) && !p.startsWith('/api/ebooks/download')) {
+    return res.status(403).json({
+      error: 'Direct PDF download forbidden. Access requires submitting your email to receive an authorized temporary download link.',
+      code: 'DIRECT_ACCESS_FORBIDDEN',
+    });
+  }
+  next();
+});
+
 // Custom static asset handler with accurate MIME types
 app.use('/assets', express.static(path.join(process.cwd(), 'public', 'assets'), {
   setHeaders: (res, filePath) => {
@@ -138,10 +167,20 @@ activeSessions.set('token_cust', {
 function requireAuth(req: Request, res: Response, next: NextFunction) {
   const authHeader = req.headers.authorization;
   const token = authHeader?.replace('Bearer ', '');
-  if (!token || !activeSessions.has(token)) {
+  if (!token) {
     return res.status(401).json({ error: 'Unauthorized. Please log in.' });
   }
-  const session = activeSessions.get(token)!;
+  let session = activeSessions.get(token);
+  if (!session) {
+    const persisted = dbQueries.getSession(token);
+    if (persisted) {
+      session = persisted;
+      activeSessions.set(token, session);
+    }
+  }
+  if (!session) {
+    return res.status(401).json({ error: 'Unauthorized. Please log in.' });
+  }
   (req as any).user = session;
   next();
 }
@@ -192,6 +231,7 @@ app.post('/api/auth/register', (req, res) => {
     const token = `tok_${Math.random().toString(36).substring(2)}_${Date.now()}`;
     const userProfile = { userId: id, role: assignedRole, email: email.toLowerCase().trim(), name: name.trim() };
     activeSessions.set(token, userProfile);
+    dbQueries.saveSession({ token, userId: id, role: assignedRole, email: email.toLowerCase().trim(), name: name.trim() });
 
     res.json({
       success: true,
@@ -229,6 +269,7 @@ app.post('/api/auth/login', (req, res) => {
     const token = `tok_${Math.random().toString(36).substring(2)}_${Date.now()}`;
     const userProfile = { userId: user.id, role: user.role, email: user.email, name: user.name };
     activeSessions.set(token, userProfile);
+    dbQueries.saveSession({ token, userId: user.id, role: user.role, email: user.email, name: user.name });
 
     res.json({
       success: true,
@@ -252,6 +293,7 @@ app.post('/api/auth/logout', (req, res) => {
   const token = authHeader?.replace('Bearer ', '');
   if (token) {
     activeSessions.delete(token);
+    dbQueries.deleteSession(token);
   }
   res.json({ success: true, message: 'Logged out successfully.' });
 });
@@ -409,7 +451,7 @@ app.post('/api/orders', (req, res) => {
     const orderAmount = typeof amount === 'number' && amount > 0 ? amount : product.price;
     const orderCurrency = currency || product.currency || 'USD';
 
-    const result = dbQueries.createOrder({
+    const orderRecord = {
       id: orderId,
       user_id: userId,
       product_id: productId,
@@ -417,15 +459,39 @@ app.post('/api/orders', (req, res) => {
       currency: orderCurrency,
       payment_status: 'paid',
       transaction_id: transactionId
+    };
+
+    const result = dbQueries.createOrder(orderRecord);
+    const isEa = product.type === 'ea';
+
+    // Persist to Supabase asynchronously (dual persistence with SQLite)
+    persistOrderToSupabase(orderRecord, result.license).catch((supaErr) => {
+      console.warn('[Order Supabase Sync Graceful Notice]', supaErr?.message || supaErr);
+    });
+
+    // Optional email notifications: will never fail or throw if Brevo, SendGrid, or SMTP are unconfigured
+    const effectiveEmail = customerEmail || (userId ? dbQueries.getUserById(userId)?.email : 'customer@ea-hub.com');
+    sendOrderNotification({
+      order: orderRecord,
+      product,
+      license: result.license,
+      customerEmail: effectiveEmail || 'customer@ea-hub.com',
+      customerName: customerName || 'Valued Trader'
+    }).catch((emailErr) => {
+      console.warn('[Order Email Notification Graceful Notice]', emailErr?.message || emailErr);
     });
 
     res.json({
       success: true,
-      message: 'Order processed successfully.',
+      message: isEa
+        ? 'Order processed successfully. Terminal license key generated. Binary delivery pending administrator review.'
+        : 'Order processed successfully.',
       orderId,
       transactionId,
+      isEa,
       licenseKey: result.license ? result.license.license_key : undefined,
-      downloadUrl: product.download_url,
+      deliveryStatus: result.license ? result.license.delivery_status : (isEa ? 'pending' : 'completed'),
+      downloadUrl: isEa ? null : product.download_url, // Strict: EA binary itself is NEVER automatically downloadable!
       license: result.license
     });
   } catch (error: any) {
@@ -556,6 +622,75 @@ app.get('/api/admin/orders', requireAuth, requireRole(['admin']), (req, res) => 
   try {
     const orders = dbQueries.getAllOrders();
     res.json({ orders });
+  } catch (error: any) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Admin: Licenses List (Secure Admin-Only EA License Governance)
+app.get('/api/admin/licenses', requireAuth, requireRole(['admin']), (req, res) => {
+  try {
+    const licenses = dbQueries.getAllLicenses();
+    res.json({ licenses });
+  } catch (error: any) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Admin: Update License Dates, Status, and Delivery Status (Persists to SQLite and Supabase)
+app.put('/api/admin/licenses/:id', requireAuth, requireRole(['admin']), async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { starts_at, expires_at, status, delivery_status, delivery_notes } = req.body;
+
+    // Check license exists
+    const existing = dbQueries.getLicenseById(id);
+    if (!existing) {
+      return res.status(404).json({ error: `License with ID ${id} not found.` });
+    }
+
+    // Persist locally in SQLite
+    const updated = dbQueries.updateLicense(id, {
+      starts_at,
+      expires_at,
+      status,
+      delivery_status,
+      delivery_notes
+    });
+
+    // Persist to Supabase
+    const supaResult = await persistLicenseToSupabase(updated);
+
+    res.json({
+      success: true,
+      message: 'License updated successfully.',
+      license: updated,
+      supabaseSynced: supaResult.success,
+      supabaseMessage: supaResult.error ? `Supabase sync note: ${supaResult.error}` : 'Persisted to Supabase successfully'
+    });
+  } catch (error: any) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Admin: Batch Sync Licenses to Supabase
+app.post('/api/admin/licenses/sync-supabase', requireAuth, requireRole(['admin']), async (req, res) => {
+  try {
+    const result = await batchSyncLicensesToSupabase();
+    res.json({ success: result.success, result });
+  } catch (error: any) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Admin: Check Supabase Tables & Get Schema SQL
+app.get('/api/admin/supabase-status', requireAuth, requireRole(['admin']), async (req, res) => {
+  try {
+    const health = await checkSupabaseOrdersLicensesHealth();
+    res.json({
+      ...health,
+      schemaSql: SUPABASE_ORDERS_LICENSES_SCHEMA_SQL
+    });
   } catch (error: any) {
     res.status(500).json({ error: error.message });
   }
@@ -1190,6 +1325,14 @@ app.post('/api/academy/progress', (req, res) => {
       lastLessonId: lastLessonId || undefined
     });
 
+    // Synchronize to Supabase non-blockingly
+    syncAcademyProgressToSupabase({
+      email,
+      completedLessonIds: Array.isArray(completedLessonIds) ? completedLessonIds : [],
+      quizScores: quizScores || {},
+      lastLessonId: lastLessonId || undefined
+    }).catch(err => console.log('[Supabase Progress Sync Notice]', err.message));
+
     res.json({ success: true, progress: saved });
   } catch (err: any) {
     console.error('Error saving academy progress:', err);
@@ -1320,10 +1463,114 @@ app.post('/api/strategy/interpret-ai', async (req, res) => {
 });
 
 // -------------------------------------------------------------
+// Protected Free eBook Delivery Endpoints
+// -------------------------------------------------------------
+
+/**
+ * POST /api/ebooks/request-free-download
+ * Validates the email, records the email lead in database and Supabase,
+ * and generates a time-limited signed download token (valid 15 minutes).
+ */
+app.post('/api/ebooks/request-free-download', async (req, res) => {
+  try {
+    const { email, name } = req.body;
+    if (!email || !isValidEmail(email)) {
+      return res.status(400).json({
+        success: false,
+        error: 'A valid email address is required to receive the free eBook.',
+        code: 'INVALID_EMAIL',
+      });
+    }
+
+    // Capture and persist email lead to SQLite and Supabase
+    await processEmailLead(email, name);
+
+    // Generate cryptographic HMAC-SHA256 signed token (valid for 15 minutes = 900 seconds)
+    const validitySeconds = 900;
+    const { token, expiresAt } = generateSignedToken(email, 'free_lead_magnet_traders_guide', validitySeconds);
+    const downloadUrl = `/api/ebooks/download?token=${token}`;
+
+    return res.json({
+      success: true,
+      message: 'Email verified. Your temporary authorized download link is ready.',
+      downloadUrl,
+      expiresAt,
+      validitySeconds,
+    });
+  } catch (err: any) {
+    console.error('Error in /api/ebooks/request-free-download:', err);
+    return res.status(500).json({
+      success: false,
+      error: 'Failed to process download request. Please try again.',
+    });
+  }
+});
+
+/**
+ * GET /api/ebooks/download
+ * Verifies that the request has a valid, non-expired cryptographic token.
+ * Streams the protected PDF strictly as an attachment with no-cache headers.
+ */
+app.get('/api/ebooks/download', async (req, res) => {
+  try {
+    const token = req.query.token as string;
+    if (!token) {
+      return res.status(403).json({
+        error: 'Access denied: Download token is required. Please submit your email on the books page.',
+        code: 'TOKEN_REQUIRED',
+      });
+    }
+
+    const verification = verifySignedToken(token);
+    if (!verification.valid || !verification.email) {
+      return res.status(403).json({
+        error: `Access denied: ${verification.reason || 'Invalid or expired download link'}. Please submit your email to request a new link.`,
+        code: 'TOKEN_INVALID_OR_EXPIRED',
+      });
+    }
+
+    // Ensure protected PDF is ready in private server storage
+    const pdfPath = getProtectedPdfPath();
+    if (!fs.existsSync(pdfPath)) {
+      await ensureProtectedPdfExists();
+    }
+
+    if (!fs.existsSync(pdfPath)) {
+      return res.status(500).json({
+        error: 'The requested eBook is temporarily unavailable. Please contact support.',
+        code: 'FILE_UNAVAILABLE',
+      });
+    }
+
+    // Track download occurrence in database
+    dbQueries.incrementEmailLeadDownload(verification.email);
+
+    // Stream PDF with attachment and strict anti-caching headers
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', 'attachment; filename="The-Traders-Guide-to-Understanding-Strategy-Automation.pdf"');
+    res.setHeader('Cache-Control', 'private, no-cache, no-store, must-revalidate');
+    res.setHeader('Pragma', 'no-cache');
+    res.setHeader('Expires', '0');
+
+    const stream = fs.createReadStream(pdfPath);
+    stream.pipe(res);
+  } catch (err: any) {
+    console.error('Error in /api/ebooks/download:', err);
+    return res.status(500).json({
+      error: 'Failed to stream protected file.',
+      code: 'DOWNLOAD_STREAM_ERROR',
+    });
+  }
+});
+
+// -------------------------------------------------------------
 // Vite Middleware / Static Serving
 // -------------------------------------------------------------
 
 async function startServer() {
+  // Ensure private eBook storage is provisioned
+  await ensureProtectedPdfExists();
+
   if (process.env.NODE_ENV !== 'production') {
     const vite = await createViteServer({
       server: { middlewareMode: true },

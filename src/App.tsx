@@ -3,6 +3,8 @@ import { ActiveView, Product } from './types.ts';
 import { api } from './services/api.ts';
 import { useAuth, AuthProvider } from './context/AuthContext.tsx';
 import { CurrencyProvider } from './context/CurrencyContext.tsx';
+import { INITIAL_PRODUCTS } from './constants/initialProducts.ts';
+import { parseUrlToView, getUrlForView, getTitleForView } from './utils/router.ts';
 import { Navbar } from './components/common/Navbar.tsx';
 import { Footer } from './components/common/Footer.tsx';
 import { HomePage } from './components/home/HomePage.tsx';
@@ -33,11 +35,23 @@ import { MegaAiChat } from './components/common/MegaAiChat.tsx';
 
 function AppContent() {
   const { user, loading: authLoading } = useAuth();
-  const [currentView, setCurrentView] = useState<ActiveView>('home');
-  const [selectedProductId, setSelectedProductId] = useState<string | undefined>('prod_ea_adaptive_liquidity');
-  const [selectedLessonId, setSelectedLessonId] = useState<string>('lesson-1-1');
-  const [selectedLevelId, setSelectedLevelId] = useState<string>('1');
-  const [products, setProducts] = useState<Product[]>([]);
+
+  // Parse initial route directly from window.location.pathname on first render
+  const initialRoute = typeof window !== 'undefined'
+    ? parseUrlToView(window.location.pathname)
+    : { view: 'home' as ActiveView };
+
+  const [currentView, setCurrentView] = useState<ActiveView>(initialRoute.view);
+  const [selectedProductId, setSelectedProductId] = useState<string | undefined>(
+    initialRoute.productId || 'prod_ea_adaptive_liquidity'
+  );
+  const [selectedLessonId, setSelectedLessonId] = useState<string>(
+    initialRoute.lessonId || 'lesson-1-1'
+  );
+  const [selectedLevelId, setSelectedLevelId] = useState<string>(
+    initialRoute.levelId || '1'
+  );
+  const [products, setProducts] = useState<Product[]>(INITIAL_PRODUCTS);
   const [loading, setLoading] = useState(true);
 
   // Modals state
@@ -48,11 +62,13 @@ function AppContent() {
   const [isCustomEaModalOpen, setIsCustomEaModalOpen] = useState(false);
   const [customEaPrefill, setCustomEaPrefill] = useState<any>(null);
 
-  // Fetch products from database
+  // Fetch products from database to hydrate any dynamic changes
   const loadProducts = async () => {
     try {
       const data = await api.getProducts();
-      setProducts(data);
+      if (Array.isArray(data) && data.length > 0) {
+        setProducts(data);
+      }
     } catch (err) {
       console.error('Failed to load products from API:', err);
     } finally {
@@ -63,156 +79,102 @@ function AppContent() {
   useEffect(() => {
     loadProducts();
 
-    // Check pathname on mount
-    const path = window.location.pathname;
-    if (path === '/prompt-architect' || path === '/free-tools') {
-      setCurrentView('prompt-architect');
-    } else if (path.startsWith('/lessons/')) {
-      const id = path.replace('/lessons/', '').trim();
-      setSelectedLessonId(id || 'lesson-1-1');
-      setCurrentView('lesson-detail');
-    } else if (path.startsWith('/levels/')) {
-      const id = path.replace('/levels/', '').trim();
-      setSelectedLevelId(id || '1');
-      setCurrentView('level-hub');
-    } else if (path === '/levels') {
-      setSelectedLevelId('1');
-      setCurrentView('level-hub');
-    } else if (path === '/academy') {
-      setCurrentView('academy');
-    } else if (path === '/ebooks/ai-prompt-engineering-handbook') {
-      setCurrentView('ai-prompt-handbook');
-      setSelectedProductId('prod_ebook_ai_prompt');
-    } else if (path === '/free-guide') {
-      setCurrentView('free-ebook');
-    } else if (path === '/trading-eas') {
-      setCurrentView('eas');
-    } else if (path === '/eas/adaptive-liquidity-pro' || path === '/liquidity-pro-ea') {
-      setSelectedProductId('prod_ea_adaptive_liquidity');
-      setCurrentView('ea-detail');
-    } else if (path === '/ebooks') {
-      setCurrentView('ebooks');
-    } else if (path === '/custom-ea') {
-      setCurrentView('custom-ea');
-    } else if (path === '/coaching') {
-      setCurrentView('coaching');
-    } else if (path === '/about') {
-      setCurrentView('about');
-    } else if (path === '/how-it-works') {
-      setCurrentView('how-it-works');
-    } else if (path === '/dashboard') {
-      setCurrentView('customer-dashboard');
-    } else if (path === '/login') {
-      setCurrentView('login');
-    } else if (path === '/portal') {
-      if (!user && !authLoading) {
-        setCurrentView('login');
-        window.history.replaceState(null, '', '/login');
-      } else {
-        setCurrentView('portal');
-      }
+    // Ensure document.title matches current view
+    document.title = getTitleForView(
+      initialRoute.view,
+      initialRoute.productId || initialRoute.levelId || initialRoute.lessonId
+    );
+
+    // Normalize address bar URL to canonical path without reload
+    const canonicalUrl = getUrlForView(
+      initialRoute.view,
+      initialRoute.productId || initialRoute.levelId || initialRoute.lessonId
+    );
+    if (window.location.pathname !== canonicalUrl) {
+      window.history.replaceState(null, '', canonicalUrl);
     }
 
     const handlePopState = () => {
-      const currentPath = window.location.pathname;
-      if (currentPath === '/prompt-architect' || currentPath === '/free-tools') {
-        setCurrentView('prompt-architect');
-      } else if (currentPath.startsWith('/lessons/')) {
-        const id = currentPath.replace('/lessons/', '').trim();
-        setSelectedLessonId(id || 'lesson-1-1');
-        setCurrentView('lesson-detail');
-      } else if (currentPath.startsWith('/levels/')) {
-        const id = currentPath.replace('/levels/', '').trim();
-        setSelectedLevelId(id || '1');
-        setCurrentView('level-hub');
-      } else if (currentPath === '/levels') {
-        setSelectedLevelId('1');
-        setCurrentView('level-hub');
-      } else if (currentPath === '/academy') {
-        setCurrentView('academy');
-      } else if (currentPath === '/ebooks/ai-prompt-engineering-handbook') {
-        setCurrentView('ai-prompt-handbook');
-        setSelectedProductId('prod_ebook_ai_prompt');
-      } else if (currentPath === '/free-guide') {
-        setCurrentView('free-ebook');
-      } else if (currentPath === '/trading-eas') {
-        setCurrentView('eas');
-      } else if (currentPath === '/eas/adaptive-liquidity-pro' || currentPath === '/liquidity-pro-ea') {
-        setSelectedProductId('prod_ea_adaptive_liquidity');
-        setCurrentView('ea-detail');
-      } else if (currentPath === '/ebooks') {
-        setCurrentView('ebooks');
-      } else if (currentPath === '/login') {
-        setCurrentView('login');
-      } else if (currentPath === '/portal') {
-        if (!user && !authLoading) {
-          setCurrentView('login');
-          window.history.replaceState(null, '', '/login');
-        } else {
-          setCurrentView('portal');
-        }
-      } else if (currentPath === '/') {
-        setCurrentView('home');
+      const resolved = parseUrlToView(window.location.pathname);
+      if (resolved.productId) {
+        setSelectedProductId(resolved.productId);
       }
+      if (resolved.lessonId) {
+        setSelectedLessonId(resolved.lessonId);
+      }
+      if (resolved.levelId) {
+        setSelectedLevelId(resolved.levelId);
+      }
+      setCurrentView(resolved.view);
+      document.title = getTitleForView(
+        resolved.view,
+        resolved.productId || resolved.levelId || resolved.lessonId
+      );
     };
 
     window.addEventListener('popstate', handlePopState);
     return () => window.removeEventListener('popstate', handlePopState);
-  }, [user, authLoading]);
+  }, []);
 
-  // Route Protection: If unauthenticated user lands on /portal, instantly redirect to /login
+  // Route Protection: If unauthenticated user lands on /portal, redirect to /login
   useEffect(() => {
     if (!authLoading && currentView === 'portal' && !user) {
       setCurrentView('login');
       window.history.replaceState(null, '', '/login');
+      document.title = getTitleForView('login');
     }
   }, [currentView, user, authLoading]);
 
   const handleNavigate = (view: ActiveView, extraId?: string) => {
     let targetView = view;
+    let targetProductId = selectedProductId;
+    let targetLessonId = selectedLessonId;
+    let targetLevelId = selectedLevelId;
+
     if (view === 'lesson-detail' && extraId) {
+      targetLessonId = extraId;
       setSelectedLessonId(extraId);
-      window.history.pushState(null, '', `/lessons/${extraId}`);
     } else if ((view === 'level-hub' || view === 'levels') && extraId) {
+      targetLevelId = extraId;
       setSelectedLevelId(extraId);
-      window.history.pushState(null, '', `/levels/${extraId}`);
-    } else if (view === 'level-hub' || view === 'levels') {
-      window.history.pushState(null, '', `/levels/${selectedLevelId}`);
     } else if (extraId) {
+      targetProductId = extraId;
       setSelectedProductId(extraId);
     }
 
-    if (view === 'prompt-architect') {
-      window.history.pushState(null, '', '/prompt-architect');
-    } else if (view === 'academy') {
-      window.history.pushState(null, '', '/academy');
-    } else if (view === 'ai-prompt-handbook' || (view === 'ebook-detail' && extraId === 'prod_ebook_ai_prompt')) {
+    if (view === 'ai-prompt-handbook' || (view === 'ebook-detail' && extraId === 'prod_ebook_ai_prompt')) {
       targetView = 'ai-prompt-handbook';
+      targetProductId = 'prod_ebook_ai_prompt';
       setSelectedProductId('prod_ebook_ai_prompt');
-      window.history.pushState(null, '', '/ebooks/ai-prompt-engineering-handbook');
-    } else if (view === 'free-ebook') {
-      window.history.pushState(null, '', '/free-guide');
-    } else if (view === 'eas') {
-      window.history.pushState(null, '', '/trading-eas');
+    } else if (view === 'ebook-detail' && extraId === 'prod_ebook_mql5_guide') {
+      targetProductId = 'prod_ebook_mql5_guide';
+      setSelectedProductId('prod_ebook_mql5_guide');
     } else if (view === 'ea-detail') {
-      const eaId = extraId || 'prod_ea_adaptive_liquidity';
+      const eaId = extraId || selectedProductId || 'prod_ea_adaptive_liquidity';
+      targetProductId = eaId;
       setSelectedProductId(eaId);
-      window.history.pushState(null, '', '/eas/adaptive-liquidity-pro');
-    } else if (view === 'ebooks') {
-      window.history.pushState(null, '', '/ebooks');
-    } else if (view === 'login') {
-      window.history.pushState(null, '', '/login');
-    } else if (view === 'portal') {
-      if (!user && !authLoading) {
-        targetView = 'login';
-        window.history.pushState(null, '', '/login');
-      } else {
-        window.history.pushState(null, '', '/portal');
-      }
-    } else if (view === 'home') {
-      window.history.pushState(null, '', '/');
     }
 
+    if (targetView === 'portal' && !user && !authLoading) {
+      targetView = 'login';
+    }
+
+    // Determine the extra ID to use for canonical URL generation
+    let canonicalParam: string | undefined;
+    if (targetView === 'level-hub' || targetView === 'levels') {
+      canonicalParam = targetLevelId;
+    } else if (targetView === 'lesson-detail' || targetView === 'lessons') {
+      canonicalParam = targetLessonId;
+    } else if (targetView === 'ea-detail' || targetView === 'ebook-detail') {
+      canonicalParam = targetProductId;
+    }
+
+    const targetUrl = getUrlForView(targetView, canonicalParam);
+    if (window.location.pathname !== targetUrl) {
+      window.history.pushState(null, '', targetUrl);
+    }
+
+    document.title = getTitleForView(targetView, canonicalParam);
     setCurrentView(targetView);
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
@@ -239,8 +201,12 @@ function AppContent() {
     handleNavigate('login');
   };
 
-  // Find currently selected product
-  const selectedProduct = products.find(p => p.id === selectedProductId) || products[0];
+  // Find currently selected product with fallback to INITIAL_PRODUCTS
+  const selectedProduct =
+    products.find(p => p.id === selectedProductId) ||
+    INITIAL_PRODUCTS.find(p => p.id === selectedProductId) ||
+    products[0] ||
+    INITIAL_PRODUCTS[0];
 
   const isAcademyView = currentView === 'academy' || currentView === 'lesson-detail';
 

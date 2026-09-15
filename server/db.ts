@@ -75,11 +75,16 @@ export function initDatabase() {
       id TEXT PRIMARY KEY,
       user_id TEXT NOT NULL,
       product_id TEXT NOT NULL,
+      order_id TEXT,
       license_key TEXT NOT NULL UNIQUE,
       license_type TEXT NOT NULL,
-      status TEXT NOT NULL CHECK(status IN ('active', 'revoked', 'expired')),
-      created_at TEXT NOT NULL,
+      status TEXT NOT NULL DEFAULT 'active',
+      delivery_status TEXT NOT NULL DEFAULT 'pending',
+      delivery_notes TEXT,
+      starts_at TEXT,
       expires_at TEXT,
+      created_at TEXT NOT NULL,
+      updated_at TEXT,
       FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
       FOREIGN KEY (product_id) REFERENCES products(id) ON DELETE CASCADE
     );
@@ -136,12 +141,33 @@ export function initDatabase() {
       created_at TEXT NOT NULL
     );
 
+    CREATE TABLE IF NOT EXISTS email_leads (
+      id TEXT PRIMARY KEY,
+      email TEXT NOT NULL UNIQUE,
+      name TEXT,
+      source TEXT NOT NULL DEFAULT 'free_ebook_download',
+      book_id TEXT NOT NULL DEFAULT 'free_lead_magnet_traders_guide',
+      download_count INTEGER NOT NULL DEFAULT 0,
+      last_downloaded_at TEXT,
+      created_at TEXT NOT NULL,
+      updated_at TEXT NOT NULL
+    );
+
     CREATE TABLE IF NOT EXISTS academy_progress (
       email TEXT PRIMARY KEY,
       completed_lesson_ids TEXT NOT NULL,
       quiz_scores TEXT,
       last_lesson_id TEXT,
       updated_at TEXT NOT NULL
+    );
+
+    CREATE TABLE IF NOT EXISTS user_sessions (
+      token TEXT PRIMARY KEY,
+      user_id TEXT NOT NULL,
+      role TEXT NOT NULL,
+      email TEXT NOT NULL,
+      name TEXT NOT NULL,
+      created_at TEXT NOT NULL
     );
 
     CREATE TABLE IF NOT EXISTS strategy_submissions (
@@ -209,6 +235,25 @@ export function initDatabase() {
     }
   } catch (migErr) {
     console.warn('Migration column check notice:', migErr);
+  }
+
+  // Auto-migrate licenses table to include order_id, starts_at, delivery_status, delivery_notes, updated_at
+  try {
+    const existingLicCols = (db.prepare('PRAGMA table_info(licenses)').all() as any[]).map(c => c.name);
+    const licColsToAdd = [
+      { name: 'order_id', type: 'TEXT' },
+      { name: 'starts_at', type: 'TEXT' },
+      { name: 'delivery_status', type: "TEXT NOT NULL DEFAULT 'pending'" },
+      { name: 'delivery_notes', type: 'TEXT' },
+      { name: 'updated_at', type: 'TEXT' },
+    ];
+    for (const col of licColsToAdd) {
+      if (!existingLicCols.includes(col.name)) {
+        db.exec(`ALTER TABLE licenses ADD COLUMN ${col.name} ${col.type};`);
+      }
+    }
+  } catch (licMigErr) {
+    console.warn('Licenses migration column check notice:', licMigErr);
   }
 
   seedInitialData();
@@ -498,8 +543,8 @@ function seedInitialData() {
     `);
 
     const insertLicense = db.prepare(`
-      INSERT INTO licenses (id, user_id, product_id, license_key, license_type, status, created_at, expires_at)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+      INSERT INTO licenses (id, user_id, product_id, order_id, license_key, license_type, status, delivery_status, delivery_notes, starts_at, expires_at, created_at, updated_at)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `);
 
     const insertDownload = db.prepare(`
@@ -523,11 +568,16 @@ function seedInitialData() {
       'lic_demo_01',
       'usr_cust_01',
       'prod_ea_adaptive_liquidity',
+      'ord_demo_01',
       'EAH-ALPRO-7892-9410-LIFETIME',
       'Lifetime Single Terminal',
       'active',
+      'delivered',
+      'Initial terminal deployment verified by lead developer.',
       now,
-      null
+      null,
+      now,
+      now
     );
 
     insertDownload.run(
@@ -764,6 +814,28 @@ export const dbQueries = {
     return db.prepare('SELECT id, name, email, phone, role, created_at, updated_at FROM users ORDER BY created_at DESC').all();
   },
 
+  // Sessions (Auth persistence across server restarts)
+  saveSession(data: { token: string; userId: string; role: string; email: string; name: string }) {
+    const now = new Date().toISOString();
+    return db.prepare(`
+      INSERT OR REPLACE INTO user_sessions (token, user_id, role, email, name, created_at)
+      VALUES (?, ?, ?, ?, ?, ?)
+    `).run(data.token, data.userId, data.role, data.email, data.name, now);
+  },
+  getSession(token: string) {
+    const row = db.prepare('SELECT token, user_id, role, email, name FROM user_sessions WHERE token = ?').get(token) as any;
+    if (!row) return null;
+    return {
+      userId: row.user_id,
+      role: row.role,
+      email: row.email,
+      name: row.name,
+    };
+  },
+  deleteSession(token: string) {
+    return db.prepare('DELETE FROM user_sessions WHERE token = ?').run(token);
+  },
+
   // Products
   getAllProducts(includeInactive = false) {
     if (includeInactive) {
@@ -884,15 +956,50 @@ export const dbQueries = {
     if (product && product.type === 'ea') {
       const licenseKey = `EAH-${Math.random().toString(36).substring(2, 6).toUpperCase()}-${Math.random().toString(36).substring(2, 6).toUpperCase()}-${Math.random().toString(36).substring(2, 6).toUpperCase()}`;
       const licId = `lic_${Date.now()}_${Math.random().toString(36).substring(2, 5)}`;
+      const startsAt = now;
+      const oneYearMs = 365 * 24 * 60 * 60 * 1000;
+      const expiresAt = new Date(Date.now() + oneYearMs).toISOString();
+      const defaultNotes = 'Order confirmed. EA binary files are compiled securely and provisioned manually by administrators.';
+
       db.prepare(`
-        INSERT INTO licenses (id, user_id, product_id, license_key, license_type, status, created_at)
-        VALUES (?, ?, ?, ?, ?, ?, ?)
-      `).run(licId, order.user_id, order.product_id, licenseKey, 'Lifetime Terminal License', 'active', now);
-      license = { id: licId, license_key: licenseKey };
+        INSERT INTO licenses (id, user_id, product_id, order_id, license_key, license_type, status, delivery_status, delivery_notes, starts_at, expires_at, created_at, updated_at)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      `).run(
+        licId,
+        order.user_id,
+        order.product_id,
+        order.id,
+        licenseKey,
+        'Terminal License',
+        'active',
+        'pending',
+        defaultNotes,
+        startsAt,
+        expiresAt,
+        now,
+        now
+      );
+
+      license = {
+        id: licId,
+        user_id: order.user_id,
+        product_id: order.product_id,
+        order_id: order.id,
+        license_key: licenseKey,
+        license_type: 'Terminal License',
+        status: 'active',
+        delivery_status: 'pending',
+        delivery_notes: defaultNotes,
+        starts_at: startsAt,
+        expires_at: expiresAt,
+        created_at: now,
+        updated_at: now
+      };
     }
 
-    // Create download record
-    if (product && product.download_url) {
+    // Create download record ONLY for non-EAs (e.g. eBooks)
+    // The EA itself is NEVER automatically downloadable!
+    if (product && product.type !== 'ea' && product.download_url) {
       const dlId = `dl_${Date.now()}_${Math.random().toString(36).substring(2, 5)}`;
       db.prepare(`
         INSERT INTO downloads (id, user_id, product_id, order_id, download_url, download_count, created_at)
@@ -921,17 +1028,79 @@ export const dbQueries = {
     `).all();
   },
 
+  // Admin license management queries
+  getAllLicenses() {
+    return db.prepare(`
+      SELECT l.*, 
+             u.name as user_name, u.email as user_email,
+             p.name as product_name, p.platform as product_platform, p.type as product_type,
+             o.payment_status, o.amount as order_amount, o.currency as order_currency, o.transaction_id
+      FROM licenses l
+      LEFT JOIN users u ON l.user_id = u.id
+      LEFT JOIN products p ON l.product_id = p.id
+      LEFT JOIN orders o ON l.order_id = o.id
+      ORDER BY l.created_at DESC
+    `).all();
+  },
+  getLicenseById(id: string) {
+    return db.prepare(`
+      SELECT l.*, 
+             u.name as user_name, u.email as user_email,
+             p.name as product_name, p.platform as product_platform, p.type as product_type,
+             o.payment_status, o.amount as order_amount, o.currency as order_currency, o.transaction_id
+      FROM licenses l
+      LEFT JOIN users u ON l.user_id = u.id
+      LEFT JOIN products p ON l.product_id = p.id
+      LEFT JOIN orders o ON l.order_id = o.id
+      WHERE l.id = ?
+    `).get(id);
+  },
+  updateLicense(id: string, updates: { starts_at?: string; expires_at?: string; status?: string; delivery_status?: string; delivery_notes?: string }) {
+    const current = db.prepare('SELECT * FROM licenses WHERE id = ?').get(id) as any;
+    if (!current) {
+      throw new Error(`License with ID ${id} not found.`);
+    }
+    const startsAt = updates.starts_at !== undefined ? updates.starts_at : (current.starts_at || current.created_at);
+    const expiresAt = updates.expires_at !== undefined ? updates.expires_at : current.expires_at;
+    const status = updates.status !== undefined ? updates.status : current.status;
+    const deliveryStatus = updates.delivery_status !== undefined ? updates.delivery_status : (current.delivery_status || 'pending');
+    const deliveryNotes = updates.delivery_notes !== undefined ? updates.delivery_notes : current.delivery_notes;
+    const now = new Date().toISOString();
+
+    db.prepare(`
+      UPDATE licenses
+      SET starts_at = ?, expires_at = ?, status = ?, delivery_status = ?, delivery_notes = ?, updated_at = ?
+      WHERE id = ?
+    `).run(startsAt, expiresAt, status, deliveryStatus, deliveryNotes, now, id);
+
+    return this.getLicenseById(id);
+  },
+
   // Customer items
   getCustomerEAs(userId: string) {
     return db.prepare(`
-      SELECT p.*, l.license_key, l.status as license_status, l.license_type, d.download_url, d.download_count, o.created_at as purchased_at
+      SELECT p.*, 
+             l.id as license_id,
+             l.license_key, 
+             l.status as license_status, 
+             l.license_type,
+             l.delivery_status,
+             l.delivery_notes,
+             l.starts_at,
+             l.expires_at,
+             NULL as download_url, 
+             0 as download_count, 
+             o.created_at as purchased_at,
+             o.id as order_id,
+             o.amount as order_amount,
+             o.currency as order_currency
       FROM orders o
       JOIN products p ON o.product_id = p.id
-      LEFT JOIN licenses l ON l.product_id = p.id AND l.user_id = ?
-      LEFT JOIN downloads d ON d.product_id = p.id AND d.user_id = ?
+      LEFT JOIN licenses l ON (l.order_id = o.id OR (l.product_id = p.id AND l.user_id = ?))
       WHERE o.user_id = ? AND p.type = 'ea' AND o.payment_status = 'paid'
       GROUP BY p.id
-    `).all(userId, userId, userId);
+      ORDER BY o.created_at DESC
+    `).all(userId, userId);
   },
   getCustomerEbooks(userId: string) {
     return db.prepare(`
@@ -1301,5 +1470,58 @@ export const dbQueries = {
       lastLessonId: row.last_lesson_id,
       updatedAt: row.updated_at
     };
+  },
+
+  // Free eBook email leads methods
+  recordEmailLead(lead: {
+    id: string;
+    email: string;
+    name?: string | null;
+    source?: string;
+    bookId?: string;
+  }) {
+    const cleanEmail = lead.email.trim().toLowerCase();
+    const now = new Date().toISOString();
+    db.prepare(`
+      INSERT INTO email_leads (id, email, name, source, book_id, download_count, created_at, updated_at)
+      VALUES (?, ?, ?, ?, ?, 0, ?, ?)
+      ON CONFLICT(email) DO UPDATE SET
+        name = COALESCE(excluded.name, email_leads.name),
+        source = excluded.source,
+        book_id = excluded.book_id,
+        updated_at = excluded.updated_at
+    `).run(
+      lead.id,
+      cleanEmail,
+      lead.name || null,
+      lead.source || 'free_ebook_download',
+      lead.bookId || 'free_lead_magnet_traders_guide',
+      now,
+      now
+    );
+    return db.prepare('SELECT * FROM email_leads WHERE email = ?').get(cleanEmail);
+  },
+
+  getEmailLead(email: string) {
+    if (!email) return null;
+    const cleanEmail = email.trim().toLowerCase();
+    return db.prepare('SELECT * FROM email_leads WHERE email = ?').get(cleanEmail);
+  },
+
+  incrementEmailLeadDownload(email: string) {
+    if (!email) return;
+    const cleanEmail = email.trim().toLowerCase();
+    const now = new Date().toISOString();
+    db.prepare(`
+      UPDATE email_leads
+      SET download_count = download_count + 1,
+          last_downloaded_at = ?,
+          updated_at = ?
+      WHERE email = ?
+    `).run(now, now, cleanEmail);
+  },
+
+  getAllEmailLeads() {
+    return db.prepare('SELECT * FROM email_leads ORDER BY created_at DESC').all();
   }
 };

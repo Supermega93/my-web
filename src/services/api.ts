@@ -1,4 +1,4 @@
-import { Product, Order, AdminStats, CustomerDashboardData, User, EAProject } from '../types.ts';
+import { Product, Order, AdminStats, CustomerDashboardData, User, EAProject, License } from '../types.ts';
 
 const TOKEN_KEY = 'ea_auth_token';
 
@@ -202,6 +202,37 @@ export const api = {
   async getAdminOrders(): Promise<Order[]> {
     const res = await request<{ orders: Order[] }>('/api/admin/orders');
     return res.orders;
+  },
+
+  async getAdminLicenses(): Promise<License[]> {
+    const res = await request<{ licenses: License[] }>('/api/admin/licenses');
+    return res.licenses;
+  },
+
+  async updateAdminLicense(
+    id: string,
+    updates: {
+      starts_at?: string | null;
+      expires_at?: string | null;
+      status?: string;
+      delivery_status?: string;
+      delivery_notes?: string | null;
+    }
+  ): Promise<{ success: boolean; license: License; supabaseSynced: boolean; supabaseMessage: string }> {
+    return request(`/api/admin/licenses/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(updates),
+    });
+  },
+
+  async syncLicensesToSupabase(): Promise<{ success: boolean; result: any }> {
+    return request('/api/admin/licenses/sync-supabase', {
+      method: 'POST',
+    });
+  },
+
+  async getAdminSupabaseStatus(): Promise<any> {
+    return request('/api/admin/supabase-status');
   },
 
   async getAdminUsers(): Promise<User[]> {

@@ -1,9 +1,10 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { motion } from 'motion/react';
 import { Product, ActiveView } from '../../types.ts';
 import { STOREFRONT_MEDIA } from '../../constants/media.ts';
 import { Button } from '../common/Button.tsx';
 import { useCurrency } from '../../context/CurrencyContext.tsx';
+import { EbookEmailGateModal } from '../ebooks/EbookEmailGateModal.tsx';
 import { 
   BookOpen, 
   ArrowRight, 
@@ -30,6 +31,7 @@ export function EbooksPage({
   onTriggerBuildMyEa,
 }: EbooksPageProps) {
   const { formatPrice, currentCurrency } = useCurrency();
+  const [isFreeEbookModalOpen, setIsFreeEbookModalOpen] = useState(false);
   const ebookProducts = products.filter(p => p.type === 'ebook' && p.active === 1);
 
   return (
@@ -102,8 +104,8 @@ export function EbooksPage({
 
           <div className="flex flex-col sm:flex-row items-center gap-3 shrink-0 relative z-10">
             <button
-              onClick={() => onNavigate('free-ebook')}
-              className="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-gradient-to-r from-emerald-800 via-emerald-700 to-teal-700 hover:from-emerald-700 hover:to-teal-600 text-white font-bold text-sm shadow-md shadow-emerald-900/20 transition-all cursor-pointer"
+              onClick={() => setIsFreeEbookModalOpen(true)}
+              className="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-gradient-to-r from-emerald-800 via-emerald-700 to-teal-700 hover:from-emerald-700 hover:to-teal-600 text-white font-bold text-sm shadow-md shadow-emerald-900/20 hover:shadow-lg transition-all cursor-pointer"
             >
               <Download className="w-4 h-4" />
               <span>Get Free eBook</span>
@@ -227,6 +229,12 @@ export function EbooksPage({
             Build My EA
           </Button>
         </div>
+
+        {/* Free eBook Email Gate Modal */}
+        <EbookEmailGateModal
+          isOpen={isFreeEbookModalOpen}
+          onClose={() => setIsFreeEbookModalOpen(false)}
+        />
       </div>
     </div>
   );

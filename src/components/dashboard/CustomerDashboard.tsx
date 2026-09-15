@@ -20,7 +20,10 @@ import {
   Calendar,
   ExternalLink,
   ShieldCheck,
-  RefreshCw
+  RefreshCw,
+  Lock,
+  Clock,
+  AlertCircle
 } from 'lucide-react';
 
 interface CustomerDashboardProps {
@@ -232,39 +235,88 @@ export function CustomerDashboard({
 
                       {/* License Key Box */}
                       {ea.license_key && (
-                        <div className="bg-slate-950 p-3 rounded-lg border border-slate-800 flex items-center justify-between gap-3">
-                          <div>
-                            <span className="text-[10px] uppercase font-mono text-slate-500 block">
-                              Active Terminal License Key
+                        <div className="bg-slate-950 p-3.5 rounded-lg border border-slate-800 space-y-2.5">
+                          <div className="flex items-center justify-between gap-3">
+                            <div>
+                              <span className="text-[10px] uppercase font-mono text-slate-500 block">
+                                Terminal License Key
+                              </span>
+                              <span className="font-mono text-xs font-bold text-emerald-400">
+                                {ea.license_key}
+                              </span>
+                            </div>
+                            <button
+                              onClick={() => copyLicenseKey(ea.license_key!)}
+                              className="p-1.5 rounded bg-slate-900 border border-slate-800 text-slate-300 hover:text-white transition-colors"
+                              title="Copy License Key"
+                            >
+                              {copiedKey === ea.license_key ? (
+                                <Check className="w-4 h-4 text-emerald-400" />
+                              ) : (
+                                <Copy className="w-4 h-4" />
+                              )}
+                            </button>
+                          </div>
+
+                          {/* License Dates - Read Only for Customers */}
+                          <div className="pt-2 border-t border-slate-800/80 grid grid-cols-2 gap-2 text-[11px] font-mono">
+                            <div className="bg-slate-900/60 px-2 py-1.5 rounded border border-slate-800 flex items-center justify-between">
+                              <span className="text-slate-500">Starts:</span>
+                              <span className="text-slate-200">{ea.starts_at ? new Date(ea.starts_at).toLocaleDateString() : 'Instant (Purchase Date)'}</span>
+                            </div>
+                            <div className="bg-slate-900/60 px-2 py-1.5 rounded border border-slate-800 flex items-center justify-between">
+                              <span className="text-slate-500">Expires:</span>
+                              <span className="text-slate-200">{ea.expires_at ? new Date(ea.expires_at).toLocaleDateString() : 'Lifetime (No Expiry)'}</span>
+                            </div>
+                          </div>
+
+                          <div className="flex items-center justify-between pt-1 text-[10px] text-slate-500 font-mono">
+                            <span className="flex items-center gap-1">
+                              <Lock className="w-3 h-3 text-slate-500" />
+                              Dates managed securely by Administrator
                             </span>
-                            <span className="font-mono text-xs font-bold text-emerald-400">
-                              {ea.license_key}
+                            <span className="text-slate-400">
+                              Status: <strong className="text-emerald-400 uppercase">{ea.license_status || 'active'}</strong>
                             </span>
                           </div>
-                          <button
-                            onClick={() => copyLicenseKey(ea.license_key!)}
-                            className="p-1.5 rounded bg-slate-900 border border-slate-800 text-slate-300 hover:text-white transition-colors"
-                            title="Copy License Key"
-                          >
-                            {copiedKey === ea.license_key ? (
-                              <Check className="w-4 h-4 text-emerald-400" />
-                            ) : (
-                              <Copy className="w-4 h-4" />
-                            )}
-                          </button>
                         </div>
                       )}
+
+                      {/* Delivery Status & Security Governance */}
+                      <div className="bg-slate-950/70 border border-slate-800/80 rounded-lg p-3 space-y-1.5 text-xs">
+                        <div className="flex items-center justify-between">
+                          <span className="text-[11px] text-slate-400 font-medium flex items-center gap-1.5">
+                            <Clock className="w-3.5 h-3.5 text-amber-400" />
+                            EA Delivery Status:
+                          </span>
+                          <span className={`text-[10px] font-mono font-bold px-2 py-0.5 rounded uppercase border ${
+                            ea.delivery_status === 'delivered'
+                              ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30'
+                              : ea.delivery_status === 'processing'
+                              ? 'bg-blue-500/10 text-blue-400 border-blue-500/30'
+                              : 'bg-amber-500/10 text-amber-400 border-amber-500/30'
+                          }`}>
+                            {ea.delivery_status === 'delivered'
+                              ? 'Delivered by Admin'
+                              : ea.delivery_status === 'processing'
+                              ? 'Compiling & Binding'
+                              : 'Pending Admin Delivery'}
+                          </span>
+                        </div>
+
+                        {ea.delivery_notes && (
+                          <div className="text-[11px] text-amber-300/90 font-mono bg-amber-500/10 border border-amber-500/20 p-2 rounded mt-1">
+                            <strong>Admin Note:</strong> {ea.delivery_notes}
+                          </div>
+                        )}
+
+                        <p className="text-[10px] text-slate-500 leading-relaxed pt-1">
+                          Institutional Policy: Expert Advisor binaries (.EX5) are compiled and delivered manually by our engineering team to protect proprietary code. Binaries are never automatically downloadable.
+                        </p>
+                      </div>
                     </div>
 
                     <div className="flex flex-col sm:flex-row md:flex-col gap-2 shrink-0">
-                      <Button
-                        variant="primary"
-                        size="sm"
-                        onClick={() => triggerMockDownload(ea.download_url || `${ea.name.toLowerCase().replace(/\s+/g, '-')}-build.zip`)}
-                        icon={<Download className="w-3.5 h-3.5 text-slate-950" />}
-                      >
-                        Download (.EX5 / ZIP)
-                      </Button>
                       <Button
                         variant="outline"
                         size="sm"

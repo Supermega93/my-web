@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { ActiveView, Lesson } from '../../types.ts';
-import { fetchLessonById, fetchAllLessons } from '../../services/academy.ts';
+import { fetchLessonById, fetchAllLessons, fetchUserProgressFromSupabase, saveUserLessonProgressToSupabase, syncAllProgressToSupabase } from '../../services/academy.ts';
 import { useAuth } from '../../context/AuthContext.tsx';
 import { AcademyNav } from './AcademyNav.tsx';
 import { BabyPipsContentRenderer } from './BabyPipsContentRenderer.tsx';
@@ -86,18 +86,36 @@ export function LessonViewerPage({ lessonId, onNavigate, onOpenCheckout }: Lesso
     return unsubscribe;
   }, [user, isAdmin]);
 
-  // Sync completed lessons reactively
+  // Sync completed lessons reactively and load from Supabase when user is authenticated
   useEffect(() => {
+    let active = true;
+
+    async function loadSupabaseProgress() {
+      if (user?.id) {
+        const supaCompleted = await fetchUserProgressFromSupabase(user.id);
+        if (active && supaCompleted && supaCompleted.length > 0) {
+          const localCompleted = getStoredCompletedLessonIds();
+          const combined = Array.from(new Set([...localCompleted, ...supaCompleted]));
+          setCompletedLessonIds(combined);
+          localStorage.setItem('completed_lesson_ids', JSON.stringify(combined));
+          window.dispatchEvent(new CustomEvent('academy-progress-change', { detail: { completedIds: combined } }));
+        }
+      }
+    }
+
+    loadSupabaseProgress();
+
     const handleProgressChange = () => {
       setCompletedLessonIds(getStoredCompletedLessonIds());
     };
     window.addEventListener('academy-progress-change', handleProgressChange);
     window.addEventListener('storage', handleProgressChange);
     return () => {
+      active = false;
       window.removeEventListener('academy-progress-change', handleProgressChange);
       window.removeEventListener('storage', handleProgressChange);
     };
-  }, []);
+  }, [user?.id]);
 
   // Dynamic fetch of lesson from Supabase
   useEffect(() => {
@@ -201,8 +219,16 @@ export function LessonViewerPage({ lessonId, onNavigate, onOpenCheckout }: Lesso
         localStorage.setItem('completed_lesson_ids', JSON.stringify(updated));
         window.dispatchEvent(new CustomEvent('academy-progress-change', { detail: { completedIds: updated } }));
         syncProgressToServer(updated);
+
+        // Persist directly into Supabase user_progress by user ID
+        if (user?.id) {
+          saveUserLessonProgressToSupabase(user.id, targetId, true);
+        }
       } else {
         setIsCompleted(true);
+        if (user?.id) {
+          saveUserLessonProgressToSupabase(user.id, targetId, true);
+        }
       }
     } catch {
       // ignore
@@ -217,9 +243,15 @@ export function LessonViewerPage({ lessonId, onNavigate, onOpenCheckout }: Lesso
       if (completed.includes(lesson.id)) {
         updated = completed.filter((id) => id !== lesson.id);
         setIsCompleted(false);
+        if (user?.id) {
+          saveUserLessonProgressToSupabase(user.id, lesson.id, false);
+        }
       } else {
         updated = [...completed, lesson.id];
         setIsCompleted(true);
+        if (user?.id) {
+          saveUserLessonProgressToSupabase(user.id, lesson.id, true);
+        }
       }
       setCompletedLessonIds(updated);
       localStorage.setItem('completed_lesson_ids', JSON.stringify(updated));

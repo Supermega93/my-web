@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { useAuth } from '../../context/AuthContext.tsx';
 import { ActiveView } from '../../types.ts';
 import { STOREFRONT_MEDIA } from '../../constants/media.ts';
+import { requestFreeEbookDownload } from '../../services/ebookService.ts';
 import { 
   Shield, 
   Download, 
@@ -30,6 +31,27 @@ export function PortalPage({ onNavigate, onTriggerBuildMyEa }: PortalPageProps) 
   const { user, session, loading, logout, isAdmin } = useAuth();
   const [copiedKey, setCopiedKey] = useState(false);
   const [activeTab, setActiveTab] = useState<'downloads' | 'licenses' | 'projects' | 'session'>('downloads');
+  const [downloadingFreeEbook, setDownloadingFreeEbook] = useState(false);
+
+  const handleDownloadFreeEbook = async () => {
+    if (!user?.email) return;
+    setDownloadingFreeEbook(true);
+    try {
+      const res = await requestFreeEbookDownload(user.email, user.name);
+      if (res.success && res.downloadUrl) {
+        const link = document.createElement('a');
+        link.href = res.downloadUrl;
+        link.setAttribute('download', 'The-Traders-Guide-to-Understanding-Strategy-Automation.pdf');
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+      }
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setDownloadingFreeEbook(false);
+    }
+  };
 
   // Route Protection: If logged out, instantly redirect to /login
   useEffect(() => {
@@ -277,15 +299,18 @@ export function PortalPage({ onNavigate, onTriggerBuildMyEa }: PortalPageProps) 
 
                 <div className="pt-4 mt-4 border-t border-slate-800/80 flex items-center justify-between">
                   <span className="text-[11px] font-mono text-slate-500">DRM-Free PDF</span>
-                  <a
-                    href={STOREFRONT_MEDIA.freeEbook.downloadUrl}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="px-3 py-1.5 rounded-lg bg-emerald-500 text-slate-950 text-xs font-bold flex items-center gap-1.5 hover:bg-emerald-400 transition-colors cursor-pointer"
+                  <button
+                    onClick={handleDownloadFreeEbook}
+                    disabled={downloadingFreeEbook}
+                    className="px-3 py-1.5 rounded-lg bg-emerald-500 text-slate-950 text-xs font-bold flex items-center gap-1.5 hover:bg-emerald-400 transition-colors cursor-pointer disabled:opacity-50"
                   >
-                    <Download className="w-3.5 h-3.5" />
+                    {downloadingFreeEbook ? (
+                      <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                    ) : (
+                      <Download className="w-3.5 h-3.5" />
+                    )}
                     <span>Download PDF</span>
-                  </a>
+                  </button>
                 </div>
               </div>
 

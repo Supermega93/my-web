@@ -4,7 +4,6 @@ import { Product, ActiveView } from '../../types.ts';
 import { STOREFRONT_MEDIA } from '../../constants/media.ts';
 import { Button } from '../common/Button.tsx';
 import { useCurrency } from '../../context/CurrencyContext.tsx';
-import { StudioLaptopMockup } from './StudioLaptopMockup.tsx';
 import { HomeFreeAcademySection } from './HomeFreeAcademySection.tsx';
 import { FuturisticRobotHero } from './FuturisticRobotHero.tsx';
 import { PillIconBadge } from '../common/PillIconBadge.tsx';
@@ -27,7 +26,10 @@ import {
   Shield,
   Clock,
   UserCheck,
-  Zap
+  Zap,
+  Compass,
+  Layers,
+  ExternalLink
 } from 'lucide-react';
 
 interface HomePageProps {
@@ -115,28 +117,27 @@ export function HomePage({
         onTriggerBuildMyEa={onTriggerBuildMyEa}
       />
 
-      {/* 2. INTERACTIVE STUDIO CENTERPIECE & CURRICULUM PREVIEW */}
+      {/* 2. STRATEGY ARCHITECT ACADEMY TRACKS */}
       <section className="relative pt-12 pb-14 md:pt-16 md:pb-16 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-        {/* Laptop 3D Mockup Centerpiece */}
-        <motion.div
-          initial={{ opacity: 0, y: 35 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.7, delay: 0.25 }}
-        >
-          <StudioLaptopMockup 
-            onStartFreeLesson={() => onNavigate('lesson-detail', 'lesson-1-0')}
-            onNavigate={onNavigate}
-          />
-        </motion.div>
+        {/* Header introducing the tracks */}
+        <div className="max-w-3xl mx-auto text-center mb-10 space-y-3">
+          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-50 text-emerald-800 text-xs font-mono font-bold uppercase tracking-wider">
+            <Sparkles className="w-3.5 h-3.5 text-emerald-600" />
+            <span>Structured Strategy Architect Curriculum</span>
+          </div>
+          <h2 className="text-2xl sm:text-3xl lg:text-4xl font-extrabold text-slate-900 tracking-tight">
+            Institutional MQL5 Learning Tracks
+          </h2>
+          <p className="text-sm sm:text-base text-slate-600 max-w-xl mx-auto">
+            From foundational quantitative logic to institutional-grade execution algorithms. 100% free and open access.
+          </p>
+        </div>
 
         {/* 4 Floating Level Cards (Styled with attached Image 3 pill badges) */}
-        <div className="max-w-5xl mx-auto grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mt-8">
+        <div className="max-w-5xl mx-auto grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           {/* Card 1: Level 1: Preschool */}
           <div 
-            onClick={() => {
-              const el = document.getElementById('free-academy');
-              if (el) el.scrollIntoView({ behavior: 'smooth' });
-            }}
+            onClick={() => onNavigate('level-hub', '1')}
             className="p-5 rounded-3xl bg-white hover:bg-slate-50 border border-slate-200/90 shadow-sm hover:shadow-md transition-all duration-300 flex flex-col justify-between text-left group cursor-pointer"
           >
             <div className="space-y-3">
@@ -153,19 +154,15 @@ export function HomePage({
                 Strategy Architect Mindset & AI machine facts.
               </p>
             </div>
-            <div className="flex items-center gap-1.5 pt-4 text-slate-300">
-              <span className="w-1.5 h-1.5 rounded-full bg-slate-400" />
-              <span className="w-1.5 h-1.5 rounded-full bg-slate-300" />
-              <span className="w-1.5 h-1.5 rounded-full bg-slate-300" />
+            <div className="flex items-center justify-between pt-4 border-t border-slate-100 mt-3 text-xs font-semibold text-emerald-700 group-hover:translate-x-0.5 transition-transform">
+              <span>Open Level 1</span>
+              <ArrowRight className="w-3.5 h-3.5" />
             </div>
           </div>
 
           {/* Card 2: Level 2: Kindergarten (FEATURED DEEP FOREST GREEN) */}
           <div 
-            onClick={() => {
-              const el = document.getElementById('free-academy');
-              if (el) el.scrollIntoView({ behavior: 'smooth' });
-            }}
+            onClick={() => onNavigate('level-hub', '2')}
             className="p-5 rounded-3xl bg-gradient-to-br from-emerald-900 via-emerald-800 to-teal-950 border border-emerald-700/60 shadow-xl shadow-emerald-950/20 transition-all duration-300 flex flex-col justify-between text-left group cursor-pointer text-white transform hover:-translate-y-1"
           >
             <div className="space-y-3">
@@ -182,19 +179,15 @@ export function HomePage({
                 Variables 📦, Conditions 🚦, Functions 🍞 & Loops 🔄.
               </p>
             </div>
-            <div className="flex items-center gap-1.5 pt-4 text-emerald-300">
-              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400/80" />
-              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400/80" />
+            <div className="flex items-center justify-between pt-4 border-t border-emerald-700/60 mt-3 text-xs font-semibold text-emerald-300 group-hover:translate-x-0.5 transition-transform">
+              <span>Open Level 2</span>
+              <ArrowRight className="w-3.5 h-3.5" />
             </div>
           </div>
 
           {/* Card 3: Level 3: Elementary */}
           <div 
-            onClick={() => {
-              const el = document.getElementById('free-academy');
-              if (el) el.scrollIntoView({ behavior: 'smooth' });
-            }}
+            onClick={() => onNavigate('level-hub', '3')}
             className="p-5 rounded-3xl bg-white hover:bg-slate-50 border border-slate-200/90 shadow-sm hover:shadow-md transition-all duration-300 flex flex-col justify-between text-left group cursor-pointer"
           >
             <div className="space-y-3">
@@ -211,10 +204,9 @@ export function HomePage({
                 5 Program Types 🚘, Robot Heartbeat 💓 & 4 Lego Blocks 🧱.
               </p>
             </div>
-            <div className="flex items-center gap-1.5 pt-4 text-slate-300">
-              <span className="w-1.5 h-1.5 rounded-full bg-slate-400" />
-              <span className="w-1.5 h-1.5 rounded-full bg-slate-300" />
-              <span className="w-1.5 h-1.5 rounded-full bg-slate-300" />
+            <div className="flex items-center justify-between pt-4 border-t border-slate-100 mt-3 text-xs font-semibold text-emerald-700 group-hover:translate-x-0.5 transition-transform">
+              <span>Open Level 3</span>
+              <ArrowRight className="w-3.5 h-3.5" />
             </div>
           </div>
 
@@ -237,10 +229,9 @@ export function HomePage({
                 Institutional ICT, Prop Firm Safeguards & Live Capstones.
               </p>
             </div>
-            <div className="flex items-center gap-1.5 pt-4 text-slate-300">
-              <span className="w-1.5 h-1.5 rounded-full bg-slate-400" />
-              <span className="w-1.5 h-1.5 rounded-full bg-slate-300" />
-              <span className="w-1.5 h-1.5 rounded-full bg-slate-300" />
+            <div className="flex items-center justify-between pt-4 border-t border-slate-100 mt-3 text-xs font-semibold text-purple-700 group-hover:translate-x-0.5 transition-transform">
+              <span>Explore Pro Tracks</span>
+              <ArrowRight className="w-3.5 h-3.5" />
             </div>
           </div>
         </div>
@@ -363,7 +354,11 @@ export function HomePage({
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 items-center relative z-10">
             {/* Left: Book Mockup Showcase */}
             <div className="lg:col-span-5 flex justify-center">
-              <div className="relative group flex flex-col items-center">
+              <div 
+                onClick={() => onNavigate('free-ebook')}
+                className="relative group flex flex-col items-center cursor-pointer"
+                title="Click to view Free Guide & Checklist"
+              >
                 <div className="relative w-full max-w-[280px] sm:max-w-[320px] flex items-center justify-center py-2">
                   <div className="absolute inset-x-8 bottom-2 h-14 bg-slate-300/60 blur-2xl rounded-full pointer-events-none -z-0" />
                   <img
@@ -406,24 +401,22 @@ export function HomePage({
               </div>
 
               <div className="pt-2 flex flex-col sm:flex-row items-center gap-4">
-                <a
-                  href={STOREFRONT_MEDIA.freeEbook.downloadUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
+                <button
+                  onClick={() => onNavigate('free-ebook')}
                   className="w-full sm:w-auto pl-2 pr-7 py-2.5 rounded-full bg-gradient-to-r from-emerald-800 via-emerald-700 to-teal-700 text-white font-extrabold text-sm shadow-md shadow-emerald-900/20 hover:shadow-lg hover:shadow-emerald-900/30 transition-all flex items-center justify-center gap-3 cursor-pointer group"
                 >
                   <span className="w-8 h-8 rounded-full bg-white text-emerald-700 flex items-center justify-center shadow-xs shrink-0 group-hover:scale-105 transition-transform">
                     <Download className="w-4 h-4" />
                   </span>
                   <span className="tracking-wider uppercase">Download Free eBook</span>
-                </a>
+                </button>
 
                 <Button
                   variant="outline"
                   size="lg"
-                  onClick={() => onNavigate('free-ebook')}
+                  onClick={() => onNavigate('ebooks')}
                 >
-                  Learn More About The Guide
+                  View Book Details
                 </Button>
               </div>
             </div>
@@ -449,9 +442,13 @@ export function HomePage({
           <div className="bg-white border border-slate-200/90 rounded-3xl overflow-hidden shadow-xl">
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-0">
               {/* Product Visual */}
-              <div className="lg:col-span-5 relative bg-slate-50 min-h-[320px] lg:min-h-[440px] flex flex-col items-center justify-center p-8 border-b lg:border-b-0 lg:border-r border-slate-200 group">
+              <div 
+                onClick={() => onNavigate('ea-detail', featuredEa.id)}
+                className="lg:col-span-5 relative bg-slate-50 min-h-[320px] lg:min-h-[440px] flex flex-col items-center justify-center p-8 border-b lg:border-b-0 lg:border-r border-slate-200 group cursor-pointer"
+                title="Click to view full EA details and backtest telemetry"
+              >
                 <div className="relative">
-                  <div className="w-[200px] h-[200px] rounded-2xl overflow-hidden border border-slate-200 shadow-lg bg-white flex items-center justify-center">
+                  <div className="w-[200px] h-[200px] rounded-2xl overflow-hidden border border-slate-200 shadow-lg bg-white flex items-center justify-center group-hover:border-emerald-400 group-hover:shadow-emerald-500/10 transition-all">
                     <img
                       src={STOREFRONT_MEDIA.flagshipEa.imageUrl}
                       alt="Adaptive Liquidity Pro V1.0 MT5 Badge"
@@ -462,8 +459,9 @@ export function HomePage({
                 </div>
 
                 <div className="mt-6 text-center space-y-1">
-                  <div className="text-[11px] font-mono text-emerald-800 uppercase tracking-widest font-bold">
-                    OFFICIAL MT5 RELEASE // V1.0
+                  <div className="text-[11px] font-mono text-emerald-800 uppercase tracking-widest font-bold flex items-center justify-center gap-1.5 group-hover:text-emerald-600 transition-colors">
+                    <span>OFFICIAL MT5 RELEASE // V1.0</span>
+                    <ArrowRight className="w-3 h-3 group-hover:translate-x-0.5 transition-transform" />
                   </div>
                   <div className="text-sm font-mono text-slate-500">
                     Prop-Firm Risk Architecture
@@ -575,7 +573,9 @@ export function HomePage({
           {processSteps.map((step) => (
             <div 
               key={step.num}
-              className="p-6 rounded-3xl bg-white border border-slate-200/90 hover:border-emerald-500/40 shadow-sm hover:shadow-md transition-all flex flex-col justify-between space-y-3 group"
+              onClick={onTriggerBuildMyEa}
+              className="p-6 rounded-3xl bg-white border border-slate-200/90 hover:border-emerald-500/60 shadow-sm hover:shadow-md transition-all flex flex-col justify-between space-y-3 group cursor-pointer"
+              title="Click to request custom EA consultation"
             >
               <div className="flex items-center justify-between">
                 <span className="text-xs font-mono font-bold text-emerald-800 bg-emerald-50 px-2.5 py-1 rounded-full border border-emerald-200">
@@ -584,8 +584,9 @@ export function HomePage({
                 <CheckCircle2 className="w-4 h-4 text-slate-400 group-hover:text-emerald-600 transition-colors" />
               </div>
               <div>
-                <h3 className="text-lg font-bold text-slate-900 group-hover:text-emerald-800 transition-colors">
-                  {step.title}
+                <h3 className="text-lg font-bold text-slate-900 group-hover:text-emerald-800 transition-colors flex items-center justify-between">
+                  <span>{step.title}</span>
+                  <ArrowRight className="w-4 h-4 text-emerald-600 opacity-0 group-hover:opacity-100 group-hover:translate-x-0.5 transition-all" />
                 </h3>
                 <p className="text-xs text-slate-500 mt-1 leading-relaxed">
                   {step.desc}
@@ -976,6 +977,228 @@ export function HomePage({
           <div className="p-6 rounded-3xl bg-white border border-slate-200/90 shadow-xs">
             <div className="text-3xl md:text-4xl font-black text-slate-900 font-mono">24/5</div>
             <div className="text-xs text-slate-500 mt-1 uppercase font-mono">VPS Monitoring</div>
+          </div>
+        </div>
+      </section>
+
+      {/* 9.5 VERIFIED PLATFORM ROUTE DIRECTORY */}
+      <section id="platform-directory" className="py-16 border-t border-slate-200/80 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="rounded-3xl bg-slate-50/80 border border-slate-200/90 p-8 sm:p-10 shadow-xs">
+          <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 pb-8 border-b border-slate-200">
+            <div>
+              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-100/80 border border-emerald-300 text-emerald-900 text-xs font-mono font-bold uppercase tracking-wider mb-2">
+                <Compass className="w-3.5 h-3.5 text-emerald-700" />
+                <span>Verified Direct Routes • Desktop & Mobile Responsive</span>
+              </div>
+              <h2 className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight">
+                Platform Navigation Directory
+              </h2>
+              <p className="text-xs sm:text-sm text-slate-600 mt-1">
+                Every page, curriculum level, and resource is direct-link accessible and persistent across all devices.
+              </p>
+            </div>
+            <div className="flex items-center gap-2 font-mono text-xs text-slate-500 bg-white px-3.5 py-2 rounded-xl border border-slate-200">
+              <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+              <span>All 12 Core Routes Active</span>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 pt-8">
+            {/* Group 1: Free Academy Tracks */}
+            <div className="space-y-3">
+              <div className="text-xs font-mono font-bold text-emerald-800 uppercase tracking-wider flex items-center gap-2">
+                <GraduationCap className="w-4 h-4 text-emerald-700" />
+                <span>Academy Tracks</span>
+              </div>
+              <ul className="space-y-1.5 text-xs font-medium">
+                <li>
+                  <button
+                    onClick={() => onNavigate('level-hub', '1')}
+                    className="w-full text-left p-2.5 rounded-xl bg-white hover:bg-emerald-50 border border-slate-200 hover:border-emerald-300 text-slate-700 hover:text-emerald-900 transition-all flex items-center justify-between group cursor-pointer"
+                  >
+                    <span>Level 1: Preschool (Free)</span>
+                    <ArrowRight className="w-3.5 h-3.5 text-slate-400 group-hover:text-emerald-700 group-hover:translate-x-0.5 transition-all" />
+                  </button>
+                </li>
+                <li>
+                  <button
+                    onClick={() => onNavigate('level-hub', '2')}
+                    className="w-full text-left p-2.5 rounded-xl bg-white hover:bg-emerald-50 border border-slate-200 hover:border-emerald-300 text-slate-700 hover:text-emerald-900 transition-all flex items-center justify-between group cursor-pointer"
+                  >
+                    <span>Level 2: Kindergarten (Free)</span>
+                    <ArrowRight className="w-3.5 h-3.5 text-slate-400 group-hover:text-emerald-700 group-hover:translate-x-0.5 transition-all" />
+                  </button>
+                </li>
+                <li>
+                  <button
+                    onClick={() => onNavigate('level-hub', '3')}
+                    className="w-full text-left p-2.5 rounded-xl bg-white hover:bg-emerald-50 border border-slate-200 hover:border-emerald-300 text-slate-700 hover:text-emerald-900 transition-all flex items-center justify-between group cursor-pointer"
+                  >
+                    <span>Level 3: Elementary (Free)</span>
+                    <ArrowRight className="w-3.5 h-3.5 text-slate-400 group-hover:text-emerald-700 group-hover:translate-x-0.5 transition-all" />
+                  </button>
+                </li>
+                <li>
+                  <button
+                    onClick={() => onNavigate('lesson-detail', 'lesson-3-practical')}
+                    className="w-full text-left p-2.5 rounded-xl bg-emerald-50 hover:bg-emerald-100/80 border border-emerald-200 text-emerald-900 font-semibold transition-all flex items-center justify-between group cursor-pointer"
+                  >
+                    <span>MQL5 Indicator Exercise</span>
+                    <Sparkles className="w-3.5 h-3.5 text-emerald-700" />
+                  </button>
+                </li>
+                <li>
+                  <button
+                    onClick={() => onNavigate('academy')}
+                    className="w-full text-left p-2.5 rounded-xl bg-white hover:bg-emerald-50 border border-slate-200 hover:border-emerald-300 text-slate-700 hover:text-emerald-900 transition-all flex items-center justify-between group cursor-pointer"
+                  >
+                    <span>Full Curriculum (Levels 1–8)</span>
+                    <ArrowRight className="w-3.5 h-3.5 text-slate-400 group-hover:text-emerald-700 group-hover:translate-x-0.5 transition-all" />
+                  </button>
+                </li>
+              </ul>
+            </div>
+
+            {/* Group 2: Systems & Robots */}
+            <div className="space-y-3">
+              <div className="text-xs font-mono font-bold text-slate-700 uppercase tracking-wider flex items-center gap-2">
+                <Cpu className="w-4 h-4 text-cyan-600" />
+                <span>Trading Systems</span>
+              </div>
+              <ul className="space-y-1.5 text-xs font-medium">
+                <li>
+                  <button
+                    onClick={() => onNavigate('ea-detail', featuredEa?.id || 'prod_ea_adaptive_liquidity')}
+                    className="w-full text-left p-2.5 rounded-xl bg-white hover:bg-cyan-50 border border-slate-200 hover:border-cyan-300 text-slate-700 hover:text-cyan-900 transition-all flex items-center justify-between group cursor-pointer"
+                  >
+                    <span>Adaptive Liquidity Pro</span>
+                    <ArrowRight className="w-3.5 h-3.5 text-slate-400 group-hover:text-cyan-700 group-hover:translate-x-0.5 transition-all" />
+                  </button>
+                </li>
+                <li>
+                  <button
+                    onClick={() => onNavigate('eas')}
+                    className="w-full text-left p-2.5 rounded-xl bg-white hover:bg-cyan-50 border border-slate-200 hover:border-cyan-300 text-slate-700 hover:text-cyan-900 transition-all flex items-center justify-between group cursor-pointer"
+                  >
+                    <span>All Trading EAs Catalog</span>
+                    <ArrowRight className="w-3.5 h-3.5 text-slate-400 group-hover:text-cyan-700 group-hover:translate-x-0.5 transition-all" />
+                  </button>
+                </li>
+                <li>
+                  <button
+                    onClick={() => onNavigate('custom-ea')}
+                    className="w-full text-left p-2.5 rounded-xl bg-white hover:bg-cyan-50 border border-slate-200 hover:border-cyan-300 text-slate-700 hover:text-cyan-900 transition-all flex items-center justify-between group cursor-pointer"
+                  >
+                    <span>Custom EA Engineering</span>
+                    <ArrowRight className="w-3.5 h-3.5 text-slate-400 group-hover:text-cyan-700 group-hover:translate-x-0.5 transition-all" />
+                  </button>
+                </li>
+                <li>
+                  <button
+                    onClick={onTriggerBuildMyEa}
+                    className="w-full text-left p-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-semibold transition-all flex items-center justify-between group cursor-pointer"
+                  >
+                    <span>Consultation Request</span>
+                    <ArrowRight className="w-3.5 h-3.5 text-emerald-400 group-hover:translate-x-0.5 transition-all" />
+                  </button>
+                </li>
+              </ul>
+            </div>
+
+            {/* Group 3: Free Resources & Tools */}
+            <div className="space-y-3">
+              <div className="text-xs font-mono font-bold text-teal-800 uppercase tracking-wider flex items-center gap-2">
+                <BookOpen className="w-4 h-4 text-teal-700" />
+                <span>Free Tools & Books</span>
+              </div>
+              <ul className="space-y-1.5 text-xs font-medium">
+                <li>
+                  <button
+                    onClick={() => onNavigate('free-ebook')}
+                    className="w-full text-left p-2.5 rounded-xl bg-white hover:bg-teal-50 border border-slate-200 hover:border-teal-300 text-slate-700 hover:text-teal-900 transition-all flex items-center justify-between group cursor-pointer"
+                  >
+                    <span>Free Strategy Guide</span>
+                    <ArrowRight className="w-3.5 h-3.5 text-slate-400 group-hover:text-teal-700 group-hover:translate-x-0.5 transition-all" />
+                  </button>
+                </li>
+                <li>
+                  <button
+                    onClick={() => onNavigate('ebooks')}
+                    className="w-full text-left p-2.5 rounded-xl bg-white hover:bg-teal-50 border border-slate-200 hover:border-teal-300 text-slate-700 hover:text-teal-900 transition-all flex items-center justify-between group cursor-pointer"
+                  >
+                    <span>Quantitative E-Books</span>
+                    <ArrowRight className="w-3.5 h-3.5 text-slate-400 group-hover:text-teal-700 group-hover:translate-x-0.5 transition-all" />
+                  </button>
+                </li>
+                <li>
+                  <button
+                    onClick={() => onNavigate('prompt-architect')}
+                    className="w-full text-left p-2.5 rounded-xl bg-white hover:bg-teal-50 border border-slate-200 hover:border-teal-300 text-slate-700 hover:text-teal-900 transition-all flex items-center justify-between group cursor-pointer"
+                  >
+                    <span>AI Strategy Builder</span>
+                    <ArrowRight className="w-3.5 h-3.5 text-slate-400 group-hover:text-teal-700 group-hover:translate-x-0.5 transition-all" />
+                  </button>
+                </li>
+                <li>
+                  <button
+                    onClick={() => onNavigate('coaching')}
+                    className="w-full text-left p-2.5 rounded-xl bg-white hover:bg-teal-50 border border-slate-200 hover:border-teal-300 text-slate-700 hover:text-teal-900 transition-all flex items-center justify-between group cursor-pointer"
+                  >
+                    <span>1-on-1 Mentorship</span>
+                    <ArrowRight className="w-3.5 h-3.5 text-slate-400 group-hover:text-teal-700 group-hover:translate-x-0.5 transition-all" />
+                  </button>
+                </li>
+              </ul>
+            </div>
+
+            {/* Group 4: Client Portal & Company */}
+            <div className="space-y-3">
+              <div className="text-xs font-mono font-bold text-slate-700 uppercase tracking-wider flex items-center gap-2">
+                <ShieldCheck className="w-4 h-4 text-slate-700" />
+                <span>Client & Company</span>
+              </div>
+              <ul className="space-y-1.5 text-xs font-medium">
+                <li>
+                  <button
+                    onClick={() => onNavigate('portal')}
+                    className="w-full text-left p-2.5 rounded-xl bg-white hover:bg-slate-100 border border-slate-200 hover:border-slate-300 text-slate-700 hover:text-slate-900 transition-all flex items-center justify-between group cursor-pointer"
+                  >
+                    <span>Downloads Portal</span>
+                    <ArrowRight className="w-3.5 h-3.5 text-slate-400 group-hover:text-slate-700 group-hover:translate-x-0.5 transition-all" />
+                  </button>
+                </li>
+                <li>
+                  <button
+                    onClick={() => onNavigate('login')}
+                    className="w-full text-left p-2.5 rounded-xl bg-white hover:bg-slate-100 border border-slate-200 hover:border-slate-300 text-slate-700 hover:text-slate-900 transition-all flex items-center justify-between group cursor-pointer"
+                  >
+                    <span>Client Login & Sign Up</span>
+                    <ArrowRight className="w-3.5 h-3.5 text-slate-400 group-hover:text-slate-700 group-hover:translate-x-0.5 transition-all" />
+                  </button>
+                </li>
+                <li>
+                  <button
+                    onClick={() => onNavigate('about')}
+                    className="w-full text-left p-2.5 rounded-xl bg-white hover:bg-slate-100 border border-slate-200 hover:border-slate-300 text-slate-700 hover:text-slate-900 transition-all flex items-center justify-between group cursor-pointer"
+                  >
+                    <span>About & Methodology</span>
+                    <ArrowRight className="w-3.5 h-3.5 text-slate-400 group-hover:text-slate-700 group-hover:translate-x-0.5 transition-all" />
+                  </button>
+                </li>
+                <li>
+                  <button
+                    onClick={() => {
+                      const el = document.getElementById('free-academy');
+                      if (el) el.scrollIntoView({ behavior: 'smooth' });
+                    }}
+                    className="w-full text-left p-2.5 rounded-xl bg-white hover:bg-slate-100 border border-slate-200 hover:border-slate-300 text-slate-700 hover:text-slate-900 transition-all flex items-center justify-between group cursor-pointer"
+                  >
+                    <span>Interactive Free Academy</span>
+                    <ArrowRight className="w-3.5 h-3.5 text-slate-400 group-hover:text-slate-700 group-hover:translate-x-0.5 transition-all" />
+                  </button>
+                </li>
+              </ul>
+            </div>
           </div>
         </div>
       </section>
