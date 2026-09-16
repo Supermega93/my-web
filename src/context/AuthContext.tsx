@@ -1,9 +1,10 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import { Session } from '@supabase/supabase-js';
-import { User, UserRole } from '../types.ts';
+import { User, UserRole, UserAccessStatus } from '../types.ts';
 import { supabase } from '../lib/supabase.ts';
 import { api, getStoredToken, setStoredToken } from '../services/api.ts';
 import { fetchUserProgressFromSupabase } from '../services/academy.ts';
+import { setActiveStudentTier, getActiveStudentTier } from '../services/academyAccess.ts';
 
 // Administrator emails recognised by the platform
 export const ADMIN_EMAILS = [
@@ -42,6 +43,9 @@ export interface AuthContextType {
   isDeveloper: boolean;
   isCustomer: boolean;
   isLoggedIn: boolean;
+  userAccessStatus: UserAccessStatus;
+  canAccessMasterclass: boolean;
+  refreshUserAccess: () => Promise<void>;
   login: (email: string, password: string) => Promise<{ success: boolean; error?: string; needsVerification?: boolean; unverifiedEmail?: string }>;
   loginWithGoogle: () => Promise<{ success: boolean; error?: string }>;
   register: (
@@ -106,6 +110,26 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             };
             setUser(activeUser);
 
+            // Store Supabase token for backend API requests
+            if (currentSession.access_token) {
+              setStoredToken(currentSession.access_token);
+            }
+
+            // Verify access status with database / Supabase
+            api.getUserAccessStatus().then((statusRes) => {
+              if (statusRes) {
+                localStorage.setItem('user_access_status', statusRes.access_status);
+                setActiveStudentTier(statusRes.access_status === 'paid' ? 'paid' : (statusRes.access_status === 'complimentary' ? 'complimentary' : 'free'));
+                setUser((prev) => prev ? {
+                  ...prev,
+                  access_status: statusRes.access_status,
+                  can_access_masterclass: statusRes.can_access_masterclass,
+                } : null);
+              }
+            }).catch(() => {
+              // Non-blocking fallback
+            });
+
             // Hydrate progress directly from Supabase user_progress
             fetchUserProgressFromSupabase(activeUser.id).then((progressIds) => {
               if (progressIds && progressIds.length > 0) {
@@ -162,6 +186,26 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           updated_at: newSession.user.updated_at || newSession.user.created_at,
         };
         setUser(activeUser);
+
+        // Store Supabase token for backend API requests
+        if (newSession.access_token) {
+          setStoredToken(newSession.access_token);
+        }
+
+        // Verify access status with database / Supabase
+        api.getUserAccessStatus().then((statusRes) => {
+          if (statusRes) {
+            localStorage.setItem('user_access_status', statusRes.access_status);
+            setActiveStudentTier(statusRes.access_status === 'paid' ? 'paid' : (statusRes.access_status === 'complimentary' ? 'complimentary' : 'free'));
+            setUser((prev) => prev ? {
+              ...prev,
+              access_status: statusRes.access_status,
+              can_access_masterclass: statusRes.can_access_masterclass,
+            } : null);
+          }
+        }).catch(() => {
+          // Non-blocking fallback
+        });
 
         // Hydrate progress directly from Supabase user_progress
         fetchUserProgressFromSupabase(activeUser.id).then((progressIds) => {
@@ -450,6 +494,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       // Clean slate on logout so next login restores their own progress
       localStorage.removeItem('completed_lesson_ids');
       localStorage.removeItem('academy_quiz_scores');
+      localStorage.removeItem('user_access_status');
       window.dispatchEvent(new CustomEvent('academy-progress-change', { detail: { completedIds: [] } }));
     } catch (err) {
       console.warn('Error during signOut:', err);
@@ -457,6 +502,25 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setLoading(false);
     }
   };
+
+  // Explicitly refresh user access status from server/database
+  const refreshUserAccess = useCallback(async () => {
+    if (!user) return;
+    try {
+      const statusRes = await api.getUserAccessStatus();
+      if (statusRes) {
+        localStorage.setItem('user_access_status', statusRes.access_status);
+        setActiveStudentTier(statusRes.access_status === 'paid' ? 'paid' : (statusRes.access_status === 'complimentary' ? 'complimentary' : 'free'));
+        setUser((prev) => prev ? {
+          ...prev,
+          access_status: statusRes.access_status,
+          can_access_masterclass: statusRes.can_access_masterclass,
+        } : null);
+      }
+    } catch {
+      // Non-blocking
+    }
+  }, [user]);
 
   // Quick switch role utility for test and preview development
   const quickLogin = async (role: UserRole) => {
@@ -474,12 +538,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       name,
       email,
       role,
+      access_status: role === 'admin' ? 'paid' : 'free',
+      can_access_masterclass: role === 'admin',
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString(),
     };
 
     setUser(testUser);
     setStoredToken(`token_${role}`);
+    localStorage.setItem('user_access_status', testUser.access_status || 'free');
+    setActiveStudentTier(role === 'admin' ? 'paid' : 'free');
     setLoading(false);
   };
 
@@ -490,6 +558,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const isDeveloper = user?.role === 'developer';
   const isCustomer = !isAdmin && !isDeveloper && !!user;
   const isLoggedIn = !!user;
+
+  const userAccessStatus: UserAccessStatus = isAdmin ? 'paid' : (user?.access_status || 'free');
+  const canAccessMasterclass = isAdmin || userAccessStatus === 'paid' || userAccessStatus === 'complimentary' || Boolean(user?.can_access_masterclass);
 
   return (
     <AuthContext.Provider
@@ -502,6 +573,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         isDeveloper,
         isCustomer,
         isLoggedIn,
+        userAccessStatus,
+        canAccessMasterclass,
+        refreshUserAccess,
         login,
         loginWithGoogle,
         register,

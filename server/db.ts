@@ -208,6 +208,23 @@ export function initDatabase() {
     CREATE INDEX IF NOT EXISTS idx_projects_user ON ea_projects(user_id);
     CREATE INDEX IF NOT EXISTS idx_submissions_sub_id ON strategy_submissions(submission_id);
     CREATE INDEX IF NOT EXISTS idx_submissions_email ON strategy_submissions(email);
+
+    CREATE TABLE IF NOT EXISTS complimentary_access (
+      id TEXT PRIMARY KEY,
+      user_id TEXT NOT NULL,
+      user_email TEXT NOT NULL,
+      access_type TEXT NOT NULL DEFAULT 'masterclass',
+      status TEXT NOT NULL DEFAULT 'active',
+      granted_at TEXT NOT NULL,
+      granted_by TEXT NOT NULL,
+      revoked_at TEXT,
+      revoked_by TEXT,
+      notes TEXT
+    );
+
+    CREATE INDEX IF NOT EXISTS idx_comp_access_uid ON complimentary_access(user_id);
+    CREATE INDEX IF NOT EXISTS idx_comp_access_email ON complimentary_access(user_email);
+    CREATE INDEX IF NOT EXISTS idx_comp_access_status ON complimentary_access(status);
   `);
 
   // Auto-migrate any existing databases to have all columns on ea_projects
@@ -812,6 +829,134 @@ export const dbQueries = {
   },
   getAllUsers() {
     return db.prepare('SELECT id, name, email, phone, role, created_at, updated_at FROM users ORDER BY created_at DESC').all();
+  },
+  ensureUser(user: { id: string; name: string; email: string; phone?: string | null; role?: string }) {
+    const existing = db.prepare('SELECT id, role, name, phone FROM users WHERE id = ? OR email = ?').get(user.id, user.email) as any;
+    const now = new Date().toISOString();
+    if (existing) {
+      db.prepare(`
+        UPDATE users 
+        SET name = COALESCE(?, name), 
+            phone = COALESCE(?, phone), 
+            role = COALESCE(?, role), 
+            updated_at = ?
+        WHERE id = ?
+      `).run(user.name || null, user.phone || null, user.role || null, now, existing.id);
+      return existing.id;
+    } else {
+      db.prepare(`
+        INSERT INTO users (id, name, email, phone, role, password_hash, created_at, updated_at)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+      `).run(
+        user.id,
+        user.name || user.email.split('@')[0],
+        user.email,
+        user.phone || null,
+        user.role || 'customer',
+        'SUPABASE_AUTHENTICATED',
+        now,
+        now
+      );
+      return user.id;
+    }
+  },
+
+  // Complimentary Access Queries
+  getComplimentaryAccess(userIdOrEmail: string) {
+    return db.prepare(`
+      SELECT * FROM complimentary_access 
+      WHERE (user_id = ? OR user_email = ?) AND status = 'active'
+      ORDER BY granted_at DESC
+      LIMIT 1
+    `).get(userIdOrEmail, userIdOrEmail) as any;
+  },
+  getAllComplimentaryAccess() {
+    return db.prepare('SELECT * FROM complimentary_access ORDER BY granted_at DESC').all();
+  },
+  grantComplimentaryAccess(userId: string, email: string, grantedBy: string, notes?: string) {
+    const now = new Date().toISOString();
+    const id = `comp_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
+    // Check if record exists
+    const existing = db.prepare('SELECT id FROM complimentary_access WHERE user_id = ? OR user_email = ?').get(userId, email) as any;
+    if (existing) {
+      db.prepare(`
+        UPDATE complimentary_access 
+        SET status = 'active', 
+            granted_at = ?, 
+            granted_by = ?, 
+            revoked_at = NULL, 
+            revoked_by = NULL,
+            notes = COALESCE(?, notes)
+        WHERE id = ?
+      `).run(now, grantedBy, notes || null, existing.id);
+      return existing.id;
+    } else {
+      db.prepare(`
+        INSERT INTO complimentary_access (id, user_id, user_email, access_type, status, granted_at, granted_by, notes)
+        VALUES (?, ?, ?, 'masterclass', 'active', ?, ?, ?)
+      `).run(id, userId, email, now, grantedBy, notes || 'Complimentary Masterclass access granted by administrator');
+      return id;
+    }
+  },
+  revokeComplimentaryAccess(userId: string, revokedBy: string) {
+    const now = new Date().toISOString();
+    return db.prepare(`
+      UPDATE complimentary_access 
+      SET status = 'revoked', 
+          revoked_at = ?, 
+          revoked_by = ? 
+      WHERE (user_id = ? OR user_email = ?) AND status = 'active'
+    `).run(now, revokedBy, userId, userId);
+  },
+  getUserAccessStatus(userId: string, email?: string) {
+    // 1. Check paid orders
+    const paidOrder = db.prepare(`
+      SELECT id, product_id, created_at FROM orders 
+      WHERE user_id = ? AND payment_status = 'paid'
+      ORDER BY created_at DESC LIMIT 1
+    `).get(userId) as any;
+
+    if (paidOrder) {
+      return {
+        access_status: 'paid' as const,
+        can_access_masterclass: true,
+        order_id: paidOrder.id,
+        paid_at: paidOrder.created_at
+      };
+    }
+
+    // 2. Check complimentary access
+    const comp = this.getComplimentaryAccess(email || userId);
+    if (comp) {
+      return {
+        access_status: 'complimentary' as const,
+        can_access_masterclass: true,
+        complimentary_id: comp.id,
+        granted_at: comp.granted_at,
+        granted_by: comp.granted_by,
+        notes: comp.notes
+      };
+    }
+
+    // 3. Otherwise Free Academy only
+    return {
+      access_status: 'free' as const,
+      can_access_masterclass: false
+    };
+  },
+  getAllUsersWithAccessStatus() {
+    const users = db.prepare('SELECT id, name, email, phone, role, created_at, updated_at FROM users ORDER BY created_at DESC').all() as any[];
+    return users.map((u) => {
+      const accessInfo = this.getUserAccessStatus(u.id, u.email);
+      const paidOrders = db.prepare('SELECT COUNT(*) as count FROM orders WHERE user_id = ? AND payment_status = "paid"').get(u.id) as any;
+      return {
+        ...u,
+        access_status: accessInfo.access_status, // 'free' | 'paid' | 'complimentary'
+        can_access_masterclass: accessInfo.can_access_masterclass,
+        complimentary_details: accessInfo.access_status === 'complimentary' ? accessInfo : null,
+        paid_orders_count: paidOrders?.count || 0,
+      };
+    });
   },
 
   // Sessions (Auth persistence across server restarts)

@@ -14,7 +14,9 @@ import {
   syncAcademyProgressToSupabase,
   checkSupabaseOrdersLicensesHealth,
   batchSyncLicensesToSupabase,
-  SUPABASE_ORDERS_LICENSES_SCHEMA_SQL
+  SUPABASE_ORDERS_LICENSES_SCHEMA_SQL,
+  SUPABASE_COMPLIMENTARY_ACCESS_SCHEMA_SQL,
+  syncComplimentaryAccessToSupabase
 } from './server/supabaseSync.ts';
 import { interpretStrategyWithGemini } from './server/strategyAiService.ts';
 import {
@@ -163,13 +165,27 @@ activeSessions.set('token_cust', {
   name: 'Valued Trader'
 });
 
-// Authentication middleware
-function requireAuth(req: Request, res: Response, next: NextFunction) {
+const ADMIN_EMAILS = [
+  (process.env.ADMIN_EMAIL || '').toLowerCase().trim(),
+  'supermegafx1@gmail.com',
+  'admin@ea-automation.com',
+  'admin@ea-automation-hub.com'
+].filter(Boolean);
+
+function isServerAdminEmail(email?: string | null): boolean {
+  if (!email) return false;
+  return ADMIN_EMAILS.includes(email.toLowerCase().trim());
+}
+
+// Authentication middleware supporting Supabase Auth JWTs & sessions
+async function requireAuth(req: Request, res: Response, next: NextFunction) {
   const authHeader = req.headers.authorization;
-  const token = authHeader?.replace('Bearer ', '');
+  const token = authHeader?.replace('Bearer ', '').trim();
   if (!token) {
     return res.status(401).json({ error: 'Unauthorized. Please log in.' });
   }
+
+  // 1. Check local session storage
   let session = activeSessions.get(token);
   if (!session) {
     const persisted = dbQueries.getSession(token);
@@ -178,11 +194,51 @@ function requireAuth(req: Request, res: Response, next: NextFunction) {
       activeSessions.set(token, session);
     }
   }
-  if (!session) {
-    return res.status(401).json({ error: 'Unauthorized. Please log in.' });
+
+  if (session) {
+    (req as any).user = session;
+    return next();
   }
-  (req as any).user = session;
-  next();
+
+  // 2. Validate Supabase JWT token with Supabase Auth
+  try {
+    const { data, error } = await supabaseServer.auth.getUser(token);
+    if (!error && data?.user) {
+      const supaUser = data.user;
+      const email = (supaUser.email || '').toLowerCase().trim();
+      const isAdmin = isServerAdminEmail(email) || supaUser.user_metadata?.role === 'admin' || supaUser.app_metadata?.role === 'admin';
+      const determinedRole = isAdmin ? 'admin' : (supaUser.user_metadata?.role === 'developer' ? 'developer' : 'customer');
+
+      const userProfile = {
+        userId: supaUser.id,
+        role: determinedRole,
+        email: email,
+        name: supaUser.user_metadata?.name || email.split('@')[0] || 'Trader',
+        phone: supaUser.phone || supaUser.user_metadata?.phone || null,
+        isSupabaseUser: true
+      };
+
+      // Keep user synchronized in database
+      try {
+        dbQueries.ensureUser({
+          id: supaUser.id,
+          name: userProfile.name,
+          email,
+          phone: userProfile.phone,
+          role: determinedRole
+        });
+      } catch (e) {
+        // Non-blocking sync
+      }
+
+      (req as any).user = userProfile;
+      return next();
+    }
+  } catch (supaErr) {
+    console.warn('[Server Auth] Supabase auth check error:', supaErr);
+  }
+
+  return res.status(401).json({ error: 'Unauthorized. Session is invalid or expired. Please log in.' });
 }
 
 function requireRole(allowedRoles: string[]) {
@@ -689,18 +745,172 @@ app.get('/api/admin/supabase-status', requireAuth, requireRole(['admin']), async
     const health = await checkSupabaseOrdersLicensesHealth();
     res.json({
       ...health,
-      schemaSql: SUPABASE_ORDERS_LICENSES_SCHEMA_SQL
+      schemaSql: SUPABASE_ORDERS_LICENSES_SCHEMA_SQL,
+      complimentarySchemaSql: SUPABASE_COMPLIMENTARY_ACCESS_SCHEMA_SQL
     });
   } catch (error: any) {
     res.status(500).json({ error: error.message });
   }
 });
 
-// Admin: Users List
+// Admin: Users List with Access Status and Search
 app.get('/api/admin/users', requireAuth, requireRole(['admin']), (req, res) => {
   try {
-    const users = dbQueries.getAllUsers();
+    const search = ((req.query.search as string) || '').toLowerCase().trim();
+    let users = dbQueries.getAllUsersWithAccessStatus();
+    if (search) {
+      users = users.filter((u: any) => 
+        (u.email && u.email.toLowerCase().includes(search)) || 
+        (u.name && u.name.toLowerCase().includes(search)) ||
+        (u.phone && u.phone.toLowerCase().includes(search)) ||
+        (u.access_status && u.access_status.toLowerCase().includes(search))
+      );
+    }
     res.json({ users });
+  } catch (error: any) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Admin: Grant Complimentary Masterclass Access
+app.post('/api/admin/users/:userId/complimentary-access', requireAuth, requireRole(['admin']), async (req, res) => {
+  try {
+    const { userId } = req.params;
+    const { notes } = req.body;
+    const adminUser = (req as any).user;
+
+    const targetUser = dbQueries.getUserById(userId) as any;
+    const targetEmail = targetUser?.email || req.body.email;
+    if (!targetEmail) {
+      return res.status(400).json({ error: 'Target user record not found or email is missing.' });
+    }
+
+    // Verify current status
+    const currentStatus = dbQueries.getUserAccessStatus(userId, targetEmail);
+    if (currentStatus.access_status === 'paid') {
+      return res.status(400).json({ error: 'User already has Paid Masterclass access from a paid order.' });
+    }
+
+    const compId = dbQueries.grantComplimentaryAccess(
+      userId,
+      targetEmail,
+      adminUser.email || 'Admin',
+      notes || 'Complimentary Masterclass access granted by administrator'
+    );
+
+    // Sync to Supabase complimentary_access table
+    let supabaseSynced = false;
+    let supabaseMessage = '';
+    try {
+      const syncResult = await syncComplimentaryAccessToSupabase({
+        id: compId,
+        user_id: userId,
+        user_email: targetEmail,
+        access_type: 'masterclass',
+        status: 'active',
+        granted_at: new Date().toISOString(),
+        granted_by: adminUser.email || 'Admin',
+        notes: notes || null,
+      });
+      supabaseSynced = syncResult.synced;
+      supabaseMessage = syncResult.synced ? 'Synced to Supabase' : (syncResult.error || 'Supabase table pending schema initialization');
+    } catch (e: any) {
+      supabaseMessage = e.message;
+    }
+
+    res.json({
+      success: true,
+      message: `Complimentary Masterclass access successfully granted to ${targetEmail}`,
+      access_status: 'complimentary',
+      complimentary_id: compId,
+      supabaseSynced,
+      supabaseMessage
+    });
+  } catch (error: any) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Admin: Revoke Complimentary Masterclass Access
+app.delete('/api/admin/users/:userId/complimentary-access', requireAuth, requireRole(['admin']), async (req, res) => {
+  try {
+    const { userId } = req.params;
+    const adminUser = (req as any).user;
+    const targetUser = dbQueries.getUserById(userId) as any;
+    const targetEmail = targetUser?.email || req.body?.email;
+
+    dbQueries.revokeComplimentaryAccess(userId, adminUser.email || 'Admin');
+
+    let supabaseSynced = false;
+    if (targetEmail) {
+      try {
+        const syncResult = await syncComplimentaryAccessToSupabase({
+          id: `rev_${Date.now()}`,
+          user_id: userId,
+          user_email: targetEmail,
+          access_type: 'masterclass',
+          status: 'revoked',
+          granted_at: new Date().toISOString(),
+          granted_by: 'Admin',
+          revoked_at: new Date().toISOString(),
+          revoked_by: adminUser.email || 'Admin',
+          notes: 'Revoked by administrator'
+        });
+        supabaseSynced = syncResult.synced;
+      } catch (e) {
+        // Ignored
+      }
+    }
+
+    res.json({
+      success: true,
+      message: `Complimentary Masterclass access revoked for user.`,
+      access_status: 'free',
+      supabaseSynced
+    });
+  } catch (error: any) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// User: Check verified access status from database/Supabase
+app.get('/api/user/access-status', requireAuth, (req, res) => {
+  try {
+    const user = (req as any).user;
+    if (user.role === 'admin') {
+      return res.json({
+        access_status: 'paid',
+        is_admin: true,
+        can_access_masterclass: true,
+        message: 'Administrator privileges enabled'
+      });
+    }
+
+    const access = dbQueries.getUserAccessStatus(user.userId, user.email);
+    res.json({
+      access_status: access.access_status, // 'free' | 'paid' | 'complimentary'
+      can_access_masterclass: access.can_access_masterclass,
+      details: access
+    });
+  } catch (error: any) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// User: Synchronize Supabase user into database
+app.post('/api/users/sync', requireAuth, (req, res) => {
+  try {
+    const user = (req as any).user;
+    const { phone } = req.body;
+    dbQueries.ensureUser({
+      id: user.userId,
+      email: user.email,
+      name: user.name,
+      phone: phone || user.phone || null,
+      role: user.role
+    });
+    const access = dbQueries.getUserAccessStatus(user.userId, user.email);
+    res.json({ success: true, user, access });
   } catch (error: any) {
     res.status(500).json({ error: error.message });
   }

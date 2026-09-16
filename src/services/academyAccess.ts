@@ -1,6 +1,6 @@
-import { User, Lesson } from '../types.ts';
+import { User, Lesson, UserAccessStatus } from '../types.ts';
 
-export type StudentTier = 'free' | 'paid';
+export type StudentTier = 'free' | 'paid' | 'complimentary';
 
 const TIER_STORAGE_KEY = 'academy_student_tier';
 const TIER_CHANGE_EVENT = 'academy-tier-change';
@@ -176,21 +176,35 @@ export function getPracticalExercisePreviewContent(fullContent: string): {
 }
 
 /**
- * Returns the current active student tier ('free' | 'paid').
- * Considers admin role, user metadata, and local storage override.
+ * Returns the current active student tier ('free' | 'paid' | 'complimentary').
+ * Considers admin role, user access status, verified database status, and local storage override.
  */
 export function getActiveStudentTier(user?: User | null, isAdmin?: boolean): StudentTier {
   if (typeof window === 'undefined') return 'free';
-
-  // Explicit user choice in storage takes priority for testing/previewing
-  const storedTier = localStorage.getItem(TIER_STORAGE_KEY);
-  if (storedTier === 'paid') return 'paid';
-  if (storedTier === 'free') return 'free';
 
   // Admin/Developer defaults to paid tier
   if (isAdmin || user?.role === 'admin' || user?.role === 'developer') {
     return 'paid';
   }
+
+  // 1. Check user access status explicitly provided on User object
+  if (user?.access_status === 'complimentary' || (user as any)?.user_metadata?.access_status === 'complimentary') {
+    return 'complimentary';
+  }
+  if (user?.access_status === 'paid' || (user as any)?.user_metadata?.access_status === 'paid') {
+    return 'paid';
+  }
+
+  // 2. Check verified access status cached in localStorage
+  const verifiedStatus = localStorage.getItem('user_access_status');
+  if (verifiedStatus === 'complimentary') return 'complimentary';
+  if (verifiedStatus === 'paid') return 'paid';
+
+  // Explicit user choice in storage (if set for testing/previewing)
+  const storedTier = localStorage.getItem(TIER_STORAGE_KEY) as StudentTier;
+  if (storedTier === 'complimentary') return 'complimentary';
+  if (storedTier === 'paid') return 'paid';
+  if (storedTier === 'free') return 'free';
 
   // Check if user has recorded paid orders
   try {
@@ -211,6 +225,7 @@ export function getActiveStudentTier(user?: User | null, isAdmin?: boolean): Stu
 export function setActiveStudentTier(tier: StudentTier): void {
   if (typeof window === 'undefined') return;
   localStorage.setItem(TIER_STORAGE_KEY, tier);
+  localStorage.setItem('user_access_status', tier);
   window.dispatchEvent(new CustomEvent(TIER_CHANGE_EVENT, { detail: { tier } }));
 }
 
@@ -238,11 +253,11 @@ export function subscribeToTierChanges(callback: (tier: StudentTier) => void): (
  * Determines whether a lesson should be visible in the curriculum list for a given tier.
  * Rule:
  * - Free tier students see lesson-3-bonus (Fundamentals Bonus & Master Exam).
- * - lesson-8-bonus (Advanced Bonus Chapter) is visible ONLY to Paid tier students.
+ * - lesson-8-bonus (Advanced Bonus Chapter) is visible to Paid and Complimentary tier students.
  */
 export function isLessonVisibleForTier(lessonId: string, tier: StudentTier): boolean {
   if (lessonId === 'lesson-8-bonus') {
-    return tier === 'paid';
+    return tier === 'paid' || tier === 'complimentary';
   }
   // All other lessons (including lesson-3-bonus) are visible in the curriculum
   return true;
@@ -252,7 +267,7 @@ export function isLessonVisibleForTier(lessonId: string, tier: StudentTier): boo
  * Determines whether the content of a lesson is unlocked for reading.
  * - Free tier students unlock Levels 1–3 and lesson-3-bonus.
  * - Lesson 3.5 (the final practical exercise) is locked until all 14 prerequisite lessons in Levels 1–3 are completed.
- * - Paid tier students unlock all levels (1–8) and lesson-8-bonus.
+ * - Paid and Complimentary students unlock all levels (1–8) and lesson-8-bonus.
  */
 export function isLessonUnlockedForTier(
   lesson: Lesson | null,
@@ -262,7 +277,7 @@ export function isLessonUnlockedForTier(
 ): boolean {
   if (!lesson) return false;
   if (isAdmin) return true;
-  if (tier === 'paid') return true;
+  if (tier === 'paid' || tier === 'complimentary') return true;
 
   // The final practical exercise of the Free Tier requires completing all 14 foundation lessons across Levels 1–3
   if (lesson.id === PRACTICAL_EXERCISE_LESSON_ID) {
@@ -274,14 +289,16 @@ export function isLessonUnlockedForTier(
 }
 
 /**
- * Checks if the user is a paid MEGA Ecosystem member (has purchased products,
- * has paid student tier, is an administrator, or holds an active ecosystem membership).
+ * Checks if the user is a paid or complimentary MEGA Ecosystem member (has purchased products,
+ * has paid/complimentary student tier, is an administrator, or holds an active ecosystem membership).
  */
 export function isEcosystemMember(user?: User | null, isAdmin?: boolean): boolean {
   if (typeof window === 'undefined') return false;
   if (isAdmin || user?.role === 'admin' || user?.role === 'developer') return true;
+  if (user?.access_status === 'paid' || user?.access_status === 'complimentary') return true;
+  if (localStorage.getItem('user_access_status') === 'complimentary' || localStorage.getItem('user_access_status') === 'paid') return true;
   if (localStorage.getItem('mega_ecosystem_member') === 'true') return true;
-  if (localStorage.getItem(TIER_STORAGE_KEY) === 'paid') return true;
+  if (localStorage.getItem(TIER_STORAGE_KEY) === 'paid' || localStorage.getItem(TIER_STORAGE_KEY) === 'complimentary') return true;
 
   try {
     const orders = JSON.parse(localStorage.getItem('user_orders') || '[]');

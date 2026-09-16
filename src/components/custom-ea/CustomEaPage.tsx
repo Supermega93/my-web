@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { motion } from 'motion/react';
 import { Button } from '../common/Button.tsx';
 import { CustomEaRequestModal } from './CustomEaRequestModal.tsx';
+import { useCurrency } from '../../context/CurrencyContext.tsx';
 import { 
   Sparkles, 
   ArrowRight, 
@@ -28,6 +29,7 @@ export function CustomEaPage({
   onTriggerBuildMyEa,
   onExploreEas,
 }: CustomEaPageProps) {
+  const { formatPrice } = useCurrency();
   const [modalOpen, setModalOpen] = useState(false);
   const [selectedPackage, setSelectedPackage] = useState<string>('Standard');
 
@@ -140,8 +142,8 @@ export function CustomEaPage({
 
                 <div>
                   <div className="flex items-baseline gap-2">
-                    <span className="text-3xl font-black text-slate-900 font-mono">From $149</span>
-                    <span className="text-sm text-slate-400 line-through font-mono">$299</span>
+                    <span className="text-3xl font-black text-slate-900 font-mono">From {formatPrice(149)}</span>
+                    <span className="text-sm text-slate-400 line-through font-mono">{formatPrice(299)}</span>
                     <span className="text-[10px] font-bold font-mono px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-800 border border-emerald-200">50% OFF</span>
                   </div>
                   <div className="text-[11px] text-slate-500 font-mono mt-1 flex items-center gap-1.5">
@@ -205,8 +207,8 @@ export function CustomEaPage({
 
                 <div>
                   <div className="flex items-baseline gap-2">
-                    <span className="text-3xl font-black text-white font-mono">From $299</span>
-                    <span className="text-sm text-emerald-300/70 line-through font-mono">$599</span>
+                    <span className="text-3xl font-black text-white font-mono">From {formatPrice(299)}</span>
+                    <span className="text-sm text-emerald-300/70 line-through font-mono">{formatPrice(599)}</span>
                     <span className="text-[10px] font-bold font-mono px-2 py-0.5 rounded-full bg-emerald-300 text-slate-950">50% OFF</span>
                   </div>
                   <div className="text-[11px] text-emerald-200 font-mono mt-1 flex items-center gap-1.5">
@@ -270,8 +272,8 @@ export function CustomEaPage({
 
                 <div>
                   <div className="flex items-baseline gap-2">
-                    <span className="text-3xl font-black text-slate-900 font-mono">From $499</span>
-                    <span className="text-sm text-slate-400 line-through font-mono">$999</span>
+                    <span className="text-3xl font-black text-slate-900 font-mono">From {formatPrice(499)}</span>
+                    <span className="text-sm text-slate-400 line-through font-mono">{formatPrice(999)}</span>
                     <span className="text-[10px] font-bold font-mono px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-800 border border-emerald-200">50% OFF</span>
                   </div>
                   <div className="text-[11px] text-slate-500 font-mono mt-1 flex items-center gap-1.5">

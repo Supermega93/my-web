@@ -1,9 +1,28 @@
-import { Product, Order, AdminStats, CustomerDashboardData, User, EAProject, License } from '../types.ts';
+import { Product, Order, AdminStats, CustomerDashboardData, User, EAProject, License, AdminUserRecord, UserAccessStatus } from '../types.ts';
 
 const TOKEN_KEY = 'ea_auth_token';
 
 export function getStoredToken(): string | null {
-  return localStorage.getItem(TOKEN_KEY);
+  const token = localStorage.getItem(TOKEN_KEY);
+  if (token) return token;
+  // Fallback to Supabase auth session token in localStorage
+  try {
+    for (let i = 0; i < localStorage.length; i++) {
+      const key = localStorage.key(i);
+      if (key && key.startsWith('sb-') && key.endsWith('-auth-token')) {
+        const item = localStorage.getItem(key);
+        if (item) {
+          const parsed = JSON.parse(item);
+          if (parsed?.access_token) {
+            return parsed.access_token;
+          }
+        }
+      }
+    }
+  } catch {
+    // Non-blocking fallback
+  }
+  return null;
 }
 
 export function setStoredToken(token: string | null) {
@@ -235,9 +254,47 @@ export const api = {
     return request('/api/admin/supabase-status');
   },
 
-  async getAdminUsers(): Promise<User[]> {
-    const res = await request<{ users: User[] }>('/api/admin/users');
+  async getAdminUsers(search?: string): Promise<AdminUserRecord[]> {
+    const query = search ? `?search=${encodeURIComponent(search)}` : '';
+    const res = await request<{ users: AdminUserRecord[] }>(`/api/admin/users${query}`);
     return res.users;
+  },
+
+  async grantComplimentaryAccess(
+    userId: string,
+    email: string,
+    notes?: string
+  ): Promise<{ success: boolean; message: string; access_status: UserAccessStatus; complimentary_id?: string; supabaseSynced: boolean; supabaseMessage?: string }> {
+    return request(`/api/admin/users/${userId}/complimentary-access`, {
+      method: 'POST',
+      body: JSON.stringify({ email, notes }),
+    });
+  },
+
+  async revokeComplimentaryAccess(
+    userId: string,
+    email?: string
+  ): Promise<{ success: boolean; message: string; access_status: UserAccessStatus; supabaseSynced: boolean }> {
+    return request(`/api/admin/users/${userId}/complimentary-access`, {
+      method: 'DELETE',
+      body: JSON.stringify({ email }),
+    });
+  },
+
+  async getUserAccessStatus(): Promise<{
+    access_status: UserAccessStatus;
+    can_access_masterclass: boolean;
+    is_admin?: boolean;
+    details?: any;
+  }> {
+    return request('/api/user/access-status');
+  },
+
+  async syncUserWithBackend(phone?: string): Promise<{ success: boolean; user: any; access: any }> {
+    return request('/api/users/sync', {
+      method: 'POST',
+      body: JSON.stringify({ phone }),
+    });
   },
 
   // Phase 2 early interest

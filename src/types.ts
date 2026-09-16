@@ -1,4 +1,5 @@
 export type UserRole = 'customer' | 'admin' | 'developer';
+export type UserAccessStatus = 'free' | 'paid' | 'complimentary';
 
 export interface User {
   id: string;
@@ -8,6 +9,20 @@ export interface User {
   role: UserRole;
   created_at: string;
   updated_at: string;
+  access_status?: UserAccessStatus;
+  can_access_masterclass?: boolean;
+}
+
+export interface AdminUserRecord extends User {
+  access_status: UserAccessStatus;
+  can_access_masterclass: boolean;
+  complimentary_details?: {
+    complimentary_id?: string;
+    granted_at?: string;
+    granted_by?: string;
+    notes?: string;
+  } | null;
+  paid_orders_count?: number;
 }
 
 export type ProductType = 'ebook' | 'ea' | 'service';

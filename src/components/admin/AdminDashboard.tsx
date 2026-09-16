@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { AdminStats, Product, Order, User, ProductType, License } from '../../types.ts';
+import { AdminStats, Product, Order, User, ProductType, License, AdminUserRecord } from '../../types.ts';
 import { api, StrategySubmission } from '../../services/api.ts';
 import { useAuth } from '../../context/AuthContext.tsx';
 import { Button } from '../common/Button.tsx';
@@ -7,8 +7,10 @@ import { StatusBadge } from '../common/StatusBadge.tsx';
 import { Modal } from '../common/Modal.tsx';
 import { LicenseManagementTab } from './LicenseManagementTab.tsx';
 import { EditLicenseModal } from './EditLicenseModal.tsx';
+import { UserManagementTab } from './UserManagementTab.tsx';
 import { 
   ShieldAlert, 
+  ShieldCheck,
   DollarSign, 
   Users, 
   ShoppingBag, 
@@ -70,7 +72,7 @@ export function AdminDashboard({ onBackToHome }: AdminDashboardProps) {
   const [licenses, setLicenses] = useState<License[]>([]);
   const [editingLicense, setEditingLicense] = useState<License | null>(null);
   const [isLicenseModalOpen, setIsLicenseModalOpen] = useState(false);
-  const [usersList, setUsersList] = useState<User[]>([]);
+  const [usersList, setUsersList] = useState<AdminUserRecord[]>([]);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<'products' | 'orders' | 'licenses' | 'users' | 'strategy-submissions' | 'supabase-sync'>('products');
   const [submissions, setSubmissions] = useState<StrategySubmission[]>([]);
@@ -472,13 +474,14 @@ export function AdminDashboard({ onBackToHome }: AdminDashboardProps) {
           </button>
           <button
             onClick={() => setActiveTab('users')}
-            className={`px-4 py-2 text-xs font-semibold rounded-t-lg transition-colors border-b-2 ${
+            className={`px-4 py-2 text-xs font-semibold rounded-t-lg transition-colors border-b-2 flex items-center gap-1.5 ${
               activeTab === 'users'
                 ? 'border-purple-400 text-purple-300 bg-slate-900/50'
                 : 'border-transparent text-slate-400 hover:text-slate-200'
             }`}
           >
-            Users ({usersList.length})
+            <ShieldCheck className="w-3.5 h-3.5 text-purple-400" />
+            Users & Access Controls ({usersList.length})
           </button>
           <button
             onClick={() => setActiveTab('strategy-submissions')}
@@ -657,43 +660,12 @@ export function AdminDashboard({ onBackToHome }: AdminDashboardProps) {
           />
         )}
 
-        {/* TAB 3: USERS */}
+        {/* TAB 3: USERS & MASTERCLASS ACCESS CONTROLS */}
         {activeTab === 'users' && (
-          <div className="bg-[#111827] border border-slate-800 rounded-xl overflow-hidden shadow-lg">
-            <div className="px-6 py-4 border-b border-slate-800">
-              <h2 className="text-sm font-bold text-slate-100">Registered Accounts</h2>
-              <p className="text-xs text-slate-400">Database user records and role allocations.</p>
-            </div>
-
-            <div className="overflow-x-auto">
-              <table className="w-full text-left text-xs">
-                <thead className="bg-slate-900/60 text-slate-400 border-b border-slate-800 font-mono uppercase text-[10px]">
-                  <tr>
-                    <th className="px-6 py-3">Name</th>
-                    <th className="px-6 py-3">Email</th>
-                    <th className="px-6 py-3">Phone</th>
-                    <th className="px-6 py-3">Role</th>
-                    <th className="px-6 py-3">Created</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-800/80 text-slate-300">
-                  {usersList.map((u) => (
-                    <tr key={u.id} className="hover:bg-slate-900/40 transition-colors">
-                      <td className="px-6 py-4 font-medium text-slate-200">{u.name}</td>
-                      <td className="px-6 py-4 font-mono text-slate-400">{u.email}</td>
-                      <td className="px-6 py-4 font-mono text-slate-400">{u.phone || '—'}</td>
-                      <td className="px-6 py-4">
-                        <StatusBadge status={u.role} type="role" size="sm" />
-                      </td>
-                      <td className="px-6 py-4 font-mono text-slate-500">
-                        {new Date(u.created_at).toLocaleDateString()}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </div>
+          <UserManagementTab
+            users={usersList}
+            onRefresh={loadAdminData}
+          />
         )}
 
         {/* TAB 4: STRATEGY & EA SUBMISSIONS */}

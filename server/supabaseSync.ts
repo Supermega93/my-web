@@ -343,3 +343,78 @@ export async function syncAcademyProgressToSupabase(progress: {
   }
 }
 
+export const SUPABASE_COMPLIMENTARY_ACCESS_SCHEMA_SQL = `-- Run in Supabase SQL Editor (https://supabase.com/dashboard/project/xbrhalmcvpxutxojemoj/sql)
+-- Schema for Complimentary Masterclass Access with RLS
+
+CREATE TABLE IF NOT EXISTS public.complimentary_access (
+  id TEXT PRIMARY KEY,
+  user_id TEXT NOT NULL,
+  user_email TEXT NOT NULL,
+  access_type TEXT NOT NULL DEFAULT 'masterclass',
+  status TEXT NOT NULL DEFAULT 'active',
+  granted_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  granted_by TEXT NOT NULL,
+  revoked_at TIMESTAMPTZ,
+  revoked_by TEXT,
+  notes TEXT
+);
+
+ALTER TABLE public.complimentary_access ENABLE ROW LEVEL SECURITY;
+
+DROP POLICY IF EXISTS "Public select complimentary_access" ON public.complimentary_access;
+CREATE POLICY "Public select complimentary_access" ON public.complimentary_access FOR SELECT USING (true);
+
+DROP POLICY IF EXISTS "Public write complimentary_access" ON public.complimentary_access;
+CREATE POLICY "Public write complimentary_access" ON public.complimentary_access FOR ALL USING (true);
+
+CREATE INDEX IF NOT EXISTS idx_supabase_comp_uid ON public.complimentary_access(user_id);
+CREATE INDEX IF NOT EXISTS idx_supabase_comp_email ON public.complimentary_access(user_email);
+CREATE INDEX IF NOT EXISTS idx_supabase_comp_status ON public.complimentary_access(status);
+`;
+
+/**
+ * Syncs complimentary access state directly to Supabase
+ */
+export async function syncComplimentaryAccessToSupabase(record: {
+  id: string;
+  user_id: string;
+  user_email: string;
+  access_type: string;
+  status: string;
+  granted_at: string;
+  granted_by: string;
+  revoked_at?: string | null;
+  revoked_by?: string | null;
+  notes?: string | null;
+}): Promise<{ synced: boolean; error?: string }> {
+  const supabase = getSupabaseClient();
+  if (!supabase) {
+    return { synced: false, error: 'No Supabase client configured' };
+  }
+
+  try {
+    const { error } = await supabase.from('complimentary_access').upsert({
+      id: record.id,
+      user_id: record.user_id,
+      user_email: record.user_email.toLowerCase().trim(),
+      access_type: record.access_type || 'masterclass',
+      status: record.status || 'active',
+      granted_at: record.granted_at,
+      granted_by: record.granted_by,
+      revoked_at: record.revoked_at || null,
+      revoked_by: record.revoked_by || null,
+      notes: record.notes || null,
+    });
+
+    if (error) {
+      console.warn('[Supabase Complimentary Sync] Notice:', error.message);
+      return { synced: false, error: error.message };
+    }
+    return { synced: true };
+  } catch (err: any) {
+    console.warn('[Supabase Complimentary Sync] Exception:', err.message);
+    return { synced: false, error: err.message };
+  }
+}
+
+
