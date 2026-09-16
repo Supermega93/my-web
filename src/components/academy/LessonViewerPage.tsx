@@ -447,7 +447,7 @@ export function LessonViewerPage({ lessonId, onNavigate, onOpenCheckout }: Lesso
           </h1>
 
           {lesson.summary && (
-            <p className="text-base text-slate-300 leading-relaxed font-light border-l-2 border-emerald-500/40 pl-4 py-1">
+            <p className="text-base text-slate-300 leading-relaxed font-normal border-l-2 border-emerald-500/40 pl-4 py-1">
               {lesson.summary}
             </p>
           )}
@@ -491,7 +491,7 @@ export function LessonViewerPage({ lessonId, onNavigate, onOpenCheckout }: Lesso
                       14/14 Completed (100%)
                     </span>
                   </div>
-                  <div className="text-xs text-slate-300 font-light mt-0.5 max-w-2xl">
+                  <div className="text-xs text-slate-300 font-normal mt-0.5 max-w-2xl">
                     You have mastered all foundational lessons across Levels 1 through 3. The full Breakout EA Build Workshop, master prompt recipe, deployment steps, and compilable MQL5 source code are 100% unlocked below!
                   </div>
                 </div>
@@ -510,7 +510,7 @@ export function LessonViewerPage({ lessonId, onNavigate, onOpenCheckout }: Lesso
                       {practicalProgress.completedCount}/{practicalProgress.totalRequired} Foundation Lessons ({practicalProgress.progressPercent}%)
                     </span>
                   </div>
-                  <div className="text-xs text-slate-300 font-light mt-0.5 max-w-2xl">
+                  <div className="text-xs text-slate-300 font-normal mt-0.5 max-w-2xl">
                     Previewing Strategy Definition & Machine Facts below. Complete all 14 foundation lessons across Levels 1–3 to unlock the full 5-Ingredient Master Prompt, MetaEditor Deployment Protocol, and Verified MQL5 Source Code!
                   </div>
                 </div>
@@ -622,7 +622,7 @@ export function LessonViewerPage({ lessonId, onNavigate, onOpenCheckout }: Lesso
               <h2 className="text-2xl sm:text-3xl font-extrabold text-white">
                 {lesson.id === 'lesson-8-bonus' ? "Creator's Workshop Masterclass Required" : 'Masterclass Pro Access Required'}
               </h2>
-              <p className="text-sm text-slate-300 leading-relaxed font-light">
+              <p className="text-sm text-slate-300 leading-relaxed font-normal">
                 {lesson.id === 'lesson-8-bonus' 
                   ? "This Advanced Bonus Chapter covers production MQL5 prompts for 2-tier EMA alignment, weekly squeeze traps, dynamic ADR buffers, on-screen chart HUDs, and automated prop firm daily loss shields. It is exclusively available to Paid Tier students."
                   : 'Levels 4 through 8 contain our proprietary quantitative trading engines, production MQL5 source code architectures, 99.9% tick data Monte Carlo stress tests, and Equinix LD4 low-latency execution setups.'}

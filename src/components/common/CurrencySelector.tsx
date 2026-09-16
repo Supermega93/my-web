@@ -3,7 +3,7 @@ import { useCurrency } from '../../context/CurrencyContext.tsx';
 import { Globe, ChevronDown, Check, Sparkles } from 'lucide-react';
 
 interface CurrencySelectorProps {
-  variant?: 'compact' | 'full' | 'subtle';
+  variant?: 'compact' | 'full' | 'subtle' | 'dark';
   className?: string;
 }
 
@@ -16,22 +16,42 @@ export const CurrencySelector: React.FC<CurrencySelectorProps> = ({
   const dropdownRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
+    const handleClickOutside = (event: MouseEvent | TouchEvent) => {
       if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
         setIsOpen(false);
       }
     };
     document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
+    document.addEventListener('touchstart', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+      document.removeEventListener('touchstart', handleClickOutside);
+    };
   }, []);
 
   return (
     <div className={`relative inline-block text-left ${className}`} ref={dropdownRef}>
+      {/* Mobile-optimized native picker overlay for instant, rock-solid touch UX */}
+      <select
+        value={currentCurrency.code}
+        onChange={(e) => setCurrency(e.target.value)}
+        className="sm:hidden absolute inset-0 w-full h-full opacity-0 z-20 cursor-pointer"
+        aria-label="Select Currency"
+      >
+        {supportedCurrencies.map((c) => (
+          <option key={c.code} value={c.code}>
+            {c.flag} {c.code} ({c.symbol}) - {c.name}
+          </option>
+        ))}
+      </select>
+
       <button
         type="button"
         onClick={() => setIsOpen(!isOpen)}
         className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold tracking-tight transition-all duration-200 cursor-pointer border ${
-          variant === 'subtle'
+          variant === 'dark'
+            ? 'bg-slate-900/90 hover:bg-slate-800 border-slate-700/80 text-slate-200 shadow-xs hover:border-slate-600'
+            : variant === 'subtle'
             ? 'bg-slate-100/80 hover:bg-slate-200/80 border-slate-300/60 text-slate-700'
             : 'bg-white hover:bg-slate-50 border-slate-200 text-slate-800 shadow-xs hover:border-slate-300'
         }`}
@@ -39,12 +59,13 @@ export const CurrencySelector: React.FC<CurrencySelectorProps> = ({
       >
         <span className="text-sm leading-none select-none">{currentCurrency.flag}</span>
         <span className="font-mono font-bold text-xs">{currentCurrency.code}</span>
-        <span className="text-[10px] text-slate-400 font-mono">({currentCurrency.symbol})</span>
+        <span className="text-[10px] text-slate-400 font-mono hidden xs:inline">({currentCurrency.symbol})</span>
         <ChevronDown className={`w-3 h-3 text-slate-400 transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`} />
       </button>
 
+      {/* Custom dropdown for desktop and tablets */}
       {isOpen && (
-        <div className="absolute right-0 mt-2 w-64 rounded-2xl bg-white border border-slate-200 shadow-xl z-50 overflow-hidden animate-in fade-in-50 zoom-in-95 duration-150">
+        <div className="absolute right-0 mt-2 w-64 max-w-[calc(100vw-2rem)] rounded-2xl bg-white border border-slate-200 shadow-xl z-50 overflow-hidden animate-in fade-in-50 zoom-in-95 duration-150">
           <div className="p-3 border-b border-slate-100 bg-slate-50/80">
             <div className="flex items-center justify-between">
               <span className="text-[11px] font-mono uppercase tracking-wider text-slate-500 font-bold flex items-center gap-1">

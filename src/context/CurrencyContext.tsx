@@ -130,14 +130,22 @@ export const CurrencyProvider: React.FC<{ children: ReactNode }> = ({ children }
   };
 
   const formatPrice = (usdAmount?: number, customCurrencyCode?: string): string => {
-    if (usdAmount === undefined || usdAmount === null) return '$0.00';
+    if (usdAmount === undefined || usdAmount === null) {
+      const sym = currentCurrency.symbol;
+      return currentCurrency.symbolPosition === 'after'
+        ? `0 ${sym.trim()}`
+        : `${sym}0.00`;
+    }
     
-    const target = customCurrencyCode 
-      ? (SUPPORTED_CURRENCIES[customCurrencyCode] || currentCurrency) 
+    // If a non-USD currency code is explicitly requested, honor it.
+    // Otherwise, if customCurrencyCode is omitted or is 'USD' (the base product currency),
+    // convert it to currentCurrency so the user's currency selection always takes effect!
+    const target = (customCurrencyCode && customCurrencyCode !== 'USD' && SUPPORTED_CURRENCIES[customCurrencyCode])
+      ? SUPPORTED_CURRENCIES[customCurrencyCode]
       : currentCurrency;
 
     const converted = usdAmount * target.rate;
-    const formattedNumber = converted.toLocaleString(undefined, {
+    const formattedNumber = converted.toLocaleString('en-US', {
       minimumFractionDigits: target.decimals,
       maximumFractionDigits: target.decimals,
     });

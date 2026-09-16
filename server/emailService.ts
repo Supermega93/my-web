@@ -1,5 +1,4 @@
 import { dbQueries } from './db.ts';
-import nodemailer from 'nodemailer';
 
 export interface StrategyEmailPayload {
   submissionId?: string;
@@ -254,12 +253,9 @@ export async function sendStrategySubmissionNotifications(payload: StrategyEmail
 }
 
 /**
- * Universal email dispatcher supporting:
- * 1. Resend API (HTTPS REST)
- * 2. Brevo API (HTTPS REST)
- * 3. SendGrid API (HTTPS REST)
- * 4. SMTP / Gmail App Password (via nodemailer)
- * 5. Database Queue Logging (when no outbound provider is configured)
+ * Direct internal notification logger.
+ * External 3rd party email APIs are disabled in favor of Supabase and Google authentication.
+ * All leads, inquiries, and orders are recorded directly in the database & Supabase.
  */
 export async function dispatchEmail(options: {
   to: string;
@@ -271,186 +267,17 @@ export async function dispatchEmail(options: {
   const emailId = `mail_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
   const now = new Date().toISOString();
 
-  // 1. Resend API (HTTPS REST on port 443)
-  if (process.env.RESEND_API_KEY) {
-    try {
-      const res = await fetch('https://api.resend.com/emails', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${process.env.RESEND_API_KEY}`,
-        },
-        body: JSON.stringify({
-          from: FROM_EMAIL,
-          to: options.to,
-          subject: options.subject,
-          html: options.html,
-        }),
-      });
-
-      if (res.ok) {
-        const json = await res.json();
-        dbQueries.logEmail({
-          id: emailId,
-          recipient: options.to,
-          subject: options.subject,
-          body: options.html,
-          source: options.source,
-          status: 'sent_resend',
-        });
-        console.log(`[Email Sent via Resend] To: ${options.to} (ID: ${json.id || emailId})`);
-        return { success: true, status: 'sent', id: json.id || emailId, sentAt: now };
-      } else {
-        const errText = await res.text();
-        console.error(`[Resend Error ${res.status}]`, errText);
-        dbQueries.logEmail({
-          id: emailId,
-          recipient: options.to,
-          subject: options.subject,
-          body: options.html,
-          source: options.source,
-          status: `failed_resend_${res.status}`,
-        });
-        return { success: false, status: 'failed', error: `Resend error: ${errText}`, id: emailId };
-      }
-    } catch (resendErr: any) {
-      console.error('[Resend Exception]', resendErr);
-      return { success: false, status: 'failed', error: resendErr.message || 'Resend connection failed', id: emailId };
-    }
-  }
-
-  // 2. Brevo API (HTTPS REST on port 443)
-  if (process.env.BREVO_API_KEY) {
-    try {
-      const senderEmail = process.env.BREVO_FROM || process.env.FROM_EMAIL || ADMIN_EMAIL;
-      const res = await fetch('https://api.brevo.com/v3/smtp/email', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'api-key': process.env.BREVO_API_KEY,
-        },
-        body: JSON.stringify({
-          sender: { name: 'MegaFX Automation', email: senderEmail },
-          to: [{ email: options.to }],
-          subject: options.subject,
-          htmlContent: options.html,
-        }),
-      });
-
-      if (res.ok) {
-        const json = await res.json();
-        dbQueries.logEmail({
-          id: emailId,
-          recipient: options.to,
-          subject: options.subject,
-          body: options.html,
-          source: options.source,
-          status: 'sent_brevo',
-        });
-        console.log(`[Email Sent via Brevo] To: ${options.to}`);
-        return { success: true, status: 'sent', id: json.messageId || emailId, sentAt: now };
-      } else {
-        const errText = await res.text();
-        console.error(`[Brevo Error ${res.status}]`, errText);
-        return { success: false, status: 'failed', error: `Brevo error: ${errText}`, id: emailId };
-      }
-    } catch (brevoErr: any) {
-      console.error('[Brevo Exception]', brevoErr);
-      return { success: false, status: 'failed', error: brevoErr.message || 'Brevo connection failed', id: emailId };
-    }
-  }
-
-  // 3. SendGrid API (HTTPS REST on port 443)
-  if (process.env.SENDGRID_API_KEY) {
-    try {
-      const sendgridFrom = process.env.SENDGRID_FROM || process.env.FROM_EMAIL || ADMIN_EMAIL;
-      const res = await fetch('https://api.sendgrid.com/v3/mail/send', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${process.env.SENDGRID_API_KEY}`,
-        },
-        body: JSON.stringify({
-          personalizations: [{ to: [{ email: options.to }] }],
-          from: { email: sendgridFrom, name: 'MegaFX Automation' },
-          subject: options.subject,
-          content: [{ type: 'text/html', value: options.html }],
-        }),
-      });
-
-      if (res.ok || res.status === 202) {
-        dbQueries.logEmail({
-          id: emailId,
-          recipient: options.to,
-          subject: options.subject,
-          body: options.html,
-          source: options.source,
-          status: 'sent_sendgrid',
-        });
-        console.log(`[Email Sent via SendGrid] To: ${options.to}`);
-        return { success: true, status: 'sent', id: emailId, sentAt: now };
-      } else {
-        const errText = await res.text();
-        console.error(`[SendGrid Error ${res.status}]`, errText);
-        return { success: false, status: 'failed', error: `SendGrid error: ${errText}`, id: emailId };
-      }
-    } catch (sgErr: any) {
-      console.error('[SendGrid Exception]', sgErr);
-      return { success: false, status: 'failed', error: sgErr.message || 'SendGrid connection failed', id: emailId };
-    }
-  }
-
-  // 4. Standard SMTP / Gmail App Password (nodemailer)
-  if (process.env.SMTP_HOST || process.env.SMTP_PASS || process.env.GMAIL_APP_PASSWORD) {
-    try {
-      const host = process.env.SMTP_HOST || 'smtp.gmail.com';
-      const port = Number(process.env.SMTP_PORT) || 587;
-      const user = process.env.SMTP_USER || process.env.ADMIN_EMAIL || 'supermegafx1@gmail.com';
-      const pass = process.env.SMTP_PASS || process.env.GMAIL_APP_PASSWORD;
-
-      const transporter = nodemailer.createTransport({
-        host,
-        port,
-        secure: port === 465,
-        auth: { user, pass },
-      });
-
-      const info = await transporter.sendMail({
-        from: `MEGA AI Automation <${user}>`,
-        to: options.to,
-        subject: options.subject,
-        html: options.html,
-      });
-
-      dbQueries.logEmail({
-        id: emailId,
-        recipient: options.to,
-        subject: options.subject,
-        body: options.html,
-        source: options.source,
-        status: 'sent_smtp',
-      });
-      console.log(`[Email Sent via SMTP] To: ${options.to} (${info.messageId})`);
-      return { success: true, status: 'sent', id: info.messageId || emailId, sentAt: now };
-    } catch (smtpErr: any) {
-      console.error('[SMTP Exception]', smtpErr);
-      return { success: false, status: 'failed', error: `SMTP error: ${smtpErr.message}`, id: emailId };
-    }
-  }
-
-  // 5. No external provider configured in environment — Graceful local logging
-  // The system relies on Supabase & internal database for persistent storage.
-  // External email dispatch is completely optional and not required.
+  // Internal audit logging: Persists notification to database
   dbQueries.logEmail({
     id: emailId,
     recipient: options.to,
     subject: options.subject,
     body: options.html,
     source: options.source,
-    status: 'stored_local',
+    status: 'recorded_internal',
   });
 
-  console.log(`[Email Dispatch] Email stored locally for ${options.to} (${options.subject}). External email provider not required.`);
+  console.log(`[Notification Logged] To: ${options.to} (${options.subject}). Saved to database & Supabase.`);
 
   return {
     success: true,

@@ -115,9 +115,9 @@ export function Navbar({
                 <button
                   key={item.label}
                   onClick={() => handleNavClick(item)}
-                  className={`relative px-3.5 py-1.5 rounded-full text-xs xl:text-sm font-semibold tracking-tight transition-all duration-200 flex items-center gap-1.5 cursor-pointer ${
+                  className={`relative px-3.5 py-1.5 rounded-full text-xs xl:text-sm font-bold tracking-tight transition-all duration-200 flex items-center gap-1.5 cursor-pointer ${
                     active
-                      ? 'bg-emerald-50 text-emerald-800 border border-emerald-200/80 shadow-xs'
+                      ? 'bg-emerald-50 text-emerald-800 border border-emerald-200/80 shadow-xs font-extrabold'
                       : 'text-slate-600 hover:text-emerald-900 hover:bg-slate-50'
                   }`}
                 >
@@ -195,11 +195,14 @@ export function Navbar({
           </div>
 
           {/* Mobile Right Controls */}
-          <div className="flex items-center gap-2 lg:hidden">
+          <div className="flex items-center gap-1.5 sm:gap-2 lg:hidden">
+            {/* Quick Currency Access on Mobile */}
+            <CurrencySelector variant="compact" />
+
             <motion.button
               whileTap={{ scale: 0.95 }}
               onClick={() => onNavigate('academy')}
-              className="px-3 py-1.5 rounded-full bg-emerald-700 text-white font-bold text-xs flex items-center gap-1 shadow-sm"
+              className="px-2.5 sm:px-3 py-1.5 rounded-full bg-emerald-700 text-white font-bold text-xs flex items-center gap-1 shadow-sm"
             >
               <span>Get Started</span>
               <ArrowRight className="w-3 h-3" />
@@ -232,9 +235,9 @@ export function Navbar({
                     <button
                       key={item.label}
                       onClick={() => handleNavClick(item)}
-                      className={`text-left px-4 py-3 rounded-2xl text-sm font-semibold transition-all flex items-center justify-between ${
+                      className={`text-left px-4 py-3 rounded-2xl text-sm font-bold transition-all flex items-center justify-between ${
                         active 
-                          ? 'bg-emerald-50 text-emerald-800 border border-emerald-200/80'
+                          ? 'bg-emerald-50 text-emerald-800 border border-emerald-200/80 font-extrabold shadow-xs'
                           : 'text-slate-700 hover:bg-slate-50 hover:text-emerald-800'
                       }`}
                     >

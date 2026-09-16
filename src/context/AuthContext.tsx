@@ -17,6 +17,22 @@ export function checkIsAdminEmail(email?: string | null): boolean {
   return ADMIN_EMAILS.includes(email.toLowerCase().trim());
 }
 
+/**
+ * Checks if a user's email is verified.
+ * Google OAuth accounts are automatically pre-verified by Google.
+ * Email/password accounts require email_confirmed_at / confirmed_at from Supabase.
+ */
+export function isUserVerified(supabaseUser?: any): boolean {
+  if (!supabaseUser) return false;
+  if (
+    supabaseUser.app_metadata?.provider === 'google' ||
+    supabaseUser.identities?.some((id: any) => id.provider === 'google')
+  ) {
+    return true;
+  }
+  return Boolean(supabaseUser.email_confirmed_at || supabaseUser.confirmed_at);
+}
+
 export interface AuthContextType {
   user: User | null;
   session: Session | null;
@@ -26,13 +42,14 @@ export interface AuthContextType {
   isDeveloper: boolean;
   isCustomer: boolean;
   isLoggedIn: boolean;
-  login: (email: string, password: string) => Promise<{ success: boolean; error?: string }>;
+  login: (email: string, password: string) => Promise<{ success: boolean; error?: string; needsVerification?: boolean; unverifiedEmail?: string }>;
   loginWithGoogle: () => Promise<{ success: boolean; error?: string }>;
   register: (
     dataOrEmail: string | { name?: string; email: string; password: string; phone?: string; role?: string },
     password?: string,
     name?: string
-  ) => Promise<{ success: boolean; error?: string; message?: string }>;
+  ) => Promise<{ success: boolean; error?: string; message?: string; needsVerification?: boolean; unverifiedEmail?: string }>;
+  resendVerificationEmail: (email: string) => Promise<{ success: boolean; message?: string; error?: string }>;
   logout: () => Promise<void>;
   quickLogin: (role: UserRole) => Promise<void>;
   clearError: () => void;
@@ -60,9 +77,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
         if (mounted) {
           const currentSession = data?.session;
-          setSession(currentSession || null);
 
           if (currentSession?.user) {
+            // Enforce email verification for standard accounts
+            if (!isUserVerified(currentSession.user)) {
+              console.log('[Auth] Unverified email session detected on load - requiring email confirmation');
+              await supabase.auth.signOut().catch(() => null);
+              setUser(null);
+              setSession(null);
+              return;
+            }
+
+            setSession(currentSession);
             const email = currentSession.user.email || '';
             const isAdminDetected = checkIsAdminEmail(email) || currentSession.user.user_metadata?.role === 'admin';
             const determinedRole: UserRole = isAdminDetected 
@@ -90,29 +116,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
               }
             });
           } else {
-            // Check stored backend token fallback
-            const token = getStoredToken();
-            if (token) {
-              try {
-                const meData = await api.getMe();
-                if (meData?.user && mounted) {
-                  setUser(meData.user);
-                  fetchUserProgressFromSupabase(meData.user.id).then((progressIds) => {
-                    if (progressIds && progressIds.length > 0) {
-                      const local = JSON.parse(localStorage.getItem('completed_lesson_ids') || '[]');
-                      const combined = Array.from(new Set([...local, ...progressIds]));
-                      localStorage.setItem('completed_lesson_ids', JSON.stringify(combined));
-                      window.dispatchEvent(new CustomEvent('academy-progress-change', { detail: { completedIds: combined } }));
-                    }
-                  });
-                }
-              } catch {
-                setStoredToken(null);
-                setUser(null);
-              }
-            } else {
-              setUser(null);
-            }
+            setUser(null);
+            setSession(null);
           }
         }
       } catch (err) {
@@ -127,12 +132,20 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     loadInitialSession();
 
     // Global listener for Supabase authentication state changes
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, newSession) => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, newSession) => {
       if (!mounted) return;
 
-      setSession(newSession || null);
-
       if (newSession?.user) {
+        // Enforce verification: users cannot access the platform without verified address
+        if (!isUserVerified(newSession.user)) {
+          console.log('[Auth] Unconfirmed email state on auth change - blocking access until verified');
+          await supabase.auth.signOut().catch(() => null);
+          setUser(null);
+          setSession(null);
+          return;
+        }
+
+        setSession(newSession);
         const email = newSession.user.email || '';
         const isAdminDetected = checkIsAdminEmail(email) || newSession.user.user_metadata?.role === 'admin';
         const determinedRole: UserRole = isAdminDetected 
@@ -161,6 +174,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         });
       } else {
         setUser(null);
+        setSession(null);
       }
     });
 
@@ -170,29 +184,68 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     };
   }, []);
 
-  // Wire "Log In" to supabase.auth.signInWithPassword() with resilient fallback
-  const login = async (email: string, password: string): Promise<{ success: boolean; error?: string }> => {
+  // Supabase Auth Login with mandatory email verification check
+  const login = async (
+    email: string,
+    password: string
+  ): Promise<{ success: boolean; error?: string; needsVerification?: boolean; unverifiedEmail?: string }> => {
     try {
       setError(null);
       setLoading(true);
 
-      const cleanEmail = email.trim();
-      let loggedInUser: User | null = null;
+      const cleanEmail = email.trim().toLowerCase();
 
-      // 1. Try Supabase Auth
+      // Sign in with Supabase Auth
       const { data, error: signInError } = await supabase.auth.signInWithPassword({
         email: cleanEmail,
         password,
       });
 
-      if (!signInError && data?.user) {
+      if (signInError) {
+        const errMsg = signInError.message || '';
+        const isUnconfirmed =
+          errMsg.toLowerCase().includes('email not confirmed') ||
+          errMsg.toLowerCase().includes('not confirmed') ||
+          errMsg.toLowerCase().includes('unconfirmed');
+
+        if (isUnconfirmed) {
+          const verificationMsg = 'Email verification required. Please click the confirmation link sent by Supabase before accessing your account.';
+          setError(verificationMsg);
+          return {
+            success: false,
+            needsVerification: true,
+            unverifiedEmail: cleanEmail,
+            error: verificationMsg,
+          };
+        }
+
+        setError(errMsg || 'Invalid email or password.');
+        return { success: false, error: errMsg || 'Invalid email or password.' };
+      }
+
+      if (data?.user) {
+        // Double check verification state
+        if (!isUserVerified(data.user)) {
+          await supabase.auth.signOut().catch(() => null);
+          setUser(null);
+          setSession(null);
+          const verificationMsg = 'Email verification required. Please check your inbox and verify your email address before logging in.';
+          setError(verificationMsg);
+          return {
+            success: false,
+            needsVerification: true,
+            unverifiedEmail: cleanEmail,
+            error: verificationMsg,
+          };
+        }
+
         const userEmail = data.user.email || cleanEmail;
         const isAdminDetected = checkIsAdminEmail(userEmail) || data.user.user_metadata?.role === 'admin';
         const determinedRole: UserRole = isAdminDetected 
           ? 'admin' 
           : (data.user.user_metadata?.role === 'developer' ? 'developer' : 'customer');
 
-        loggedInUser = {
+        const loggedInUser: User = {
           id: data.user.id,
           name: data.user.user_metadata?.name || userEmail.split('@')[0] || 'Trader',
           email: userEmail,
@@ -201,24 +254,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           created_at: data.user.created_at,
           updated_at: data.user.updated_at || data.user.created_at,
         };
+
         setUser(loggedInUser);
         setSession(data.session);
-      } else {
-        // 2. Fallback to API login
-        try {
-          const apiRes = await api.login(cleanEmail, password);
-          if (apiRes?.user) {
-            loggedInUser = apiRes.user;
-            setUser(loggedInUser);
-          }
-        } catch {
-          const msg = signInError?.message || 'Invalid login credentials';
-          setError(msg);
-          return { success: false, error: msg };
-        }
-      }
 
-      if (loggedInUser) {
         // Hydrate and sync Supabase user_progress
         const supaIds = await fetchUserProgressFromSupabase(loggedInUser.id);
         const local = JSON.parse(localStorage.getItem('completed_lesson_ids') || '[]');
@@ -238,13 +277,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
-  // Wire "Sign in with Google" to supabase.auth.signInWithOAuth({ provider: 'google' })
+  // Supabase Google OAuth: Google accounts are pre-verified
   const loginWithGoogle = async (): Promise<{ success: boolean; error?: string }> => {
     try {
       setError(null);
       setLoading(true);
       const redirectUrl = typeof window !== 'undefined' ? window.location.origin : '';
-      const { data, error: oauthError } = await supabase.auth.signInWithOAuth({
+      const { data: _data, error: oauthError } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
           redirectTo: redirectUrl,
@@ -270,12 +309,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
-  // Wire "Create Account" to supabase.auth.signUp() with resilient dual registration
+  // Supabase Auth Registration requiring email address verification
   const register = async (
     dataOrEmail: string | { name?: string; email: string; password: string; phone?: string; role?: string },
     passwordParam?: string,
     nameParam?: string
-  ): Promise<{ success: boolean; error?: string; message?: string }> => {
+  ): Promise<{ success: boolean; error?: string; message?: string; needsVerification?: boolean; unverifiedEmail?: string }> => {
     try {
       setError(null);
       setLoading(true);
@@ -296,9 +335,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         name = nameParam || '';
       }
 
-      const cleanEmail = email.trim();
+      const cleanEmail = email.trim().toLowerCase();
+      const redirectUrl = typeof window !== 'undefined' ? window.location.origin : undefined;
 
-      // 1. Supabase Auth signup
+      // Supabase Auth signup with verification redirect
       const { data, error: signUpError } = await supabase.auth.signUp({
         email: cleanEmail,
         password,
@@ -307,24 +347,34 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             name: name.trim() || cleanEmail.split('@')[0],
             phone: phone.trim() || undefined,
           },
+          emailRedirectTo: redirectUrl,
         },
       });
 
-      // 2. Also register backend account to ensure immediate signin access
-      let backendUser: User | null = null;
-      try {
-        const apiRes = await api.register({
-          name: name.trim() || cleanEmail.split('@')[0],
-          email: cleanEmail,
-          password,
-          phone: phone.trim() || undefined,
-          role: checkIsAdminEmail(cleanEmail) ? 'admin' : 'customer'
-        });
-        backendUser = apiRes.user;
-      } catch {
-        // Backend user may already exist or handle duplicate
+      if (signUpError) {
+        const msg = signUpError.message || 'Registration failed';
+        setError(msg);
+        return { success: false, error: msg };
       }
 
+      const isConfirmed = isUserVerified(data?.user);
+
+      // If user requires email confirmation (standard security requirement)
+      if (!isConfirmed) {
+        // Prevent unconfirmed session from holding active login state
+        await supabase.auth.signOut().catch(() => null);
+        setUser(null);
+        setSession(null);
+
+        return {
+          success: true,
+          needsVerification: true,
+          unverifiedEmail: cleanEmail,
+          message: `Verification link sent to ${cleanEmail}! Please check your inbox and confirm your address before logging in.`,
+        };
+      }
+
+      // If already confirmed (e.g. project setting or Google)
       if (data?.session && data.user) {
         const isAdminDetected = checkIsAdminEmail(data.user.email);
         const determinedRole: UserRole = isAdminDetected 
@@ -344,20 +394,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         return { success: true };
       }
 
-      if (backendUser) {
-        setUser(backendUser);
-        return { success: true };
-      }
-
-      if (signUpError) {
-        const msg = signUpError.message || 'Registration failed';
-        setError(msg);
-        return { success: false, error: msg };
-      }
-
       return {
         success: true,
-        message: 'Account created! You can now log in.',
+        needsVerification: true,
+        unverifiedEmail: cleanEmail,
+        message: `Account created. Please check ${cleanEmail} for your verification link before accessing the platform.`,
       };
     } catch (err: any) {
       const msg = err.message || 'Registration failed. Please check your details.';
@@ -365,6 +406,35 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       return { success: false, error: msg };
     } finally {
       setLoading(false);
+    }
+  };
+
+  // Resend Supabase signup confirmation email
+  const resendVerificationEmail = async (targetEmail: string): Promise<{ success: boolean; message?: string; error?: string }> => {
+    try {
+      const clean = targetEmail.trim().toLowerCase();
+      if (!clean) {
+        return { success: false, error: 'Please enter a valid email address.' };
+      }
+      const redirectUrl = typeof window !== 'undefined' ? window.location.origin : undefined;
+      const { error: resendErr } = await supabase.auth.resend({
+        type: 'signup',
+        email: clean,
+        options: {
+          emailRedirectTo: redirectUrl,
+        },
+      });
+
+      if (resendErr) {
+        return { success: false, error: resendErr.message };
+      }
+
+      return {
+        success: true,
+        message: `Verification link successfully resent to ${clean}. Please check your inbox and spam folders!`,
+      };
+    } catch (err: any) {
+      return { success: false, error: err.message || 'Failed to resend confirmation email.' };
     }
   };
 
@@ -435,6 +505,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         login,
         loginWithGoogle,
         register,
+        resendVerificationEmail,
         logout,
         quickLogin,
         clearError,

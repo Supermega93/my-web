@@ -5,6 +5,7 @@ import { BookOpen, Terminal, Sparkles, LogIn, LogOut, CheckCircle2, User as User
 import { Button } from '../common/Button.tsx';
 import { AcademyAuthModal } from './AcademyAuthModal.tsx';
 import { MegAiLogoIcon } from '../common/MegAiLogo.tsx';
+import { CurrencySelector } from '../common/CurrencySelector.tsx';
 
 interface AcademyNavProps {
   onNavigate: (view: ActiveView, extraId?: string) => void;
@@ -53,9 +54,9 @@ export function AcademyNav({ onNavigate, activeTab }: AcademyNavProps) {
         <nav className="hidden md:flex items-center gap-1.5">
           <button
             onClick={() => onNavigate('academy')}
-            className={`flex items-center gap-2 px-3.5 py-1.5 rounded-lg text-xs font-medium transition-all ${
+            className={`flex items-center gap-2 px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all ${
               activeTab === 'curriculum'
-                ? 'text-white bg-slate-800/90 border border-slate-700/80 shadow-sm'
+                ? 'text-white bg-slate-800/90 border border-slate-700/80 shadow-sm font-extrabold'
                 : 'text-slate-300 hover:text-white hover:bg-slate-900/60'
             }`}
           >
@@ -65,9 +66,9 @@ export function AcademyNav({ onNavigate, activeTab }: AcademyNavProps) {
 
           <button
             onClick={() => onNavigate('prompt-architect')}
-            className={`flex items-center gap-2 px-3.5 py-1.5 rounded-lg text-xs font-medium transition-all ${
+            className={`flex items-center gap-2 px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all ${
               activeTab === 'prompt-architect'
-                ? 'text-white bg-slate-800/90 border border-cyan-500/30 shadow-[0_0_15px_rgba(6,182,212,0.15)]'
+                ? 'text-white bg-slate-800/90 border border-cyan-500/30 shadow-[0_0_15px_rgba(6,182,212,0.15)] font-extrabold'
                 : 'text-slate-300 hover:text-cyan-300 hover:bg-slate-900/60'
             }`}
           >
@@ -80,7 +81,7 @@ export function AcademyNav({ onNavigate, activeTab }: AcademyNavProps) {
 
           <button
             onClick={() => onNavigate('free-ebook')}
-            className="flex items-center gap-2 px-3.5 py-1.5 rounded-lg text-xs font-medium text-slate-300 hover:text-white hover:bg-slate-900/60 transition-all"
+            className="flex items-center gap-2 px-3.5 py-1.5 rounded-lg text-xs font-bold text-slate-300 hover:text-white hover:bg-slate-900/60 transition-all"
           >
             <Download className="w-3.5 h-3.5 text-emerald-400" />
             <span>Free Ebook</span>
@@ -88,7 +89,7 @@ export function AcademyNav({ onNavigate, activeTab }: AcademyNavProps) {
 
           <button
             onClick={() => onNavigate('eas')}
-            className="flex items-center gap-1.5 px-3 py-1.5 text-xs text-slate-400 hover:text-slate-200 transition-colors"
+            className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold text-slate-400 hover:text-slate-200 transition-colors"
           >
             <Terminal className="w-3 h-3 text-slate-500" />
             <span>Trading EAs</span>
@@ -96,7 +97,9 @@ export function AcademyNav({ onNavigate, activeTab }: AcademyNavProps) {
         </nav>
 
         {/* Right Auth / Action */}
-        <div className="flex items-center gap-2.5">
+        <div className="flex items-center gap-2 sm:gap-2.5">
+          <CurrencySelector variant="dark" />
+
           {isLoggedIn && user ? (
             <div className="flex items-center gap-2">
               <div 

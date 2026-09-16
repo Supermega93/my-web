@@ -261,7 +261,7 @@ export function LevelHubPage({ levelId, onNavigate }: LevelHubPageProps) {
               </div>
 
               {/* Course Description */}
-              <p className="text-sm sm:text-base text-slate-300 max-w-2xl leading-relaxed font-light">
+              <p className="text-sm sm:text-base text-slate-300 max-w-2xl leading-relaxed font-normal">
                 {levelMeta.description}
               </p>
 
@@ -350,7 +350,7 @@ export function LevelHubPage({ levelId, onNavigate }: LevelHubPageProps) {
                     </div>
                   </div>
 
-                  <p className="text-xs text-slate-400 font-light leading-relaxed">
+                  <p className="text-xs text-slate-400 font-normal leading-relaxed">
                     Wish there was a way to keep track of lessons you've completed? Sign in to unlock this feature and we'll display helpful markers along the way.
                   </p>
 
@@ -391,7 +391,7 @@ export function LevelHubPage({ levelId, onNavigate }: LevelHubPageProps) {
                       </div>
                     </div>
                   ) : (
-                    <div className="text-xs text-slate-400 font-light">
+                    <div className="text-xs text-slate-400 font-normal">
                       Click any checkbox below or within a lesson to update your cloud progress in real time.
                     </div>
                   )}
@@ -580,7 +580,7 @@ export function LevelHubPage({ levelId, onNavigate }: LevelHubPageProps) {
                         </h3>
 
                         {/* 1-Sentence Description Summary */}
-                        <p className="text-xs sm:text-sm text-slate-300 mt-2 line-clamp-2 leading-relaxed font-light">
+                        <p className="text-xs sm:text-sm text-slate-300 mt-2 line-clamp-2 leading-relaxed font-normal">
                           {lesson.summary ||
                             'Deconstruct institutional algorithmic execution rules, mathematical risk controls, and automated market entry parameters.'}
                         </p>
@@ -657,7 +657,7 @@ export function LevelHubPage({ levelId, onNavigate }: LevelHubPageProps) {
                     <h3 className="text-base font-bold text-white">
                       Bonus Chapter Master Class: Creator's Workshop
                     </h3>
-                    <p className="text-xs text-slate-300 leading-relaxed font-light">
+                    <p className="text-xs text-slate-300 leading-relaxed font-normal">
                       Free tier students have full access to the Fundamentals Bonus Chapter & Master Exam in Level 3. The Creator's Workshop Advanced Bonus Chapter is unlocked for Paid Tier students, featuring production prompt architecture for multi-tier EMAs, weekly squeeze traps, dynamic ADR buffers, and prop firm kill shields.
                     </p>
                     <div className="pt-1 flex items-center gap-3">

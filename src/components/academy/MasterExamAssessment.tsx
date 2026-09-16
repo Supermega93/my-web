@@ -134,7 +134,7 @@ export function MasterExamAssessment({
             <h3 className="text-2xl sm:text-3xl font-extrabold text-white tracking-tight">
               {exam.title}
             </h3>
-            <p className="text-sm text-slate-300 leading-relaxed font-light">
+            <p className="text-sm text-slate-300 leading-relaxed font-normal">
               {exam.subtitle}
             </p>
           </div>
@@ -307,7 +307,7 @@ export function MasterExamAssessment({
                   </div>
 
                   {/* Plain English Rationale */}
-                  <div className="mt-3 p-3 rounded-xl bg-slate-900 border border-slate-800 text-xs text-slate-300 leading-relaxed font-light">
+                  <div className="mt-3 p-3 rounded-xl bg-slate-900 border border-slate-800 text-xs text-slate-300 leading-relaxed font-normal">
                     <span className="font-mono font-bold text-emerald-400 mr-1.5">Rationale:</span>
                     {q.explanation}
                   </div>

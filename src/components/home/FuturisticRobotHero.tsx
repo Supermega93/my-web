@@ -63,7 +63,7 @@ export const FuturisticRobotHero: React.FC<FuturisticRobotHeroProps> = ({
           >
             <span className="w-6 sm:w-10 h-[2px] bg-cyan-400 shadow-[0_0_8px_rgba(6,182,212,0.8)]" />
             <span className="text-[11px] sm:text-xs md:text-sm font-mono tracking-[0.25em] sm:tracking-[0.3em] font-semibold text-cyan-400 uppercase">
-              EYEVOLVE. INNOVATE. AUTOMATE.
+              EVOLVE. INNOVATE. AUTOMATE.
             </span>
           </motion.div>
 

@@ -27,7 +27,7 @@ export function BabyPipsContentRenderer({ content }: BabyPipsContentRendererProp
   }
 
   return (
-    <div className="babypips-content max-w-none text-slate-200">
+    <div className="babypips-content max-w-none text-slate-200 font-sans antialiased">
       <ReactMarkdown
         remarkPlugins={[remarkGfm]}
         components={{

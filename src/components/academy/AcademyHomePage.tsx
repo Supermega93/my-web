@@ -277,7 +277,7 @@ export function AcademyHomePage({ onNavigate, onOpenEbookDownload }: AcademyHome
                     {course.technicalTitle}
                   </p>
 
-                  <p className="text-sm text-slate-300 leading-relaxed font-light max-w-xl">
+                  <p className="text-sm text-slate-300 leading-relaxed font-normal max-w-xl">
                     {course.description}
                   </p>
                 </div>
@@ -431,7 +431,7 @@ export function AcademyHomePage({ onNavigate, onOpenEbookDownload }: AcademyHome
                             </div>
                             
                             {lesson.summary && (
-                              <p className="text-xs text-slate-400 line-clamp-1 mt-1 font-light">
+                              <p className="text-xs text-slate-400 line-clamp-1 mt-1 font-normal">
                                 {lesson.summary}
                               </p>
                             )}
