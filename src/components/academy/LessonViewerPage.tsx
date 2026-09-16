@@ -335,30 +335,34 @@ export function LessonViewerPage({ lessonId, onNavigate, onOpenCheckout }: Lesso
 
           <div className="flex items-center gap-2.5 shrink-0">
             {/* Active Student Tier Mode Badge & Quick-Switcher */}
-            <div className="flex items-center gap-1 bg-slate-900 border border-slate-800 rounded-lg p-1 text-[11px] font-mono">
-              <span className="text-slate-500 px-1.5 hidden sm:inline">Student Tier:</span>
-              <button
-                onClick={() => setActiveStudentTier('free')}
-                className={`px-2 py-0.5 rounded transition-all cursor-pointer font-bold ${
-                  studentTier === 'free'
-                    ? 'bg-emerald-500 text-slate-950 shadow-sm'
-                    : 'text-slate-400 hover:text-white'
+            <div className="flex items-center gap-1.5 bg-slate-900 border border-slate-800 rounded-lg px-2.5 py-1 text-[11px] font-mono">
+              <span className="text-slate-500 hidden sm:inline">Tier:</span>
+              <span
+                className={`px-2 py-0.5 rounded font-bold uppercase text-[10px] tracking-wider ${
+                  studentTier === 'paid' || studentTier === 'complimentary'
+                    ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/30'
+                    : 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30'
                 }`}
-                title="View as Free Tier Student (Levels 1–3 + Fundamentals Bonus & Master Exam)"
               >
-                Free Tier
-              </button>
-              <button
-                onClick={() => setActiveStudentTier('paid')}
-                className={`px-2 py-0.5 rounded transition-all cursor-pointer font-bold ${
-                  studentTier === 'paid'
-                    ? 'bg-cyan-500 text-slate-950 shadow-sm'
-                    : 'text-slate-400 hover:text-white'
-                }`}
-                title="View as Paid Tier Student (Levels 1–8 + Creator Workshop Advanced Bonus)"
-              >
-                Paid Tier
-              </button>
+                {studentTier === 'paid' ? 'Paid Tier' : studentTier === 'complimentary' ? 'Complimentary' : 'Free Tier'}
+              </span>
+              {isAdmin && (
+                <div className="flex items-center gap-1 ml-1 border-l border-slate-700 pl-1.5">
+                  <span className="text-[9px] text-amber-400 font-bold">ADMIN:</span>
+                  <button
+                    onClick={() => setActiveStudentTier('free')}
+                    className={`px-1.5 py-0.5 rounded text-[10px] ${studentTier === 'free' ? 'bg-amber-500 text-black font-bold' : 'text-slate-400 hover:text-white'}`}
+                  >
+                    Free
+                  </button>
+                  <button
+                    onClick={() => setActiveStudentTier('paid')}
+                    className={`px-1.5 py-0.5 rounded text-[10px] ${studentTier === 'paid' ? 'bg-cyan-500 text-black font-bold' : 'text-slate-400 hover:text-white'}`}
+                  >
+                    Paid
+                  </button>
+                </div>
+              )}
             </div>
 
             <button
@@ -651,14 +655,21 @@ export function LessonViewerPage({ lessonId, onNavigate, onOpenCheckout }: Lesso
 
             {/* Unlock CTAs */}
             <div className="flex flex-wrap items-center justify-center gap-3 pt-4">
-              <button
-                onClick={() => {
-                  setActiveStudentTier('paid');
-                }}
-                className="px-6 py-3.5 rounded-xl bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-bold text-sm transition-all shadow-[0_0_20px_rgba(6,182,212,0.4)] cursor-pointer"
-              >
-                Switch to Paid Tier Access
-              </button>
+              {!user ? (
+                <button
+                  onClick={() => setAuthModalOpen(true)}
+                  className="px-6 py-3.5 rounded-xl bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-bold text-sm transition-all shadow-[0_0_20px_rgba(6,182,212,0.4)] cursor-pointer"
+                >
+                  Sign In to Access Paid Lessons
+                </button>
+              ) : (
+                <button
+                  onClick={() => onNavigate('custom-ea')}
+                  className="px-6 py-3.5 rounded-xl bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-bold text-sm transition-all shadow-[0_0_20px_rgba(6,182,212,0.4)] cursor-pointer"
+                >
+                  Get Masterclass Pro Access
+                </button>
+              )}
 
               <button
                 onClick={() => onNavigate('custom-ea')}

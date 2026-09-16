@@ -224,6 +224,10 @@ export interface Lesson {
   is_free: boolean;
   duration_minutes?: number;
   summary?: string;
+  accessGranted?: boolean;
+  requiresAuth?: boolean;
+  requiresPurchase?: boolean;
+  accessType?: string;
 }
 
 export interface CustomDevLead {

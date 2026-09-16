@@ -177,13 +177,18 @@ function isServerAdminEmail(email?: string | null): boolean {
   return ADMIN_EMAILS.includes(email.toLowerCase().trim());
 }
 
-// Authentication middleware supporting Supabase Auth JWTs & sessions
-async function requireAuth(req: Request, res: Response, next: NextFunction) {
+// Helper to resolve an authenticated user from session or Supabase JWT token
+async function resolveAuthUser(req: Request): Promise<{
+  userId: string;
+  role: string;
+  email: string;
+  name: string;
+  phone?: string | null;
+  isSupabaseUser?: boolean;
+} | null> {
   const authHeader = req.headers.authorization;
   const token = authHeader?.replace('Bearer ', '').trim();
-  if (!token) {
-    return res.status(401).json({ error: 'Unauthorized. Please log in.' });
-  }
+  if (!token) return null;
 
   // 1. Check local session storage
   let session = activeSessions.get(token);
@@ -196,8 +201,7 @@ async function requireAuth(req: Request, res: Response, next: NextFunction) {
   }
 
   if (session) {
-    (req as any).user = session;
-    return next();
+    return session;
   }
 
   // 2. Validate Supabase JWT token with Supabase Auth
@@ -231,14 +235,23 @@ async function requireAuth(req: Request, res: Response, next: NextFunction) {
         // Non-blocking sync
       }
 
-      (req as any).user = userProfile;
-      return next();
+      return userProfile;
     }
   } catch (supaErr) {
     console.warn('[Server Auth] Supabase auth check error:', supaErr);
   }
 
-  return res.status(401).json({ error: 'Unauthorized. Session is invalid or expired. Please log in.' });
+  return null;
+}
+
+// Authentication middleware supporting Supabase Auth JWTs & sessions
+async function requireAuth(req: Request, res: Response, next: NextFunction) {
+  const user = await resolveAuthUser(req);
+  if (!user) {
+    return res.status(401).json({ error: 'Unauthorized. Session is invalid or expired. Please log in.' });
+  }
+  (req as any).user = user;
+  return next();
 }
 
 function requireRole(allowedRoles: string[]) {
@@ -257,6 +270,148 @@ function requireRole(allowedRoles: string[]) {
 
 app.get('/api/health', (req, res) => {
   res.json({ status: 'ok', time: new Date().toISOString(), platform: 'EA Automation Hub' });
+});
+
+// -------------------------------------------------------------
+// Academy Curriculum & Access-Controlled Lesson Delivery
+// -------------------------------------------------------------
+
+// Public course outline: returns all 34 lessons with metadata (CONTENT IS NEVER DELIVERED HERE)
+app.get('/api/academy/curriculum', (_req, res) => {
+  try {
+    const outline = dbQueries.getAllAcademyLessonsOutline();
+    res.json({
+      lessons: outline,
+      totalCount: outline.length,
+      freeCount: outline.filter((l: any) => Boolean(l.is_free)).length,
+      paidCount: outline.filter((l: any) => !l.is_free).length,
+    });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message || 'Failed to retrieve curriculum outline.' });
+  }
+});
+
+// Access-controlled single lesson endpoint
+app.get('/api/academy/lessons/:id', async (req, res) => {
+  try {
+    const lessonId = req.params.id;
+    const lesson = dbQueries.getAcademyLessonById(lessonId);
+
+    if (!lesson) {
+      return res.status(404).json({ error: 'Lesson not found' });
+    }
+
+    const isFree = Boolean(lesson.is_free);
+
+    // Free lessons (Levels 1 to 3) are open to all visitors exploring the curriculum
+    if (isFree) {
+      return res.json({
+        lesson: {
+          ...lesson,
+          is_free: true,
+        },
+        accessGranted: true,
+        accessType: 'free',
+        message: 'Free Academy Lesson'
+      });
+    }
+
+    // PAID LESSON ACCESS ENFORCEMENT (Levels 4 through 8)
+    const user = await resolveAuthUser(req);
+
+    // Unauthenticated user attempting to view paid lesson:
+    if (!user) {
+      return res.status(403).json({
+        error: 'Access Denied: Paid curriculum lesson. Please sign in with an authorized account.',
+        accessGranted: false,
+        requiresAuth: true,
+        requiresPurchase: true,
+        accessType: 'none',
+        lesson: {
+          id: lesson.id,
+          uuid: lesson.uuid,
+          course_id: lesson.course_id,
+          order_index: lesson.order_index,
+          level_name: lesson.level_name,
+          lesson_number: lesson.lesson_number,
+          title: lesson.title,
+          summary: lesson.summary,
+          duration_minutes: lesson.duration_minutes,
+          is_free: false,
+          content: '' // ZERO BYTES of proprietary lesson content delivered
+        }
+      });
+    }
+
+    // Check Administrator privileges
+    const isAdmin = isServerAdminEmail(user.email) || user.role === 'admin';
+    if (isAdmin) {
+      return res.json({
+        lesson: {
+          ...lesson,
+          is_free: false,
+        },
+        accessGranted: true,
+        accessType: 'admin',
+        message: 'Administrator full access'
+      });
+    }
+
+    // Check student access status in database (orders and complimentary_access tables)
+    const access = dbQueries.getUserAccessStatus(user.userId, user.email);
+
+    if (access.access_status === 'paid') {
+      return res.json({
+        lesson: {
+          ...lesson,
+          is_free: false,
+        },
+        accessGranted: true,
+        accessType: 'paid',
+        orderId: access.order_id,
+        message: 'Masterclass Pro Paid Access'
+      });
+    }
+
+    if (access.access_status === 'complimentary') {
+      return res.json({
+        lesson: {
+          ...lesson,
+          is_free: false,
+        },
+        accessGranted: true,
+        accessType: 'complimentary',
+        complimentaryId: access.complimentary_id,
+        grantedAt: access.granted_at,
+        message: 'Complimentary Masterclass Access'
+      });
+    }
+
+    // User is signed in but only on Free tier: DENY ACCESS & STRIP CONTENT
+    return res.status(403).json({
+      error: 'Access Denied: This lesson requires Masterclass Pro or Complimentary Access.',
+      accessGranted: false,
+      requiresAuth: false,
+      requiresPurchase: true,
+      accessType: 'free',
+      lesson: {
+        id: lesson.id,
+        uuid: lesson.uuid,
+        course_id: lesson.course_id,
+        order_index: lesson.order_index,
+        level_name: lesson.level_name,
+        lesson_number: lesson.lesson_number,
+        title: lesson.title,
+        summary: lesson.summary,
+        duration_minutes: lesson.duration_minutes,
+        is_free: false,
+        content: '' // ZERO BYTES of proprietary lesson content delivered
+      }
+    });
+  } catch (err: any) {
+    console.error('[Academy Lesson API Error]', err);
+    res.status(500).json({ error: err.message || 'Server error loading lesson' });
+  }
 });
 
 // Auth: Register
@@ -1518,51 +1673,93 @@ app.get('/api/admin/email-logs', requireAuth, requireRole(['admin']), (req, res)
 });
 
 // -------------------------------------------------------------
-// Free Academy Student Progress Tracking (Gentle Email Tracking)
+// Academy Student Progress Tracking (Supabase Auth & Database Sync)
 // -------------------------------------------------------------
 
-app.post('/api/academy/progress', (req, res) => {
+app.post('/api/academy/progress', async (req, res) => {
   try {
+    const user = await resolveAuthUser(req);
     const { email, completedLessonIds, quizScores, lastLessonId } = req.body;
-    if (!email || typeof email !== 'string' || !email.includes('@')) {
-      return res.status(400).json({ error: 'A valid email address is required to track progress.' });
+    const targetEmail = user?.email || (typeof email === 'string' && email.includes('@') ? email.toLowerCase().trim() : null);
+    const targetUserId = user?.userId || null;
+    const lessonsList: string[] = Array.isArray(completedLessonIds) ? completedLessonIds : [];
+
+    if (!targetUserId && !targetEmail) {
+      return res.status(400).json({ error: 'Authentication or a valid email address is required to track progress.' });
     }
 
-    const saved = dbQueries.saveAcademyProgress({
-      email,
-      completedLessonIds: Array.isArray(completedLessonIds) ? completedLessonIds : [],
-      quizScores: quizScores || {},
-      lastLessonId: lastLessonId || undefined
+    // 1. Save to user_lesson_progress table in SQLite if user is authenticated
+    if (targetUserId) {
+      for (const lid of lessonsList) {
+        dbQueries.saveUserLessonProgress(targetUserId, lid, true);
+      }
+    }
+
+    // 2. Save to academy_progress table in SQLite if email is available
+    let saved: any = null;
+    if (targetEmail) {
+      saved = dbQueries.saveAcademyProgress({
+        email: targetEmail,
+        completedLessonIds: lessonsList,
+        quizScores: quizScores || {},
+        lastLessonId: lastLessonId || undefined
+      });
+    }
+
+    // 3. Synchronize to Supabase non-blockingly
+    if (targetEmail) {
+      syncAcademyProgressToSupabase({
+        email: targetEmail,
+        completedLessonIds: lessonsList,
+        quizScores: quizScores || {},
+        lastLessonId: lastLessonId || undefined
+      }).catch(err => console.log('[Supabase Progress Sync Notice]', err.message));
+    }
+
+    res.json({
+      success: true,
+      userId: targetUserId,
+      email: targetEmail,
+      completedLessonIds: targetUserId ? dbQueries.getUserCompletedLessons(targetUserId) : lessonsList,
+      progress: saved
     });
-
-    // Synchronize to Supabase non-blockingly
-    syncAcademyProgressToSupabase({
-      email,
-      completedLessonIds: Array.isArray(completedLessonIds) ? completedLessonIds : [],
-      quizScores: quizScores || {},
-      lastLessonId: lastLessonId || undefined
-    }).catch(err => console.log('[Supabase Progress Sync Notice]', err.message));
-
-    res.json({ success: true, progress: saved });
   } catch (err: any) {
     console.error('Error saving academy progress:', err);
     res.status(500).json({ error: err.message || 'Failed to save progress.' });
   }
 });
 
-app.get('/api/academy/progress', (req, res) => {
+app.get('/api/academy/progress', async (req, res) => {
   try {
-    const email = req.query.email as string;
-    if (!email) {
-      return res.status(400).json({ error: 'Email query parameter is required.' });
+    const user = await resolveAuthUser(req);
+    const queryEmail = (req.query.email as string)?.toLowerCase()?.trim();
+    const targetEmail = user?.email || (queryEmail && queryEmail.includes('@') ? queryEmail : null);
+    const targetUserId = user?.userId || null;
+
+    let completedLessonIds: string[] = [];
+    let progressRecord: any = null;
+
+    if (targetUserId) {
+      completedLessonIds = dbQueries.getUserCompletedLessons(targetUserId);
     }
 
-    const progress = dbQueries.getAcademyProgress(email);
-    if (!progress) {
-      return res.json({ found: false, progress: null });
+    if (targetEmail) {
+      progressRecord = dbQueries.getAcademyProgress(targetEmail);
+      if (progressRecord?.completed_lesson_ids) {
+        completedLessonIds = Array.from(new Set([...completedLessonIds, ...progressRecord.completed_lesson_ids]));
+      }
     }
 
-    res.json({ found: true, progress });
+    if (!targetUserId && !targetEmail) {
+      return res.status(400).json({ error: 'Authentication or email query parameter is required.' });
+    }
+
+    res.json({
+      found: completedLessonIds.length > 0 || !!progressRecord,
+      completedLessonIds,
+      progress: progressRecord,
+      source: targetUserId ? 'user_account' : 'email_tracking'
+    });
   } catch (err: any) {
     console.error('Error fetching academy progress:', err);
     res.status(500).json({ error: err.message || 'Failed to fetch progress.' });

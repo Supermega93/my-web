@@ -187,33 +187,19 @@ export function getActiveStudentTier(user?: User | null, isAdmin?: boolean): Stu
     return 'paid';
   }
 
-  // 1. Check user access status explicitly provided on User object
+  // 1. Check user access status explicitly provided on authenticated User object
   if (user?.access_status === 'complimentary' || (user as any)?.user_metadata?.access_status === 'complimentary') {
     return 'complimentary';
   }
-  if (user?.access_status === 'paid' || (user as any)?.user_metadata?.access_status === 'paid') {
+  if (user?.access_status === 'paid' || (user as any)?.user_metadata?.access_status === 'paid' || user?.can_access_masterclass) {
     return 'paid';
   }
 
-  // 2. Check verified access status cached in localStorage
-  const verifiedStatus = localStorage.getItem('user_access_status');
-  if (verifiedStatus === 'complimentary') return 'complimentary';
-  if (verifiedStatus === 'paid') return 'paid';
-
-  // Explicit user choice in storage (if set for testing/previewing)
-  const storedTier = localStorage.getItem(TIER_STORAGE_KEY) as StudentTier;
-  if (storedTier === 'complimentary') return 'complimentary';
-  if (storedTier === 'paid') return 'paid';
-  if (storedTier === 'free') return 'free';
-
-  // Check if user has recorded paid orders
-  try {
-    const orders = JSON.parse(localStorage.getItem('user_orders') || '[]');
-    if (Array.isArray(orders) && orders.some((o: any) => o.payment_status === 'paid')) {
-      return 'paid';
-    }
-  } catch {
-    // ignore
+  // 2. If user is logged in, check verified server access status
+  if (user) {
+    const verifiedStatus = localStorage.getItem('user_access_status');
+    if (verifiedStatus === 'complimentary') return 'complimentary';
+    if (verifiedStatus === 'paid') return 'paid';
   }
 
   return 'free';
@@ -277,6 +263,16 @@ export function isLessonUnlockedForTier(
 ): boolean {
   if (!lesson) return false;
   if (isAdmin) return true;
+
+  // If server explicitly denied access for this lesson:
+  if (lesson.accessGranted === false && !lesson.is_free) {
+    return false;
+  }
+  // If server explicitly granted access:
+  if (lesson.accessGranted === true) {
+    return true;
+  }
+
   if (tier === 'paid' || tier === 'complimentary') return true;
 
   // The final practical exercise of the Free Tier requires completing all 14 foundation lessons across Levels 1–3
@@ -296,18 +292,7 @@ export function isEcosystemMember(user?: User | null, isAdmin?: boolean): boolea
   if (typeof window === 'undefined') return false;
   if (isAdmin || user?.role === 'admin' || user?.role === 'developer') return true;
   if (user?.access_status === 'paid' || user?.access_status === 'complimentary') return true;
-  if (localStorage.getItem('user_access_status') === 'complimentary' || localStorage.getItem('user_access_status') === 'paid') return true;
-  if (localStorage.getItem('mega_ecosystem_member') === 'true') return true;
-  if (localStorage.getItem(TIER_STORAGE_KEY) === 'paid' || localStorage.getItem(TIER_STORAGE_KEY) === 'complimentary') return true;
-
-  try {
-    const orders = JSON.parse(localStorage.getItem('user_orders') || '[]');
-    if (Array.isArray(orders) && orders.some((o: any) => o.payment_status === 'paid')) {
-      return true;
-    }
-  } catch {
-    // ignore
-  }
+  if (user && (localStorage.getItem('user_access_status') === 'complimentary' || localStorage.getItem('user_access_status') === 'paid')) return true;
 
   return false;
 }

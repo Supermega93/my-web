@@ -1,6 +1,7 @@
 import { supabase } from '../lib/supabase.ts';
 import { Lesson, CustomDevLead, LevelMeta } from '../types.ts';
 import { FALLBACK_LESSONS } from '../data/lessonsData.ts';
+import { getStoredToken } from './api.ts';
 
 // Comprehensive, institutional BabyPips-style curriculum
 // Used dynamically and as authoritative fallback if Supabase table is empty or loading
@@ -156,75 +157,95 @@ function mapSupabaseLesson(item: any): Lesson {
   } as Lesson;
 }
 
-// Helper to fetch all lessons from Supabase (with automatic fallback to authoritative curriculum)
+// Helper to fetch all lessons outline (from authoritative API with automatic fallback)
 export async function fetchAllLessons(): Promise<Lesson[]> {
+  try {
+    const res = await fetch('/api/academy/curriculum');
+    if (res.ok) {
+      const data = await res.json();
+      if (data.lessons && Array.isArray(data.lessons) && data.lessons.length > 0) {
+        return data.lessons.map((l: any) => ({
+          ...l,
+          is_free: Boolean(l.is_free),
+          content: '', // Outline does not include proprietary content
+        }));
+      }
+    }
+  } catch (apiErr) {
+    console.warn('[Academy] API curriculum fetch notice:', apiErr);
+  }
+
+  // Fallback to Supabase
   try {
     const { data, error } = await supabase
       .from('lessons')
       .select('*')
       .order('order_index', { ascending: true });
 
-    if (error) {
-      console.warn('[Academy] Supabase lessons query returned warning, utilizing curriculum service:', error.message);
-      return FALLBACK_LESSONS;
-    }
-
-    if (data && data.length > 0) {
+    if (!error && data && data.length > 0) {
       return data.map(mapSupabaseLesson);
     }
-
-    return FALLBACK_LESSONS;
-  } catch (err) {
-    console.warn('[Academy] Network or client exception fetching lessons, utilizing curriculum service:', err);
-    return FALLBACK_LESSONS;
+  } catch (supaErr) {
+    console.warn('[Academy] Supabase lessons query notice:', supaErr);
   }
+
+  return FALLBACK_LESSONS;
 }
 
-// Helper to fetch a single lesson by ID or lesson number
-export async function fetchLessonById(lessonId: string): Promise<Lesson | null> {
+// Helper to fetch a single lesson by ID or lesson number with server-enforced access control
+export async function fetchLessonById(lessonId: string, token?: string | null): Promise<Lesson | null> {
+  const effectiveToken = token || getStoredToken();
   try {
-    const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(lessonId);
-    let data: any = null;
-    let error: any = null;
-
-    if (isUuid) {
-      const res = await supabase.from('lessons').select('*').eq('id', lessonId).maybeSingle();
-      data = res.data;
-      error = res.error;
-    } else {
-      const fallback = FALLBACK_LESSONS.find(
-        (l) => l.id === lessonId || String(l.lesson_number) === lessonId || String(l.order_index) === lessonId
-      );
-      if (fallback) {
-        const uuid = getLessonUuid(fallback);
-        const res = await supabase
-          .from('lessons')
-          .select('*')
-          .or(`id.eq.${uuid},order_index.eq.${fallback.order_index}`)
-          .maybeSingle();
-        data = res.data;
-        error = res.error;
+    const headers: Record<string, string> = {};
+    if (effectiveToken) {
+      headers['Authorization'] = `Bearer ${effectiveToken}`;
+    }
+    const res = await fetch(`/api/academy/lessons/${encodeURIComponent(lessonId)}`, { headers });
+    if (res.ok) {
+      const data = await res.json();
+      if (data && data.lesson) {
+        return {
+          ...data.lesson,
+          is_free: Boolean(data.lesson.is_free),
+          accessGranted: true,
+          accessType: data.accessType,
+        };
+      }
+    } else if (res.status === 403) {
+      const data = await res.json().catch(() => ({}));
+      if (data && data.lesson) {
+        return {
+          ...data.lesson,
+          is_free: false,
+          content: '', // Zero bytes delivered
+          accessGranted: false,
+          requiresAuth: Boolean(data.requiresAuth),
+          requiresPurchase: Boolean(data.requiresPurchase),
+          accessType: data.accessType || 'none',
+        };
       }
     }
-
-    if (!error && data) {
-      return mapSupabaseLesson(data);
-    }
-
-    // Fallback: search our curriculum by ID or lesson number
-    const found = FALLBACK_LESSONS.find(
-      (l) => l.id === lessonId || String(l.lesson_number) === lessonId || String(l.order_index) === lessonId
-    );
-
-    return found || null;
-  } catch (err) {
-    console.warn('[Academy] Error fetching lesson by ID, using fallback:', err);
-    return (
-      FALLBACK_LESSONS.find(
-        (l) => l.id === lessonId || String(l.lesson_number) === lessonId || String(l.order_index) === lessonId
-      ) || null
-    );
+  } catch (apiErr) {
+    console.warn('[Academy] API lesson fetch notice:', apiErr);
   }
+
+  // Fallback if network/offline: Check outline
+  const fallback = FALLBACK_LESSONS.find(
+    (l) => l.id === lessonId || String(l.lesson_number) === lessonId || String(l.order_index) === lessonId
+  );
+  if (fallback) {
+    return {
+      ...fallback,
+      // For paid lessons, content is always stripped on client if offline
+      content: fallback.is_free ? fallback.content : '',
+      accessGranted: Boolean(fallback.is_free),
+      requiresAuth: !fallback.is_free,
+      requiresPurchase: !fallback.is_free,
+      accessType: fallback.is_free ? 'free' : 'none',
+    };
+  }
+
+  return null;
 }
 
 // Diagnostic helper to inspect Supabase sync status
@@ -414,10 +435,29 @@ export async function fetchLessonsForLevel(
 // ==============================================================================
 
 /**
- * Loads completed lesson IDs for a specific user ID directly from Supabase user_progress table.
+ * Loads completed lesson IDs for a specific user ID directly from backend database and Supabase user_progress table.
  */
 export async function fetchUserProgressFromSupabase(userId: string): Promise<string[]> {
   if (!userId) return [];
+  const token = getStoredToken();
+  const completedIdsSet = new Set<string>();
+
+  // 1. Fetch from server database
+  try {
+    const headers: Record<string, string> = {};
+    if (token) headers['Authorization'] = `Bearer ${token}`;
+    const res = await fetch('/api/academy/progress', { headers });
+    if (res.ok) {
+      const data = await res.json();
+      if (Array.isArray(data.completedLessonIds)) {
+        data.completedLessonIds.forEach((id: string) => completedIdsSet.add(id));
+      }
+    }
+  } catch (apiErr) {
+    console.warn('[Academy Progress] Server fetch notice:', apiErr);
+  }
+
+  // 2. Fetch from Supabase user_progress table
   try {
     const { data, error } = await supabase
       .from('user_progress')
@@ -425,35 +465,28 @@ export async function fetchUserProgressFromSupabase(userId: string): Promise<str
       .eq('user_id', userId)
       .eq('is_completed', true);
 
-    if (error) {
-      console.warn('[Supabase Progress] Query returned notice:', error.message);
-      return [];
-    }
-
-    if (!data || data.length === 0) return [];
-
-    const completedIds: string[] = [];
-    for (const row of data) {
-      const uuid = row.lesson_id;
-      // Match UUID against authoritative lessons
-      const matched = FALLBACK_LESSONS.find(
-        (l) => getLessonUuid(l) === uuid || l.id === uuid || l.uuid === uuid
-      );
-      if (matched) {
-        completedIds.push(matched.id);
-      } else {
-        completedIds.push(uuid);
+    if (!error && data && data.length > 0) {
+      for (const row of data) {
+        const uuid = row.lesson_id;
+        const matched = FALLBACK_LESSONS.find(
+          (l) => getLessonUuid(l) === uuid || l.id === uuid || l.uuid === uuid
+        );
+        if (matched) {
+          completedIdsSet.add(matched.id);
+        } else {
+          completedIdsSet.add(uuid);
+        }
       }
     }
-    return completedIds;
   } catch (err) {
     console.warn('[Supabase Progress] Network notice fetching progress:', err);
-    return [];
   }
+
+  return Array.from(completedIdsSet);
 }
 
 /**
- * Persists lesson completion status by user ID in Supabase user_progress table.
+ * Persists lesson completion status by user ID in Supabase user_progress table and backend database.
  */
 export async function saveUserLessonProgressToSupabase(
   userId: string,
@@ -461,6 +494,33 @@ export async function saveUserLessonProgressToSupabase(
   isCompleted: boolean = true
 ): Promise<boolean> {
   if (!userId || !lessonId) return false;
+  const token = getStoredToken();
+
+  // 1. Persist to authoritative backend database
+  try {
+    const headers: Record<string, string> = {
+      'Content-Type': 'application/json',
+    };
+    if (token) headers['Authorization'] = `Bearer ${token}`;
+
+    const local = JSON.parse(localStorage.getItem('completed_lesson_ids') || '[]');
+    const nextCompleted = isCompleted
+      ? Array.from(new Set([...local, lessonId]))
+      : local.filter((id: string) => id !== lessonId);
+
+    await fetch('/api/academy/progress', {
+      method: 'POST',
+      headers,
+      body: JSON.stringify({
+        completedLessonIds: nextCompleted,
+        lastLessonId: lessonId,
+      }),
+    });
+  } catch (apiErr) {
+    console.warn('[Academy Progress] Server save notice:', apiErr);
+  }
+
+  // 2. Persist to Supabase user_progress table
   try {
     const matched = FALLBACK_LESSONS.find((l) => l.id === lessonId || l.uuid === lessonId);
     const lessonUuid = matched ? getLessonUuid(matched) : (/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(lessonId) ? lessonId : null);

@@ -168,31 +168,35 @@ export function LevelHubPage({ levelId, onNavigate }: LevelHubPageProps) {
           </div>
 
           <div className="flex flex-wrap items-center gap-3">
-            {/* Student Tier Quick Selector */}
-            <div className="flex items-center gap-1 bg-slate-900 border border-slate-800 rounded-lg p-1 text-[11px] font-mono">
-              <span className="text-slate-500 px-1.5 hidden sm:inline">Student Tier:</span>
-              <button
-                onClick={() => setActiveStudentTier('free')}
-                className={`px-2 py-0.5 rounded transition-all cursor-pointer font-bold ${
-                  studentTier === 'free'
-                    ? 'bg-emerald-500 text-slate-950 shadow-sm'
-                    : 'text-slate-400 hover:text-white'
+            {/* Student Tier Badge & Quick Selector */}
+            <div className="flex items-center gap-1.5 bg-slate-900 border border-slate-800 rounded-lg px-2.5 py-1 text-[11px] font-mono">
+              <span className="text-slate-500 hidden sm:inline">Tier:</span>
+              <span
+                className={`px-2 py-0.5 rounded font-bold uppercase text-[10px] tracking-wider ${
+                  studentTier === 'paid' || studentTier === 'complimentary'
+                    ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/30'
+                    : 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30'
                 }`}
-                title="View as Free Tier Student (Levels 1–3 + Fundamentals Bonus & Master Exam)"
               >
-                Free Tier
-              </button>
-              <button
-                onClick={() => setActiveStudentTier('paid')}
-                className={`px-2 py-0.5 rounded transition-all cursor-pointer font-bold ${
-                  studentTier === 'paid'
-                    ? 'bg-cyan-500 text-slate-950 shadow-sm'
-                    : 'text-slate-400 hover:text-white'
-                }`}
-                title="View as Paid Tier Student (Levels 1–8 + Creator's Workshop Advanced Bonus)"
-              >
-                Paid Tier
-              </button>
+                {studentTier === 'paid' ? 'Paid Tier' : studentTier === 'complimentary' ? 'Complimentary' : 'Free Tier'}
+              </span>
+              {isAdmin && (
+                <div className="flex items-center gap-1 ml-1 border-l border-slate-700 pl-1.5">
+                  <span className="text-[9px] text-amber-400 font-bold">ADMIN:</span>
+                  <button
+                    onClick={() => setActiveStudentTier('free')}
+                    className={`px-1.5 py-0.5 rounded text-[10px] ${studentTier === 'free' ? 'bg-amber-500 text-black font-bold' : 'text-slate-400 hover:text-white'}`}
+                  >
+                    Free
+                  </button>
+                  <button
+                    onClick={() => setActiveStudentTier('paid')}
+                    className={`px-1.5 py-0.5 rounded text-[10px] ${studentTier === 'paid' ? 'bg-cyan-500 text-black font-bold' : 'text-slate-400 hover:text-white'}`}
+                  >
+                    Paid
+                  </button>
+                </div>
+              )}
             </div>
 
             {prevLevel && (
@@ -662,10 +666,10 @@ export function LevelHubPage({ levelId, onNavigate }: LevelHubPageProps) {
                     </p>
                     <div className="pt-1 flex items-center gap-3">
                       <button
-                        onClick={() => setActiveStudentTier('paid')}
+                        onClick={() => onNavigate('lesson-detail', 'lesson-8-bonus')}
                         className="px-4 py-2 rounded-xl bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-bold text-xs transition-all shadow-[0_0_15px_rgba(6,182,212,0.3)] cursor-pointer"
                       >
-                        Switch to Paid Tier to View Advanced Bonus Chapter
+                        Explore Advanced Bonus Chapter
                       </button>
                     </div>
                   </div>

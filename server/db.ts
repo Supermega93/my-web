@@ -1,6 +1,7 @@
 import { DatabaseSync } from 'node:sqlite';
 import fs from 'node:fs';
 import path from 'node:path';
+import { SERVER_ACADEMY_LESSONS } from './academyCurriculumData.ts';
 
 const DATA_DIR = path.join(process.cwd(), 'data');
 if (!fs.existsSync(DATA_DIR)) {
@@ -225,6 +226,36 @@ export function initDatabase() {
     CREATE INDEX IF NOT EXISTS idx_comp_access_uid ON complimentary_access(user_id);
     CREATE INDEX IF NOT EXISTS idx_comp_access_email ON complimentary_access(user_email);
     CREATE INDEX IF NOT EXISTS idx_comp_access_status ON complimentary_access(status);
+
+    CREATE TABLE IF NOT EXISTS academy_lessons (
+      id TEXT PRIMARY KEY,
+      uuid TEXT,
+      course_id TEXT,
+      order_index INTEGER NOT NULL,
+      level_name TEXT NOT NULL,
+      lesson_number INTEGER NOT NULL,
+      title TEXT NOT NULL,
+      summary TEXT,
+      duration_minutes INTEGER DEFAULT 15,
+      is_free INTEGER DEFAULT 0,
+      content TEXT NOT NULL,
+      created_at TEXT NOT NULL,
+      updated_at TEXT NOT NULL
+    );
+
+    CREATE TABLE IF NOT EXISTS user_lesson_progress (
+      id TEXT PRIMARY KEY,
+      user_id TEXT NOT NULL,
+      lesson_id TEXT NOT NULL,
+      is_completed INTEGER NOT NULL DEFAULT 1,
+      completed_at TEXT NOT NULL,
+      UNIQUE(user_id, lesson_id)
+    );
+
+    CREATE INDEX IF NOT EXISTS idx_academy_lessons_order ON academy_lessons(order_index);
+    CREATE INDEX IF NOT EXISTS idx_academy_lessons_course ON academy_lessons(course_id);
+    CREATE INDEX IF NOT EXISTS idx_ulp_user ON user_lesson_progress(user_id);
+    CREATE INDEX IF NOT EXISTS idx_ulp_lesson ON user_lesson_progress(lesson_id);
   `);
 
   // Auto-migrate any existing databases to have all columns on ea_projects
@@ -802,6 +833,39 @@ function seedInitialData() {
       SET price = ?
       WHERE id = 'prod_service_custom_ea'
     `).run(375.00);
+
+    // Seed authoritative academy lessons into SQLite
+    try {
+      const lessonCheck = db.prepare('SELECT COUNT(*) as count FROM academy_lessons').get() as { count: number };
+      if (!lessonCheck || lessonCheck.count < SERVER_ACADEMY_LESSONS.length) {
+        const insertLesson = db.prepare(`
+          INSERT OR REPLACE INTO academy_lessons (
+            id, uuid, course_id, order_index, level_name, lesson_number, title, summary, duration_minutes, is_free, content, created_at, updated_at
+          ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        `);
+        const now = new Date().toISOString();
+        for (const l of SERVER_ACADEMY_LESSONS) {
+          insertLesson.run(
+            l.id,
+            l.uuid || null,
+            l.course_id,
+            l.order_index,
+            l.level_name,
+            l.lesson_number,
+            l.title,
+            l.summary || '',
+            l.duration_minutes || 15,
+            l.is_free ? 1 : 0,
+            l.content,
+            now,
+            now
+          );
+        }
+        console.log(`[Database] Synced ${SERVER_ACADEMY_LESSONS.length} authoritative lessons into SQLite academy_lessons.`);
+      }
+    } catch (lessonErr) {
+      console.warn('[Database] Academy lessons seed notice:', lessonErr);
+    }
   } catch (err) {
     console.error('Failed to sync product updates:', err);
   }
@@ -909,12 +973,13 @@ export const dbQueries = {
     `).run(now, revokedBy, userId, userId);
   },
   getUserAccessStatus(userId: string, email?: string) {
-    // 1. Check paid orders
+    const cleanEmail = (email || '').toLowerCase().trim();
+    // 1. Check paid orders (by user_id OR user_email)
     const paidOrder = db.prepare(`
       SELECT id, product_id, created_at FROM orders 
-      WHERE user_id = ? AND payment_status = 'paid'
+      WHERE (user_id = ? OR (user_email IS NOT NULL AND LOWER(user_email) = ?)) AND payment_status = 'paid'
       ORDER BY created_at DESC LIMIT 1
-    `).get(userId) as any;
+    `).get(userId, cleanEmail || userId) as any;
 
     if (paidOrder) {
       return {
@@ -926,7 +991,7 @@ export const dbQueries = {
     }
 
     // 2. Check complimentary access
-    const comp = this.getComplimentaryAccess(email || userId);
+    const comp = this.getComplimentaryAccess(cleanEmail || userId);
     if (comp) {
       return {
         access_status: 'complimentary' as const,
@@ -943,6 +1008,43 @@ export const dbQueries = {
       access_status: 'free' as const,
       can_access_masterclass: false
     };
+  },
+
+  // Authoritative Academy Lessons & User Progress (Protected in SQLite)
+  getAllAcademyLessonsOutline() {
+    return db.prepare(`
+      SELECT id, uuid, course_id, order_index, level_name, lesson_number, title, summary, duration_minutes, is_free
+      FROM academy_lessons
+      ORDER BY order_index ASC
+    `).all() as any[];
+  },
+  getAcademyLessonById(idOrIndex: string) {
+    const numericIndex = parseInt(idOrIndex, 10);
+    return db.prepare(`
+      SELECT * FROM academy_lessons
+      WHERE id = ? OR uuid = ? OR order_index = ?
+      LIMIT 1
+    `).get(idOrIndex, idOrIndex, isNaN(numericIndex) ? -1 : numericIndex) as any;
+  },
+  saveUserLessonProgress(userId: string, lessonId: string, isCompleted: boolean) {
+    const now = new Date().toISOString();
+    if (isCompleted) {
+      const id = `ulp_${userId}_${lessonId}`;
+      db.prepare(`
+        INSERT OR REPLACE INTO user_lesson_progress (id, user_id, lesson_id, is_completed, completed_at)
+        VALUES (?, ?, ?, 1, ?)
+      `).run(id, userId, lessonId, now);
+    } else {
+      db.prepare(`
+        DELETE FROM user_lesson_progress WHERE user_id = ? AND lesson_id = ?
+      `).run(userId, lessonId);
+    }
+  },
+  getUserCompletedLessons(userId: string) {
+    const rows = db.prepare(`
+      SELECT lesson_id FROM user_lesson_progress WHERE user_id = ? AND is_completed = 1
+    `).all(userId) as any[];
+    return rows.map((r: any) => r.lesson_id);
   },
   getAllUsersWithAccessStatus() {
     const users = db.prepare('SELECT id, name, email, phone, role, created_at, updated_at FROM users ORDER BY created_at DESC').all() as any[];

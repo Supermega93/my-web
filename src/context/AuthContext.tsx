@@ -339,12 +339,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       });
 
       if (oauthError) {
-        throw oauthError;
+        let msg = oauthError.message || 'Google OAuth authentication failed';
+        if (msg.toLowerCase().includes('provider is not enabled') || (oauthError as any)?.error_code === 'validation_failed') {
+          msg = 'Google provider is not enabled in your Supabase project. In your Supabase Dashboard, go to Authentication > Providers > Google to toggle it ON and enter your Google Client ID, or sign in using Email & Password.';
+        }
+        throw new Error(msg);
       }
 
       return { success: true };
     } catch (err: any) {
-      const msg = err.message || 'Google OAuth authentication failed';
+      let msg = err.message || 'Google OAuth authentication failed';
+      if (msg.toLowerCase().includes('provider is not enabled')) {
+        msg = 'Google provider is not enabled in your Supabase project. In your Supabase Dashboard, go to Authentication > Providers > Google to toggle it ON and enter your Google Client ID, or sign in using Email & Password.';
+      }
       console.warn('[Supabase OAuth Error]', err);
       setError(msg);
       return { success: false, error: msg };
@@ -495,6 +502,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       localStorage.removeItem('completed_lesson_ids');
       localStorage.removeItem('academy_quiz_scores');
       localStorage.removeItem('user_access_status');
+      localStorage.removeItem('academy_student_tier');
+      setActiveStudentTier('free');
       window.dispatchEvent(new CustomEvent('academy-progress-change', { detail: { completedIds: [] } }));
     } catch (err) {
       console.warn('Error during signOut:', err);

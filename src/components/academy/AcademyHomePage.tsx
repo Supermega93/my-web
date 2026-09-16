@@ -204,29 +204,43 @@ export function AcademyHomePage({ onNavigate, onOpenEbookDownload }: AcademyHome
           <span>Get Started!</span>
         </div>
 
-        {/* Student Tier Toggle */}
-        <div className="flex items-center gap-1 bg-slate-900 border border-slate-800 rounded-full p-1 text-xs font-mono">
-          <span className="text-slate-500 px-2 hidden sm:inline">Student Tier:</span>
-          <button
-            onClick={() => setActiveStudentTier('free')}
-            className={`px-3 py-1 rounded-full transition-all cursor-pointer font-bold ${
-              studentTier === 'free'
-                ? 'bg-emerald-500 text-slate-950 shadow-sm'
-                : 'text-slate-400 hover:text-white'
+        {/* Student Tier Badge & Status */}
+        <div className="flex items-center gap-1.5 bg-slate-900 border border-slate-800 rounded-full px-3.5 py-1.5 text-xs font-mono">
+          <span className="text-slate-500 hidden sm:inline">Your Tier:</span>
+          <span
+            className={`px-2.5 py-0.5 rounded-full font-bold uppercase text-[10px] tracking-wider ${
+              studentTier === 'paid' || studentTier === 'complimentary'
+                ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/40 shadow-sm'
+                : 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 shadow-sm'
             }`}
           >
-            Free Tier (Levels 1–3 + Master Exam)
-          </button>
-          <button
-            onClick={() => setActiveStudentTier('paid')}
-            className={`px-3 py-1 rounded-full transition-all cursor-pointer font-bold ${
-              studentTier === 'paid'
-                ? 'bg-cyan-500 text-slate-950 shadow-sm'
-                : 'text-slate-400 hover:text-white'
-            }`}
-          >
-            Paid Tier (Levels 1–8 + Creator's Workshop)
-          </button>
+            {studentTier === 'paid' ? 'Paid Tier (All 8 Levels)' : studentTier === 'complimentary' ? 'Complimentary Access' : 'Free Tier (Levels 1–3)'}
+          </span>
+          {isAdmin && (
+            <div className="flex items-center gap-1 ml-2 border-l border-slate-700 pl-2">
+              <span className="text-[10px] text-amber-400 font-bold">Admin:</span>
+              <button
+                onClick={() => setActiveStudentTier('free')}
+                className={`px-2 py-0.5 rounded-full transition-all cursor-pointer text-[10px] font-bold ${
+                  studentTier === 'free'
+                    ? 'bg-emerald-500 text-slate-950 shadow-sm'
+                    : 'text-slate-400 hover:text-white'
+                }`}
+              >
+                Free
+              </button>
+              <button
+                onClick={() => setActiveStudentTier('paid')}
+                className={`px-2 py-0.5 rounded-full transition-all cursor-pointer text-[10px] font-bold ${
+                  studentTier === 'paid'
+                    ? 'bg-cyan-500 text-slate-950 shadow-sm'
+                    : 'text-slate-400 hover:text-white'
+                }`}
+              >
+                Paid
+              </button>
+            </div>
+          )}
         </div>
       </div>
 
@@ -498,10 +512,10 @@ export function AcademyHomePage({ onNavigate, onOpenEbookDownload }: AcademyHome
                           </p>
                         </div>
                         <button
-                          onClick={() => setActiveStudentTier('paid')}
+                          onClick={() => onNavigate('lesson-detail', 'lesson-8-bonus')}
                           className="px-3 py-1.5 rounded-lg bg-cyan-500 hover:bg-cyan-400 text-slate-950 text-xs font-bold shrink-0 transition-all cursor-pointer"
                         >
-                          View as Paid Tier
+                          Explore Bonus Chapter
                         </button>
                       </div>
                     )}
