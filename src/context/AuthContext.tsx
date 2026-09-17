@@ -34,7 +34,28 @@ export function isUserVerified(supabaseUser?: any): boolean {
   return Boolean(supabaseUser.email_confirmed_at || supabaseUser.confirmed_at);
 }
 
-export interface AuthContextType {
+// Helper to obtain the canonical application domain for Supabase email verification and OAuth callbacks.
+// Prevents local container or iframe localhost URLs (e.g. http://localhost:3000) from being embedded in confirmation emails.
+export const getAppRedirectUrl = (): string => {
+  // 1. If runtime environment variable is provided
+  const envAppUrl = typeof process !== 'undefined' ? (process.env?.APP_URL || (process.env as any)?.VITE_APP_URL) : undefined;
+  if (envAppUrl && typeof envAppUrl === 'string' && envAppUrl.startsWith('http')) {
+    return envAppUrl.replace(/\/+$/, '');
+  }
+
+  // 2. Browser window origin check: only use if not localhost or 127.0.0.1
+  if (typeof window !== 'undefined') {
+    const origin = window.location.origin;
+    if (origin && !origin.includes('localhost') && !origin.includes('127.0.0.1') && !origin.includes('0.0.0.0')) {
+      return origin.replace(/\/+$/, '');
+    }
+  }
+
+  // 3. Fallback to the active deployed Cloud Run website domain
+  return 'https://ais-dev-y34gbws5veojx7kebkrid5-102937162047.europe-west2.run.app';
+};
+
+interface AuthContextType {
   user: User | null;
   session: Session | null;
   loading: boolean;
@@ -326,7 +347,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     try {
       setError(null);
       setLoading(true);
-      const redirectUrl = typeof window !== 'undefined' ? window.location.origin : '';
+      const redirectUrl = getAppRedirectUrl();
       const { data: _data, error: oauthError } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
@@ -387,7 +408,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
 
       const cleanEmail = email.trim().toLowerCase();
-      const redirectUrl = typeof window !== 'undefined' ? window.location.origin : undefined;
+      const redirectUrl = getAppRedirectUrl();
 
       // Supabase Auth signup with verification redirect
       const { data, error: signUpError } = await supabase.auth.signUp({
@@ -467,7 +488,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       if (!clean) {
         return { success: false, error: 'Please enter a valid email address.' };
       }
-      const redirectUrl = typeof window !== 'undefined' ? window.location.origin : undefined;
+      const redirectUrl = getAppRedirectUrl();
       const { error: resendErr } = await supabase.auth.resend({
         type: 'signup',
         email: clean,

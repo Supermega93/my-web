@@ -35,6 +35,7 @@ import {
   Award
 } from 'lucide-react';
 import { Button } from '../common/Button.tsx';
+import { MasterclassPricingSection } from './MasterclassPricingSection.tsx';
 
 interface AcademyHomePageProps {
   onNavigate: (view: ActiveView, extraId?: string) => void;
@@ -527,6 +528,11 @@ export function AcademyHomePage({ onNavigate, onOpenEbookDownload }: AcademyHome
           );
         })}
       </section>
+
+      {/* Distinct Masterclass Section Right Below Academy Curriculum */}
+      <div className="mt-20 border-t border-slate-850 bg-gradient-to-b from-slate-950 via-slate-900/40 to-slate-950">
+        <MasterclassPricingSection onNavigate={onNavigate} onOpenAuth={() => setAuthModalOpen(true)} />
+      </div>
 
       {/* In-page Academy Auth Modal */}
       <AcademyAuthModal

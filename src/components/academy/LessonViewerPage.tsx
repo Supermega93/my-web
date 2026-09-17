@@ -25,6 +25,7 @@ import {
 } from '../../services/academyAccess.ts';
 import { IndicatorWorkshopWorkbench } from './IndicatorWorkshopWorkbench.tsx';
 import { LessonVideoPlayer } from './LessonVideoPlayer.tsx';
+import { LessonExerciseDocCard } from './LessonExerciseDocCard.tsx';
 import { AcademyAuthModal } from './AcademyAuthModal.tsx';
 import { FreeCourseEmailModal } from './FreeCourseEmailModal.tsx';
 import { 
@@ -162,8 +163,8 @@ export function LessonViewerPage({ lessonId, onNavigate, onOpenCheckout }: Lesso
   // Final practical capstone (lesson-3-practical) is locked until Levels 1 to 3 are completed.
   // Paid Tier students unlock Levels 4-8 and lesson-8-bonus.
   const isLessonFree = lesson ? Boolean(lesson.is_free) : true;
-  const isBreakoutWorkshop = lesson?.id === PRACTICAL_EXERCISE_LESSON_ID;
-  const isIndicatorWorkshop = lesson?.id === INDICATOR_WORKSHOP_LESSON_ID;
+  const isBreakoutWorkshop = lesson?.id === PRACTICAL_EXERCISE_LESSON_ID || lesson?.id === 'lesson-3-5';
+  const isIndicatorWorkshop = lesson?.id === INDICATOR_WORKSHOP_LESSON_ID || lesson?.id === 'lesson-3-6';
   const isPractical = isBreakoutWorkshop || isIndicatorWorkshop;
   const practicalProgress = useMemo(
     () => getPracticalExerciseProgress(completedLessonIds),
@@ -573,6 +574,14 @@ export function LessonViewerPage({ lessonId, onNavigate, onOpenCheckout }: Lesso
               />
             )}
 
+            {/* Free Downloadable Exercise Document */}
+            {isBreakoutWorkshop && (
+              <LessonExerciseDocCard type="ea" className="my-4" />
+            )}
+            {isIndicatorWorkshop && (
+              <LessonExerciseDocCard type="indicator" className="my-4" />
+            )}
+
             {/* Strategy Definition & Machine Facts Preview */}
             <BabyPipsContentRenderer content={previewContent} />
 
@@ -596,6 +605,14 @@ export function LessonViewerPage({ lessonId, onNavigate, onOpenCheckout }: Lesso
                 subtitle="Full video lesson version: follow the complete 16-step AI automation workflow, ChatGPT prompt specifications, Claude MQL5 coding, MetaEditor compilation, and MT5 visual chart testing."
                 badgeText="Video Lesson Version"
               />
+            )}
+
+            {/* Free Downloadable Exercise Document associated directly with the exercise */}
+            {isBreakoutWorkshop && (
+              <LessonExerciseDocCard type="ea" className="mb-6" />
+            )}
+            {isIndicatorWorkshop && (
+              <LessonExerciseDocCard type="indicator" className="my-6" />
             )}
 
             {/* Interactive Indicator Workshop Workbench for Lesson 3.6 */}
@@ -722,18 +739,18 @@ export function LessonViewerPage({ lessonId, onNavigate, onOpenCheckout }: Lesso
                 </button>
               ) : (
                 <button
-                  onClick={() => onNavigate('custom-ea')}
+                  onClick={() => onNavigate('academy-pricing')}
                   className="px-6 py-3.5 rounded-xl bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-bold text-sm transition-all shadow-[0_0_20px_rgba(6,182,212,0.4)] cursor-pointer"
                 >
-                  Get Masterclass Pro Access
+                  Get Masterclass Access (View Pricing)
                 </button>
               )}
 
               <button
-                onClick={() => onNavigate('custom-ea')}
+                onClick={() => onNavigate('academy-pricing')}
                 className="px-6 py-3.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-white font-medium text-sm transition-all border border-slate-700 flex items-center gap-2 cursor-pointer"
               >
-                <span>Order Custom Masterclass Project</span>
+                <span>View Masterclass Pricing Packages</span>
               </button>
 
               <button

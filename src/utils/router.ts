@@ -68,6 +68,9 @@ export function parseUrlToView(pathname: string): RouteResolution {
   }
 
   // 4. Academy & Courses
+  if (path === '/academy/pricing' || path === '/academy-pricing' || path === '/academy/plans') {
+    return { view: 'academy-pricing' };
+  }
   if (path === '/academy' || path === '/course' || path === '/courses') {
     return { view: 'academy' };
   }
@@ -264,6 +267,9 @@ export function getUrlForView(view: ActiveView, extraId?: string): string {
     case 'academy':
       return '/academy';
 
+    case 'academy-pricing':
+      return '/academy/pricing';
+
     case 'levels':
     case 'level-hub':
       return extraId ? `/levels/${extraId}` : '/levels/1';
@@ -345,6 +351,9 @@ export function getTitleForView(view: ActiveView, extraId?: string): string {
 
     case 'academy':
       return 'Free Strategy Academy (Levels 1–8) | MEG.AI LABS';
+
+    case 'academy-pricing':
+      return 'Academy Masterclass & Membership Pricing | MEG.AI LABS';
 
     case 'levels':
     case 'level-hub':

@@ -48,28 +48,28 @@ export function Modal({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 overflow-y-auto bg-slate-950/80 backdrop-blur-sm animate-fade-in">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 overflow-y-auto bg-slate-950/70 backdrop-blur-md animate-fade-in">
       <div
         className="fixed inset-0"
         onClick={onClose}
         aria-hidden="true"
       />
       <div
-        className={`relative w-full ${maxWidthClasses[maxWidth]} bg-[#111827] border border-slate-800 rounded-xl shadow-2xl overflow-hidden z-10 my-8`}
+        className={`relative w-full ${maxWidthClasses[maxWidth]} bg-slate-900/95 backdrop-blur-2xl border border-slate-800/80 rounded-3xl shadow-2xl overflow-hidden z-10 my-8`}
         onClick={(e) => e.stopPropagation()}
       >
         {(title || subtitle) && (
-          <div className="px-6 py-5 border-b border-slate-800 flex items-start justify-between bg-slate-900/40">
+          <div className="px-6 py-5 border-b border-slate-800/80 flex items-start justify-between bg-slate-900/50">
             <div>
-              {title && <h3 className="text-lg font-semibold text-slate-100">{title}</h3>}
-              {subtitle && <p className="text-xs text-slate-400 mt-0.5">{subtitle}</p>}
+              {title && <h3 className="text-base sm:text-lg font-bold text-white tracking-tight">{title}</h3>}
+              {subtitle && <p className="text-xs text-slate-400 mt-1 leading-relaxed">{subtitle}</p>}
             </div>
             <button
               onClick={onClose}
-              className="p-1 rounded-lg text-slate-400 hover:text-slate-200 hover:bg-slate-800 transition-colors"
+              className="p-1.5 rounded-full text-slate-400 hover:text-white hover:bg-slate-800 transition-colors cursor-pointer"
               aria-label="Close modal"
             >
-              <X className="w-5 h-5" />
+              <X className="w-4 h-4" />
             </button>
           </div>
         )}

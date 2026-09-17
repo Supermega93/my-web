@@ -8,8 +8,8 @@ import {
   Mail, 
   CheckCircle2, 
   AlertCircle, 
-  Sparkles,
-  ArrowRight
+  Eye,
+  EyeOff
 } from 'lucide-react';
 import { Button } from '../common/Button.tsx';
 
@@ -24,6 +24,7 @@ export function AcademyAuthModal({ isOpen, onClose, onSuccess }: AcademyAuthModa
   const [mode, setMode] = useState<'login' | 'register'>('login');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [name, setName] = useState('');
   const [loading, setLoading] = useState(false);
   const [resending, setResending] = useState(false);
@@ -126,15 +127,16 @@ export function AcademyAuthModal({ isOpen, onClose, onSuccess }: AcademyAuthModa
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-in fade-in duration-200">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 bg-slate-950/70 backdrop-blur-md animate-in fade-in duration-200">
       <div 
-        className="w-full max-w-md bg-slate-900 border border-emerald-500/40 rounded-3xl p-6 sm:p-8 shadow-[0_0_50px_rgba(16,185,129,0.2)] relative text-left"
+        className="w-full max-w-md bg-slate-900/95 backdrop-blur-2xl border border-slate-800/80 rounded-3xl p-6 sm:p-8 shadow-2xl relative text-left"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Close Button */}
         <button
           onClick={onClose}
-          className="absolute top-5 right-5 p-2 rounded-full bg-slate-800/80 hover:bg-slate-700 text-slate-400 hover:text-white transition-colors cursor-pointer"
+          className="absolute top-5 right-5 p-1.5 rounded-full bg-slate-800/60 hover:bg-slate-750 text-slate-400 hover:text-white transition-colors cursor-pointer"
+          aria-label="Close"
         >
           <X className="w-4 h-4" />
         </button>
@@ -142,33 +144,33 @@ export function AcademyAuthModal({ isOpen, onClose, onSuccess }: AcademyAuthModa
         {needsVerification ? (
           /* Verification Required Screen */
           <div className="text-center space-y-4 py-2">
-            <div className="w-14 h-14 rounded-2xl bg-amber-500/10 border border-amber-500/30 flex items-center justify-center text-amber-400 mx-auto shadow-[0_0_25px_rgba(245,158,11,0.2)]">
-              <Mail className="w-7 h-7" />
+            <div className="w-12 h-12 rounded-2xl bg-amber-500/10 border border-amber-500/30 flex items-center justify-center text-amber-400 mx-auto">
+              <Mail className="w-6 h-6" />
             </div>
 
-            <div className="space-y-1.5">
-              <h3 className="text-xl font-bold text-white tracking-tight">
+            <div className="space-y-1">
+              <h3 className="text-lg font-bold text-white tracking-tight">
                 Verify Your Email Address
               </h3>
-              <p className="text-xs text-slate-300 max-w-sm mx-auto leading-relaxed">
-                For platform security, all accounts must verify their email address via Supabase before accessing courses and tools.
+              <p className="text-xs text-slate-400 max-w-sm mx-auto leading-relaxed">
+                For platform security, verify your email address via Supabase to access the Academy courses and files.
               </p>
             </div>
 
-            <div className="p-3.5 rounded-xl bg-slate-950 border border-slate-800 text-xs font-mono text-emerald-400 text-center break-all">
+            <div className="p-3 rounded-2xl bg-slate-950 border border-slate-800 text-xs font-mono text-emerald-400 text-center break-all">
               {unverifiedEmail || email}
             </div>
 
             {errorMsg && (
-              <div className="p-3 rounded-xl bg-rose-950/40 border border-rose-500/40 text-rose-300 text-xs flex items-start gap-2 text-left">
-                <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
+              <div className="p-3 rounded-2xl bg-rose-950/50 border border-rose-800/80 text-rose-300 text-xs flex items-start gap-2 text-left animate-in fade-in duration-150">
+                <AlertCircle className="w-4 h-4 shrink-0 mt-0.5 text-rose-400" />
                 <span className="leading-relaxed">{errorMsg}</span>
               </div>
             )}
 
             {successMsg && (
-              <div className="p-3 rounded-xl bg-emerald-950/40 border border-emerald-500/40 text-emerald-300 text-xs flex items-center gap-2 text-left">
-                <CheckCircle2 className="w-4 h-4 shrink-0" />
+              <div className="p-3 rounded-2xl bg-emerald-950/50 border border-emerald-800/80 text-emerald-300 text-xs flex items-center gap-2 text-left animate-in fade-in duration-150">
+                <CheckCircle2 className="w-4 h-4 shrink-0 text-emerald-400" />
                 <span className="leading-relaxed">{successMsg}</span>
               </div>
             )}
@@ -178,7 +180,9 @@ export function AcademyAuthModal({ isOpen, onClose, onSuccess }: AcademyAuthModa
                 type="button"
                 onClick={handleResend}
                 disabled={resending}
-                className="w-full bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold text-xs py-3 rounded-xl shadow-[0_0_20px_rgba(16,185,129,0.3)] cursor-pointer"
+                variant="primary"
+                fullWidth
+                className="bg-emerald-700 hover:bg-emerald-600 text-white font-medium cursor-pointer"
               >
                 {resending ? 'Sending Link...' : 'Resend Verification Link'}
               </Button>
@@ -189,21 +193,21 @@ export function AcademyAuthModal({ isOpen, onClose, onSuccess }: AcademyAuthModa
                   setNeedsVerification(false);
                   setMode('login');
                   setErrorMsg(null);
-                  setSuccessMsg('Once you have clicked the confirmation link in your email, sign in below.');
+                  setSuccessMsg('Once you have confirmed your email, sign in below.');
                 }}
-                className="w-full py-2.5 text-xs text-slate-400 hover:text-white transition-colors cursor-pointer"
+                className="w-full py-2 text-xs text-slate-400 hover:text-white transition-colors cursor-pointer"
               >
                 Already verified? <span className="text-emerald-400 font-semibold underline">Sign In</span>
               </button>
             </div>
 
             <div className="border-t border-slate-800/80 pt-4 mt-4">
-              <p className="text-[11px] text-slate-400 mb-2">Want instant access without verification emails?</p>
+              <p className="text-[11px] text-slate-400 mb-2.5">Prefer instant login without confirmation emails?</p>
               <button
                 type="button"
                 onClick={handleGoogleSignIn}
                 disabled={loading}
-                className="w-full py-2.5 px-4 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-700 hover:border-emerald-500/40 text-xs font-semibold text-white flex items-center justify-center gap-2.5 transition-all shadow-sm cursor-pointer"
+                className="w-full py-2.5 px-4 rounded-2xl bg-slate-800/90 hover:bg-slate-750 border border-slate-750 hover:border-slate-600 text-xs font-medium text-white flex items-center justify-center gap-2.5 transition-all shadow-xs cursor-pointer active:scale-[0.98]"
               >
                 <svg className="w-4 h-4" viewBox="0 0 24 24">
                   <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" />
@@ -211,35 +215,71 @@ export function AcademyAuthModal({ isOpen, onClose, onSuccess }: AcademyAuthModa
                   <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z" />
                   <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z" />
                 </svg>
-                <span>Continue with Google (Instant Verified Access)</span>
+                <span>Continue with Google</span>
               </button>
             </div>
           </div>
         ) : (
           <>
             {/* Header */}
-            <div className="text-center space-y-2 mb-6">
-              <div className="w-12 h-12 rounded-2xl bg-emerald-500/10 border border-emerald-500/30 flex items-center justify-center text-emerald-400 mx-auto shadow-[0_0_20px_rgba(16,185,129,0.2)]">
-                <Lock className="w-6 h-6" />
+            <div className="text-center space-y-1.5 mb-5">
+              <div className="w-10 h-10 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-400 mx-auto mb-2">
+                <Lock className="w-5 h-5" />
               </div>
-              <h3 className="text-xl font-bold text-white tracking-tight">
-                {mode === 'login' ? 'Sign In to Unlock Progress' : 'Create Free Student Account'}
+              <h3 className="text-lg font-bold text-white tracking-tight">
+                {mode === 'login' ? 'Welcome Back to Academy' : 'Create Student Account'}
               </h3>
-              <p className="text-xs text-slate-400 max-w-xs mx-auto">
-                Sync your lesson progress, track quiz scores, and unlock personalized trading meters across all courses.
+              <p className="text-xs text-slate-400 max-w-xs mx-auto leading-relaxed">
+                {mode === 'login' 
+                  ? 'Sign in to sync your progress, track quiz scores, and unlock lesson materials.' 
+                  : 'Get started for free to access course modules, community notes, and study guides.'}
               </p>
+            </div>
+
+            {/* Segmented Control Tabs */}
+            <div className="flex p-1 bg-slate-950/70 rounded-2xl border border-slate-800/80 mb-4">
+              <button
+                type="button"
+                onClick={() => {
+                  setMode('login');
+                  setErrorMsg(null);
+                  setSuccessMsg(null);
+                }}
+                className={`flex-1 py-2 text-xs font-medium rounded-xl transition-all select-none cursor-pointer ${
+                  mode === 'login'
+                    ? 'bg-slate-800 text-white shadow-xs font-semibold'
+                    : 'text-slate-400 hover:text-slate-200'
+                }`}
+              >
+                Sign In
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setMode('register');
+                  setErrorMsg(null);
+                  setSuccessMsg(null);
+                }}
+                className={`flex-1 py-2 text-xs font-medium rounded-xl transition-all select-none cursor-pointer ${
+                  mode === 'register'
+                    ? 'bg-slate-800 text-white shadow-xs font-semibold'
+                    : 'text-slate-400 hover:text-slate-200'
+                }`}
+              >
+                Create Account
+              </button>
             </div>
 
             {/* Error / Success Notifications */}
             {errorMsg && (
-              <div className="mb-4 p-3 rounded-xl bg-rose-950/40 border border-rose-500/40 text-rose-300 text-xs flex items-start gap-2">
-                <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
+              <div className="mb-3.5 p-3 rounded-2xl bg-rose-950/50 border border-rose-800/80 text-rose-300 text-xs flex items-start gap-2 animate-in fade-in duration-150">
+                <AlertCircle className="w-4 h-4 shrink-0 mt-0.5 text-rose-400" />
                 <span className="leading-relaxed">{errorMsg}</span>
               </div>
             )}
             {successMsg && (
-              <div className="mb-4 p-3 rounded-xl bg-emerald-950/40 border border-emerald-500/40 text-emerald-300 text-xs flex items-center gap-2">
-                <CheckCircle2 className="w-4 h-4 shrink-0" />
+              <div className="mb-3.5 p-3 rounded-2xl bg-emerald-950/50 border border-emerald-800/80 text-emerald-300 text-xs flex items-center gap-2 animate-in fade-in duration-150">
+                <CheckCircle2 className="w-4 h-4 shrink-0 text-emerald-400" />
                 <span>{successMsg}</span>
               </div>
             )}
@@ -249,7 +289,7 @@ export function AcademyAuthModal({ isOpen, onClose, onSuccess }: AcademyAuthModa
               type="button"
               onClick={handleGoogleSignIn}
               disabled={loading}
-              className="w-full mb-4 py-3 px-4 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-700 hover:border-emerald-500/40 text-xs font-semibold text-white flex items-center justify-center gap-3 transition-all shadow-sm cursor-pointer disabled:opacity-50"
+              className="w-full py-2.5 px-4 rounded-2xl bg-slate-800/90 hover:bg-slate-750 border border-slate-750 hover:border-slate-600 text-xs font-medium text-white flex items-center justify-center gap-3 transition-all shadow-xs cursor-pointer active:scale-[0.98] disabled:opacity-50"
             >
               <svg className="w-4 h-4" viewBox="0 0 24 24">
                 <path
@@ -272,19 +312,19 @@ export function AcademyAuthModal({ isOpen, onClose, onSuccess }: AcademyAuthModa
               <span>Continue with Google</span>
             </button>
 
-            <div className="relative flex items-center justify-center my-4">
-              <div className="border-t border-slate-800 w-full" />
-              <span className="bg-slate-900 px-3 text-[11px] font-mono uppercase text-slate-500">
-                or with email
+            <div className="relative flex items-center justify-center my-3">
+              <div className="border-t border-slate-800/80 w-full" />
+              <span className="bg-slate-900 px-3 text-[10px] font-mono uppercase text-slate-500 tracking-wider">
+                or email
               </span>
-              <div className="border-t border-slate-800 w-full" />
+              <div className="border-t border-slate-800/80 w-full" />
             </div>
 
             {/* Email & Password Form */}
             <form onSubmit={handleSubmit} className="space-y-3">
               {mode === 'register' && (
                 <div>
-                  <label className="block text-[11px] font-mono uppercase text-slate-400 mb-1">
+                  <label className="block text-[11px] font-mono text-slate-400 mb-1">
                     Your Name
                   </label>
                   <input
@@ -292,13 +332,13 @@ export function AcademyAuthModal({ isOpen, onClose, onSuccess }: AcademyAuthModa
                     value={name}
                     onChange={(e) => setName(e.target.value)}
                     placeholder="Alex Morgan"
-                    className="w-full px-3.5 py-2.5 rounded-xl bg-slate-950 border border-slate-800 focus:border-emerald-500 focus:outline-none text-xs text-white placeholder-slate-600"
+                    className="w-full px-3.5 py-2.5 bg-slate-950/80 border border-slate-800 focus:border-slate-500 rounded-2xl text-slate-100 placeholder-slate-600 focus:outline-none focus:ring-1 focus:ring-slate-700 text-xs transition-all"
                   />
                 </div>
               )}
 
               <div>
-                <label className="block text-[11px] font-mono uppercase text-slate-400 mb-1">
+                <label className="block text-[11px] font-mono text-slate-400 mb-1">
                   Email Address
                 </label>
                 <input
@@ -306,65 +346,53 @@ export function AcademyAuthModal({ isOpen, onClose, onSuccess }: AcademyAuthModa
                   required
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  placeholder="trader@quant.com"
-                  className="w-full px-3.5 py-2.5 rounded-xl bg-slate-950 border border-slate-800 focus:border-emerald-500 focus:outline-none text-xs text-white placeholder-slate-600"
+                  placeholder="student@meg-labs.com"
+                  className="w-full px-3.5 py-2.5 bg-slate-950/80 border border-slate-800 focus:border-slate-500 rounded-2xl text-slate-100 placeholder-slate-600 focus:outline-none focus:ring-1 focus:ring-slate-700 text-xs transition-all"
                 />
               </div>
 
               <div>
-                <label className="block text-[11px] font-mono uppercase text-slate-400 mb-1">
+                <label className="block text-[11px] font-mono text-slate-400 mb-1">
                   Password
                 </label>
-                <input
-                  type="password"
-                  required
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  placeholder="••••••••"
-                  className="w-full px-3.5 py-2.5 rounded-xl bg-slate-950 border border-slate-800 focus:border-emerald-500 focus:outline-none text-xs text-white placeholder-slate-600"
-                />
+                <div className="relative">
+                  <input
+                    type={showPassword ? 'text' : 'password'}
+                    required
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    placeholder="••••••••"
+                    className="w-full px-3.5 py-2.5 pr-10 bg-slate-950/80 border border-slate-800 focus:border-slate-500 rounded-2xl text-slate-100 placeholder-slate-600 focus:outline-none focus:ring-1 focus:ring-slate-700 text-xs transition-all"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-200 p-1 cursor-pointer transition-colors"
+                    title={showPassword ? 'Hide password' : 'Show password'}
+                  >
+                    {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                  </button>
+                </div>
               </div>
 
               {mode === 'register' && (
-                <div className="p-2.5 rounded-lg bg-slate-950/60 border border-slate-800 text-[11px] text-slate-400 flex items-center gap-2">
+                <div className="p-2.5 rounded-2xl bg-slate-950/60 border border-slate-800/80 text-[11px] text-slate-400 flex items-center gap-2">
                   <Mail className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
-                  <span>A verification link will be sent to your email to activate access.</span>
+                  <span>A confirmation link will be sent to your email to activate access.</span>
                 </div>
               )}
 
               <Button
                 type="submit"
                 disabled={loading}
-                className="w-full mt-2 bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold text-xs py-3 rounded-xl shadow-[0_0_20px_rgba(16,185,129,0.3)] cursor-pointer"
+                variant="primary"
+                fullWidth
+                icon={mode === 'login' ? <LogIn className="w-4 h-4" /> : <UserPlus className="w-4 h-4" />}
+                className="w-full mt-2 bg-emerald-700 hover:bg-emerald-600 text-white font-medium cursor-pointer"
               >
-                {loading ? (
-                  <div className="w-4 h-4 border-2 border-slate-950 border-t-transparent rounded-full animate-spin mx-auto" />
-                ) : mode === 'login' ? (
-                  'Sign In'
-                ) : (
-                  'Create Account'
-                )}
+                {loading ? 'Processing...' : mode === 'login' ? 'Sign In' : 'Create Account'}
               </Button>
             </form>
-
-            {/* Toggle Mode */}
-            <div className="mt-4 text-center">
-              <button
-                type="button"
-                onClick={() => {
-                  setMode(mode === 'login' ? 'register' : 'login');
-                  setErrorMsg(null);
-                  setSuccessMsg(null);
-                }}
-                className="text-xs text-slate-400 hover:text-emerald-400 transition-colors cursor-pointer"
-              >
-                {mode === 'login' ? (
-                  <span>Don't have an account yet? <strong className="text-emerald-400">Register</strong></span>
-                ) : (
-                  <span>Already registered? <strong className="text-emerald-400">Sign In</strong></span>
-                )}
-              </button>
-            </div>
           </>
         )}
       </div>

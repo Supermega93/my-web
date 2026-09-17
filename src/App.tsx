@@ -31,6 +31,7 @@ import { AcademyHomePage } from './components/academy/AcademyHomePage.tsx';
 import { LessonViewerPage } from './components/academy/LessonViewerPage.tsx';
 import { PromptArchitectPage } from './components/academy/PromptArchitectPage.tsx';
 import { LevelHubPage } from './components/academy/LevelHubPage.tsx';
+import { AcademyPricingPage } from './components/academy/AcademyPricingPage.tsx';
 import { MegaAiChat } from './components/common/MegaAiChat.tsx';
 
 function AppContent() {
@@ -208,7 +209,12 @@ function AppContent() {
     products[0] ||
     INITIAL_PRODUCTS[0];
 
-  const isAcademyView = currentView === 'academy' || currentView === 'lesson-detail';
+  const isAcademyView =
+    currentView === 'academy' ||
+    currentView === 'lesson-detail' ||
+    currentView === 'level-hub' ||
+    currentView === 'levels' ||
+    currentView === 'academy-pricing';
 
   return (
     <div className="min-h-screen bg-[#FAFBFD] text-slate-900 flex flex-col font-sans selection:bg-emerald-200 selection:text-emerald-900">
@@ -227,6 +233,12 @@ function AppContent() {
       <main className="flex-grow">
         {currentView === 'academy' && (
           <AcademyHomePage
+            onNavigate={handleNavigate}
+          />
+        )}
+
+        {currentView === 'academy-pricing' && (
+          <AcademyPricingPage
             onNavigate={handleNavigate}
           />
         )}

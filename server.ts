@@ -99,17 +99,48 @@ const PORT = 3000;
 app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ extended: true, limit: '50mb' }));
 
-// SECURITY ENFORCEMENT: Strictly block direct public/static PDF access.
-// All eBook downloads MUST go through the authorized server-side signed URL flow (/api/ebooks/download).
+// SECURITY ENFORCEMENT: Strictly block direct public/static paid eBook PDF access.
+// Free Academy exercise companion guides are permitted via /api/academy/download and /downloads/.
 app.use((req, res, next) => {
   const p = req.path.toLowerCase();
-  if ((p.endsWith('.pdf') || p.includes('.pdf')) && !p.startsWith('/api/ebooks/download')) {
+  if (
+    (p.endsWith('.pdf') || p.includes('.pdf')) && 
+    !p.startsWith('/api/ebooks/download') && 
+    !p.startsWith('/api/academy/download') && 
+    !p.startsWith('/downloads/')
+  ) {
     return res.status(403).json({
       error: 'Direct PDF download forbidden. Access requires submitting your email to receive an authorized temporary download link.',
       code: 'DIRECT_ACCESS_FORBIDDEN',
     });
   }
   next();
+});
+
+// Free Academy Exercise Download API (Instant download for Lesson 3.5 & Lesson 3.6 companion guides)
+app.get('/api/academy/download/:docType', (req, res) => {
+  const { docType } = req.params;
+  let filename = '';
+  let downloadName = '';
+  if (docType === 'indicator' || docType === 'mt5-indicator' || docType === 'lesson-3-6') {
+    filename = 'From_Trading_Idea_to_MT5_Indicator_Guide.pdf';
+    downloadName = 'From-Trading-Idea-to-MT5-Indicator-Guide.pdf';
+  } else if (docType === 'ea' || docType === 'breakout-ea' || docType === 'lesson-3-5' || docType === 'lesson-3-practical') {
+    filename = 'From_Trading_Idea_to_MT5_EA_Guide.pdf';
+    downloadName = 'From-Trading-Idea-to-MT5-EA-Guide.pdf';
+  } else {
+    return res.status(404).json({ error: 'Document not found' });
+  }
+
+  const filePath = path.join(process.cwd(), 'public', 'downloads', filename);
+  if (!fs.existsSync(filePath)) {
+    return res.status(404).json({ error: 'Exercise document not found' });
+  }
+
+  res.setHeader('Content-Type', 'application/pdf');
+  res.setHeader('Content-Disposition', `attachment; filename="${downloadName}"`);
+  const fileStream = fs.createReadStream(filePath);
+  fileStream.pipe(res);
 });
 
 // Custom static asset handler with accurate MIME types

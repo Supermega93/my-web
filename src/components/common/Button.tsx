@@ -21,20 +21,20 @@ export function Button({
   loading = false,
   ...props
 }: ButtonProps) {
-  const baseStyles = 'inline-flex items-center justify-center font-semibold rounded-xl transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-emerald-600 disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap active:scale-[0.98] cursor-pointer';
+  const baseStyles = 'inline-flex items-center justify-center font-medium rounded-full transition-all duration-200 ease-out focus:outline-none focus:ring-2 focus:ring-offset-1 focus:ring-slate-400/40 disabled:opacity-40 disabled:pointer-events-none whitespace-nowrap active:scale-[0.98] cursor-pointer tracking-tight select-none';
 
   const sizeStyles = {
-    sm: 'text-xs px-3 py-1.5 gap-1.5',
-    md: 'text-sm px-4.5 py-2.5 gap-2',
-    lg: 'text-base px-6 py-3.5 gap-2.5 shadow-sm hover:shadow-md',
+    sm: 'text-xs px-3.5 py-1.5 gap-1.5',
+    md: 'text-sm px-5 py-2.5 gap-2',
+    lg: 'text-base px-6.5 py-3 gap-2.5 shadow-[0_2px_8px_rgba(0,0,0,0.06)] hover:shadow-[0_4px_14px_rgba(0,0,0,0.1)]',
   };
 
   const variantStyles = {
-    primary: 'bg-emerald-700 hover:bg-emerald-800 text-white shadow-xs hover:shadow-md shadow-emerald-900/15 border border-emerald-800/30',
-    secondary: 'bg-white hover:bg-slate-50 text-slate-800 border border-slate-200 hover:border-slate-300 shadow-xs',
-    outline: 'bg-white/80 hover:bg-emerald-50/50 text-slate-700 hover:text-emerald-900 border border-slate-300 hover:border-emerald-400 shadow-xs',
-    ghost: 'bg-transparent hover:bg-slate-100 text-slate-600 hover:text-slate-900',
-    danger: 'bg-rose-600 hover:bg-rose-700 text-white font-semibold focus:ring-rose-500 border border-rose-600/30',
+    primary: 'bg-slate-900 hover:bg-slate-850 text-white shadow-[0_1px_3px_rgba(0,0,0,0.08)] hover:shadow-[0_3px_10px_rgba(0,0,0,0.12)] border border-slate-800/80',
+    secondary: 'bg-white hover:bg-slate-50 text-slate-800 border border-slate-200/90 hover:border-slate-300 shadow-xs',
+    outline: 'bg-white/90 hover:bg-slate-50 text-slate-700 hover:text-slate-900 border border-slate-200/90 hover:border-slate-300 shadow-xs',
+    ghost: 'bg-transparent hover:bg-slate-100/70 text-slate-600 hover:text-slate-900',
+    danger: 'bg-rose-600 hover:bg-rose-700 text-white shadow-xs focus:ring-rose-400 border border-rose-700/30',
   };
 
   return (

@@ -199,7 +199,8 @@ export type ActiveView =
   | 'level-hub'
   | 'lessons'
   | 'lesson-detail'
-  | 'prompt-architect';
+  | 'prompt-architect'
+  | 'academy-pricing';
 
 export interface LevelMeta {
   id: string;

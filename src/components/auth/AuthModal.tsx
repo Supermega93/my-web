@@ -3,7 +3,7 @@ import { Modal } from '../common/Modal.tsx';
 import { Button } from '../common/Button.tsx';
 import { useAuth } from '../../context/AuthContext.tsx';
 import { UserRole } from '../../types.ts';
-import { LogIn, UserPlus, Mail, AlertCircle, CheckCircle2 } from 'lucide-react';
+import { LogIn, UserPlus, Mail, AlertCircle, CheckCircle2, Eye, EyeOff } from 'lucide-react';
 
 interface AuthModalProps {
   isOpen: boolean;
@@ -22,6 +22,7 @@ export function AuthModal({
   const [email, setEmail] = useState('');
   const [phone, setPhone] = useState('');
   const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [role, setRole] = useState<UserRole>('customer');
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
@@ -111,22 +112,58 @@ export function AuthModal({
     <Modal
       isOpen={isOpen}
       onClose={onClose}
-      title={needsVerification ? 'Verify Your Email' : mode === 'login' ? 'Sign In to EA Automation Hub' : 'Create Trader Account'}
-      subtitle={needsVerification ? 'Complete email confirmation via Supabase to access your account.' : 'Access your purchased EAs, licenses, ebooks, and project queues.'}
+      title={needsVerification ? 'Verify Your Email' : mode === 'login' ? 'Welcome Back' : 'Create Trader Account'}
+      subtitle={needsVerification ? 'Complete email confirmation via Supabase to access your account.' : mode === 'login' ? 'Sign in to access your EAs, licenses, Academy courses, and tools.' : 'Join MEG.AI Labs to unlock courses, download set files, and track progress.'}
       maxWidth="md"
     >
       <div className="space-y-4 text-xs">
+        {/* Segmented Tab Switcher (Apple-Inspired) */}
+        {!needsVerification && (
+          <div className="flex p-1 bg-slate-950/70 rounded-2xl border border-slate-800/80 mb-2">
+            <button
+              type="button"
+              onClick={() => {
+                setMode('login');
+                setError('');
+                setSuccess('');
+              }}
+              className={`flex-1 py-2 text-xs font-medium rounded-xl transition-all select-none cursor-pointer ${
+                mode === 'login'
+                  ? 'bg-slate-800 text-white shadow-xs font-semibold'
+                  : 'text-slate-400 hover:text-slate-200'
+              }`}
+            >
+              Sign In
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                setMode('register');
+                setError('');
+                setSuccess('');
+              }}
+              className={`flex-1 py-2 text-xs font-medium rounded-xl transition-all select-none cursor-pointer ${
+                mode === 'register'
+                  ? 'bg-slate-800 text-white shadow-xs font-semibold'
+                  : 'text-slate-400 hover:text-slate-200'
+              }`}
+            >
+              Create Account
+            </button>
+          </div>
+        )}
+
         {error && (
-          <div className="p-3 rounded-xl bg-rose-950/60 border border-rose-800 text-rose-300 flex items-start gap-2">
-            <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
+          <div className="p-3 rounded-2xl bg-rose-950/50 border border-rose-800/80 text-rose-300 flex items-start gap-2 animate-in fade-in duration-150">
+            <AlertCircle className="w-4 h-4 shrink-0 mt-0.5 text-rose-400" />
             <span className="leading-relaxed">{error}</span>
           </div>
         )}
 
         {success && (
-          <div className="p-3 rounded-xl bg-emerald-950/60 border border-emerald-800 text-emerald-300 flex items-center gap-2">
-            <CheckCircle2 className="w-4 h-4 shrink-0" />
-            <span>{success}</span>
+          <div className="p-3 rounded-2xl bg-emerald-950/50 border border-emerald-800/80 text-emerald-300 flex items-center gap-2 animate-in fade-in duration-150">
+            <CheckCircle2 className="w-4 h-4 shrink-0 text-emerald-400" />
+            <span className="leading-relaxed">{success}</span>
           </div>
         )}
 
@@ -139,10 +176,10 @@ export function AuthModal({
             <p className="text-slate-300 text-xs leading-relaxed">
               We sent a confirmation link to:
             </p>
-            <div className="p-2.5 bg-slate-900 border border-slate-800 rounded-lg text-emerald-400 font-mono text-center break-all">
+            <div className="p-2.5 bg-slate-950 border border-slate-800 rounded-2xl text-emerald-400 font-mono text-center break-all">
               {unverifiedEmail || email}
             </div>
-            <p className="text-slate-400 text-[11px] leading-relaxed">
+            <p className="text-slate-400 text-[11px] leading-relaxed max-w-sm mx-auto">
               Users must verify their email address before accessing the platform. Please check your inbox and spam folders.
             </p>
 
@@ -154,6 +191,7 @@ export function AuthModal({
                 type="button"
                 disabled={resending}
                 onClick={handleResend}
+                className="bg-emerald-700 hover:bg-emerald-600 text-white font-medium"
               >
                 {resending ? 'Sending...' : 'Resend Verification Link'}
               </Button>
@@ -165,7 +203,7 @@ export function AuthModal({
                   setMode('login');
                   setError('');
                 }}
-                className="text-xs text-slate-400 hover:text-emerald-400 transition-colors font-mono pt-2"
+                className="text-xs text-slate-400 hover:text-emerald-400 transition-colors font-mono pt-2 cursor-pointer"
               >
                 Already clicked the link? <span className="text-emerald-400 underline font-semibold">Sign In</span>
               </button>
@@ -178,7 +216,7 @@ export function AuthModal({
               type="button"
               onClick={handleGoogleLogin}
               disabled={loading}
-              className="w-full py-2.5 px-4 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-700 hover:border-emerald-500/40 text-xs font-semibold text-white flex items-center justify-center gap-3 transition-all shadow-sm cursor-pointer disabled:opacity-50"
+              className="w-full py-2.5 px-4 rounded-2xl bg-slate-800/90 hover:bg-slate-750 border border-slate-750 hover:border-slate-600 text-xs font-medium text-white flex items-center justify-center gap-3 transition-all shadow-xs cursor-pointer active:scale-[0.98] disabled:opacity-50"
             >
               <svg className="w-4 h-4" viewBox="0 0 24 24">
                 <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" />
@@ -189,70 +227,80 @@ export function AuthModal({
               <span>Continue with Google</span>
             </button>
 
-            <div className="relative flex items-center justify-center my-2">
-              <div className="border-t border-slate-800 w-full" />
-              <span className="bg-slate-900 px-3 text-[11px] font-mono uppercase text-slate-500">
-                or with email
+            <div className="relative flex items-center justify-center my-3">
+              <div className="border-t border-slate-800/80 w-full" />
+              <span className="bg-slate-900 px-3 text-[10px] font-mono uppercase text-slate-500 tracking-wider">
+                or email
               </span>
-              <div className="border-t border-slate-800 w-full" />
+              <div className="border-t border-slate-800/80 w-full" />
             </div>
 
-            <form onSubmit={handleSubmit} className="space-y-3.5">
+            <form onSubmit={handleSubmit} className="space-y-3">
               {mode === 'register' && (
                 <div>
-                  <label className="block text-slate-400 font-mono mb-1">Full Name</label>
+                  <label className="block text-[11px] font-mono text-slate-400 mb-1">Full Name</label>
                   <input
                     type="text"
                     required
                     value={name}
                     onChange={(e) => setName(e.target.value)}
                     placeholder="Alex Morgan"
-                    className="w-full px-3 py-2 bg-slate-900 border border-slate-800 rounded-lg text-slate-100 focus:outline-none focus:border-emerald-500"
+                    className="w-full px-3.5 py-2.5 bg-slate-950/80 border border-slate-800 focus:border-slate-500 rounded-2xl text-slate-100 placeholder-slate-600 focus:outline-none focus:ring-1 focus:ring-slate-700 text-xs transition-all"
                   />
                 </div>
               )}
 
               <div>
-                <label className="block text-slate-400 font-mono mb-1">Email Address</label>
+                <label className="block text-[11px] font-mono text-slate-400 mb-1">Email Address</label>
                 <input
                   type="email"
                   required
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   placeholder="trader@ea-hub.com"
-                  className="w-full px-3 py-2 bg-slate-900 border border-slate-800 rounded-lg text-slate-100 focus:outline-none focus:border-emerald-500"
+                  className="w-full px-3.5 py-2.5 bg-slate-950/80 border border-slate-800 focus:border-slate-500 rounded-2xl text-slate-100 placeholder-slate-600 focus:outline-none focus:ring-1 focus:ring-slate-700 text-xs transition-all"
                 />
               </div>
 
               {mode === 'register' && (
                 <div>
-                  <label className="block text-slate-400 font-mono mb-1">Phone (Optional)</label>
+                  <label className="block text-[11px] font-mono text-slate-400 mb-1">Phone (Optional)</label>
                   <input
                     type="tel"
                     value={phone}
                     onChange={(e) => setPhone(e.target.value)}
                     placeholder="+1 (555) 019-2834"
-                    className="w-full px-3 py-2 bg-slate-900 border border-slate-800 rounded-lg text-slate-100 focus:outline-none focus:border-emerald-500"
+                    className="w-full px-3.5 py-2.5 bg-slate-950/80 border border-slate-800 focus:border-slate-500 rounded-2xl text-slate-100 placeholder-slate-600 focus:outline-none focus:ring-1 focus:ring-slate-700 text-xs transition-all"
                   />
                 </div>
               )}
 
               <div>
-                <label className="block text-slate-400 font-mono mb-1">Password</label>
-                <input
-                  type="password"
-                  required
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  placeholder="••••••••"
-                  className="w-full px-3 py-2 bg-slate-900 border border-slate-800 rounded-lg text-slate-100 focus:outline-none focus:border-emerald-500"
-                />
+                <label className="block text-[11px] font-mono text-slate-400 mb-1">Password</label>
+                <div className="relative">
+                  <input
+                    type={showPassword ? 'text' : 'password'}
+                    required
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    placeholder="••••••••"
+                    className="w-full px-3.5 py-2.5 pr-10 bg-slate-950/80 border border-slate-800 focus:border-slate-500 rounded-2xl text-slate-100 placeholder-slate-600 focus:outline-none focus:ring-1 focus:ring-slate-700 text-xs transition-all"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-200 p-1 cursor-pointer transition-colors"
+                    title={showPassword ? 'Hide password' : 'Show password'}
+                  >
+                    {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                  </button>
+                </div>
               </div>
 
               {mode === 'register' && (
-                <div className="p-2 rounded-lg bg-slate-950 border border-slate-800 text-[11px] text-slate-400 flex items-center gap-2">
+                <div className="p-2.5 rounded-2xl bg-slate-950/60 border border-slate-800/80 text-[11px] text-slate-400 flex items-center gap-2">
                   <Mail className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
-                  <span>A Supabase verification link will be sent to activate your account.</span>
+                  <span>A Supabase confirmation link will be sent to activate your account.</span>
                 </div>
               )}
 
@@ -263,28 +311,13 @@ export function AuthModal({
                   fullWidth
                   type="submit"
                   disabled={loading}
-                  icon={mode === 'login' ? <LogIn className="w-4 h-4 text-slate-950" /> : <UserPlus className="w-4 h-4 text-slate-950" />}
+                  icon={mode === 'login' ? <LogIn className="w-4 h-4" /> : <UserPlus className="w-4 h-4" />}
+                  className="bg-emerald-700 hover:bg-emerald-600 text-white font-medium"
                 >
                   {loading ? 'Processing...' : mode === 'login' ? 'Sign In' : 'Create Account'}
                 </Button>
               </div>
             </form>
-
-            <div className="text-center pt-2">
-              <button
-                type="button"
-                onClick={() => {
-                  setError('');
-                  setSuccess('');
-                  setMode(mode === 'login' ? 'register' : 'login');
-                }}
-                className="text-xs text-slate-400 hover:text-emerald-400 transition-colors font-mono"
-              >
-                {mode === 'login'
-                  ? "Don't have an account? Create one"
-                  : 'Already have an account? Sign in'}
-              </button>
-            </div>
           </>
         )}
       </div>
