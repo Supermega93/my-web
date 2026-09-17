@@ -912,5 +912,500 @@ In the upcoming Paid Masterclass levels, you will unlock the institutional playb
 
 Take your momentum, celebrate this build, and when you're ready, let's take your architecture skills to the institutional level!
 `
+  },
+  {
+    id: 'lesson-3-6',
+    course_id: '00000000-0000-0000-0000-000000000003',
+    order_index: 14,
+    level_name: 'Level 3: Elementary — Robot Architecture & Blueprints',
+    lesson_number: 6,
+    title: 'Lesson 3.6: Practical Workshop: Build Your First MT5 Indicator 📊',
+    summary: 'The Final Free Tier Workshop: Turn a raw trading idea into a working MT5 Average Daily Range (ADR) indicator using AI assistance, step-by-step specifications, Claude coding prompts, MetaEditor debugging, and chart validation.',
+    duration_minutes: 30,
+    is_free: true,
+    content: `
+# Practical Workshop: Build Your First MT5 Indicator 📊
+
+Welcome to the grand finale of the Free Academy: **Lesson 3.6 — Build Your First MT5 Indicator**!
+
+In Lesson 3.5, you constructed your first automated robot (The Breakout EA) using the 4 Lego Blocks. Now, you are going to master the other fundamental half of MQL5 development: **Custom Indicators**.
+
+Building an indicator requires a different architectural mindset than building an Expert Advisor:
+* **Indicators never execute trades** — they calculate buffers, draw lines, plot histograms, and generate visual telemetry directly on price charts.
+* **Indicators run on every tick** — meaning memory efficiency, non-repainting buffer indexing, and clean loop logic are paramount.
+* **The Workflow Is King** — You do not jump straight into MQL5 code. You start with a raw trading idea, refine it into an institutional specification with ChatGPT, translate that specification into a surgical coding prompt for Claude, compile it in MetaEditor, verify it on an active chart, and iterate.
+
+> 🎬 **Video Lesson Edition**: Watch the full video lesson above at any time. Follow along on video or use the interactive **Indicator Workshop Workbench** and step-by-step written specifications below!
+
+---
+
+## 🗺️ The 16-Step AI Automation Workflow
+
+\`\`\`text
+┌────────────────────────────────────────────────────────────────────────────────────────┐
+│                        THE 16-STEP INDICATOR WORKFLOW                                 │
+├────────────────────────────────────────────────────────────────────────────────────────┤
+│  [PHASE 1: SPECIFICATION & ARCHITECTURE] (ChatGPT)                                    │
+│   1. Start with a rough trading idea in plain English.                                 │
+│   2. Feed the idea to ChatGPT to structure the mathematical logic.                    │
+│   3. ChatGPT asks 6 clarifying questions (Buffers, Inputs, Colors, Formulas).          │
+│   4. Review, adjust, and prune unneeded complexity.                                    │
+│   5. Finalize the 1-page Machine Specification Agreement.                             │
+│                                                                                        │
+│  [PHASE 2: PROMPT ENGINEERING & CODE GENERATION] (Claude)                             │
+│   6. Formulate the "Bridge Prompt" (Transition from Architect to Coder).               │
+│   7. Apply the 5-Ingredient Master Recipe (Role, Context, Goal, Constraints, Format). │
+│   8. Feed the prompt into Claude 3.5 Sonnet / Claude 3.7 Sonnet.                       │
+│                                                                                        │
+│  [PHASE 3: COMPILATION & SURGICAL DEBUGGING] (MetaEditor)                             │
+│   9. Open MetaEditor (F4) ➔ New Custom Indicator ➔ Paste Code ➔ Compile (F7).         │
+│  10. If errors occur: Isolate error line ➔ Apply Compiler Error Protocol ➔ 0 Errors.  │
+│                                                                                        │
+│  [PHASE 4: CHART VERIFICATION & ITERATIVE REFINEMENT] (MT5 Chart)                     │
+│  11. Attach to chart ➔ Run 7-Point Visual Inspection (Buffers, Colors, Timeframes).   │
+│  12. Check historical candles ➔ Verify non-repainting buffer math.                    │
+│  13. Craft the Iterative Improvement Prompt (Labels, Alerts, Smoothing).               │
+│  14. Re-compile and save final .ex5 binary to MQL5/Indicators.                        │
+│  15. Save source prompt & specification in your Strategy Architecture Library.         │
+│  16. Graduate Free Academy ➔ Advance to the Institutional Masterclass!                │
+└────────────────────────────────────────────────────────────────────────────────────────┘
+\`\`\`
+
+---
+
+## 💡 Step 1: Start With the Rough Idea
+
+Every great trading tool starts with an eyeball observation on a chart.
+
+For this workshop, our core concept is the **Average Daily Range (ADR) Projection Indicator**:
+> *"I want an indicator for MT5 that calculates the Average Daily Range (ADR) over the last 5 days. Then, every morning at the day's open, it projects four horizontal reference levels: ADR High (+100%), ADR Low (-100%), ADR Half-High (+50%), and ADR Half-Low (-50%). Traders use these levels to identify intraday exhaustion and high-probability reversal zones."*
+
+### 🛑 The Golden Rule: Never Ask For Code Yet!
+Beginner traders make the mistake of pasting that rough paragraph straight into an AI and asking: *"Write the MQL5 code."*
+
+The AI will guess:
+* How many indicator buffers to allocate?
+* Should it use indicator buffers or graphical chart objects (\`OBJ_HLINE\`)?
+* What happens across weekend gaps or Sunday bars?
+* Does it recalculate on every tick or once per day?
+
+When the AI guesses, you get broken, repainting code. **Instead, we use ChatGPT as our Strategy Architect to interrogate our idea first!**
+
+---
+
+## 🤖 Step 2: Let ChatGPT Help Structure the Idea
+
+Copy and paste this specification builder prompt into ChatGPT:
+
+\`\`\`text
+ROLE: Act as an institutional trading systems analyst and MQL5 architect.
+
+CONTEXT: I have a trading idea for a custom MetaTrader 5 indicator based on the Average Daily Range (ADR).
+
+IDEA:
+I want an indicator that calculates the average true daily range over the past N days (default 5). Based on today's daily open price, it should project 4 horizontal boundary levels onto intraday charts:
+- ADR High (Today Open + 100% ADR)
+- ADR Half-High (Today Open + 50% ADR)
+- ADR Half-Low (Today Open - 50% ADR)
+- ADR Low (Today Open - 100% ADR)
+
+TASK:
+Do NOT write any code yet. Instead, ask me 6 technical and architectural questions regarding buffers, input parameters, calculation timing, visual styling, and chart handling so we can turn this rough idea into a complete, bulletproof specification.
+\`\`\`
+
+### 📋 The 6 Structural Clarifications ChatGPT Will Ask:
+1. **Mathematical Formula**: Is ADR calculated as \`(Daily High - Daily Low)\` simple average, or Wilder's ATR?
+2. **Buffer Strategy**: Do you want 4 plotted indicator lines (\`INDICATOR_LINE\`), or drawn chart ray objects?
+3. **Execution Heartbeat**: Should the levels update on every tick or calculate once on the first bar of the day?
+4. **Historical Persistence**: Should the lines show historical levels for previous days, or only for the current active trading session?
+5. **Configurable Inputs**: What variables should the user be able to tweak in the indicator settings dialog?
+6. **Color & Styling**: What default colors and line thicknesses should represent full extension vs. half extension?
+
+---
+
+## 📝 Step 3: The Finalized Specification Agreement
+
+By reviewing ChatGPT's questions and locking in clear answers, we arrive at our finalized specification:
+
+\`\`\`text
+================================================================================
+                    MT5 CUSTOM INDICATOR SPECIFICATION: ADR LEVELS
+================================================================================
+1. PROGRAM IDENTITY:
+   - Type: Custom Indicator (INDICATOR_CHART_WINDOW)
+   - Name: ADR_Levels
+   - Timeframe Compatibility: Intraday (M1, M5, M15, M30, H1)
+
+2. INPUT PARAMETERS:
+   - InpADRPeriod: int = 5 (Number of completed daily candles for ADR average)
+   - InpShowHalfLevels: bool = true (Toggle 50% ADR levels on/off)
+   - InpHighColor: color = clrCrimson (ADR 100% High)
+   - InpLowColor: color = clrDodgerBlue (ADR 100% Low)
+   - InpHalfColor: color = clrGold (ADR 50% Mid-Levels)
+   - InpLineWidth: int = 2
+
+3. CALCULATION LOGIC:
+   - Loop over the last N completed daily candles (D1 timeframe, shifts 1 to InpADRPeriod).
+   - Sum (iHigh(D1, i) - iLow(D1, i)) and divide by InpADRPeriod.
+   - Fetch today's Day Open price: iOpen(_Symbol, PERIOD_D1, 0).
+   - Level Calculations:
+     * ADR_High = DayOpen + ADR
+     * ADR_HalfHigh = DayOpen + (ADR * 0.5)
+     * ADR_HalfLow = DayOpen - (ADR * 0.5)
+     * ADR_Low = DayOpen - ADR
+
+4. PLOTTING ARCHITECTURE:
+   - 4 Indicator Buffers mapped to Plot 1-4 with DRAW_LINE style.
+   - Values plotted across all intraday bars belonging to the current trading day (matching iTime(D1, 0)).
+
+5. CONSTRAINTS:
+   - Indicator must strictly NOT repaint historical days.
+   - Zero trade execution code (Indicator only).
+   - OnCalculate() must use prev_calculated optimization to prevent CPU lag.
+================================================================================
+\`\`\`
+
+---
+
+## 🧠 Step 4: Why Claude Over ChatGPT for MQL5 Coding?
+
+In the AI coding ecosystem, different models excel at different tasks:
+* **ChatGPT (OpenAI)**: Superb reasoning partner for brainstorming, edge-case interrogation, and structuring specifications.
+* **Claude (Anthropic — Claude 3.5 / 3.7 Sonnet)**: The gold standard for MQL5 code generation. Claude possesses significantly deeper training on strict C++ / MQL5 memory pointers, buffer bindings (\`SetIndexBuffer\`), and compiler syntax requirements, resulting in far fewer hallucinated MT4 keywords.
+
+### 🍳 The 5-Ingredient Master Coding Prompt for Claude
+
+Copy and paste this prompt directly into Claude:
+
+\`\`\`text
+ROLE: Senior MQL5 Indicator Architect.
+
+CONTEXT: You are writing a production-grade custom indicator for MetaTrader 5 (.mq5) that displays Average Daily Range (ADR) projected levels on intraday charts.
+
+OBJECTIVE: Write a clean, modular, and compilable MT5 Custom Indicator based on the finalized specification below.
+
+INPUTS:
+- input int InpADRPeriod = 5; // Lookback Daily Candles
+- input bool InpShowHalfLevels = true; // Show 50% ADR Levels
+- input color InpHighColor = clrCrimson; // ADR 100% High
+- input color InpLowColor = clrDodgerBlue; // ADR 100% Low
+- input color InpHalfColor = clrGold; // ADR 50% Levels
+- input int InpLineWidth = 2; // Line Width
+
+ARCHITECTURAL REQUIREMENTS:
+1. Use #property indicator_chart_window.
+2. Allocate 4 indicator buffers using SetIndexBuffer() with INDICATOR_DATA.
+3. In OnCalculate(), check prev_calculated to avoid unnecessary recalculation of historical bars.
+4. Calculate ADR by reading completed daily candles on PERIOD_D1 (shifts 1 to InpADRPeriod).
+5. Read current day's open price using iOpen(_Symbol, PERIOD_D1, 0).
+6. Fill the 4 indicator buffers for all intraday bars belonging to the current day.
+7. Include clean comments and zero MT4 legacy functions.
+
+FORMAT: Return ONLY the complete, ready-to-compile .mq5 source code.
+\`\`\`
+
+---
+
+## 💻 Step 5: MetaEditor Deployment Protocol
+
+1. Open MetaTrader 5 and press **F4** to launch **MetaEditor**.
+2. Click **New > Custom Indicator (template)** in the top toolbar.
+3. Name your indicator: \`ADR_Levels\` and click Next through the wizard until Finish.
+4. Highlight all default template code (\`Ctrl+A\`) and press **Delete**.
+5. Paste your Claude-generated MQL5 code into the blank editor.
+6. Press **F7** (or click the green **Compile** button in the toolbar).
+
+---
+
+## 🛡️ Step 6: Fix Errors Without Guessing (The Compiler Error Protocol)
+
+If MetaEditor displays a red error in the bottom toolbox, **do not panic and do not rewrite the entire file!**
+
+Follow the **3-Rule Compiler Error Protocol**:
+1. **Rule 1: Never guess the fix.** Copy the exact error text, line number, and column number.
+2. **Rule 2: Provide the exact function.** Copy only the function containing that line number back to Claude.
+3. **Rule 3: Demand a surgical replacement.** Instruct Claude to fix only that function without modifying global inputs or other buffers.
+
+### 💬 The Surgical Debug Prompt Template:
+\`\`\`text
+I compiled your ADR_Levels.mq5 code in MetaEditor and received this error:
+Line 68, Column 14: 'SetIndexBuffer' - wrong number of parameters
+
+Here is the OnInit() function where this occurs:
+[PASTE ONINIT FUNCTION HERE]
+
+Fix the parameter signature strictly for MetaTrader 5 MQL5 and provide ONLY the corrected OnInit() function.
+\`\`\`
+
+---
+
+## 🔍 Step 7: Visual Verification on MT5 Chart
+
+Once your indicator compiles with **0 Errors and 0 Warnings**, open MetaTrader 5:
+1. Open any intraday chart (e.g., **EURUSD M15** or **GBPUSD H1**).
+2. Press **Ctrl+N** to open the Navigator window.
+3. Expand **Indicators** and find **ADR_Levels**.
+4. Drag and drop it onto the chart.
+
+### 📋 The 7 Behavioral Verification Questions:
+* [ ] **Line Alignment**: Do the 4 horizontal lines project forward cleanly from the start of the current daily session (00:00 server time)?
+* [ ] **High & Low Boundaries**: Is the red 100% ADR High line positioned above the gold 50% line, and the blue 100% ADR Low line positioned below the gold 50% line?
+* [ ] **Intraday Reaction**: When price reaches the ADR High line on a high-momentum session, does price show signs of consolidation, exhaustion, or wick rejection?
+* [ ] **Timeframe Switching**: Does the indicator adjust seamlessly when toggling between M5, M15, M30, and H1?
+* [ ] **Input Responsiveness**: Does changing \`InpADRPeriod\` from 5 to 10 or 20 adjust the level distances immediately?
+* [ ] **Toggle Check**: Does setting \`InpShowHalfLevels = false\` completely hide the 50% mid-lines?
+* [ ] **Zero CPU Spikes**: Does the MT5 terminal remain fluid without freezing or spiking CPU usage?
+
+---
+
+## 🚀 Step 8: Compare Results & Iterate (The Improvement Prompt)
+
+Once your baseline indicator is working reliably, you can add institutional enhancements!
+
+Here is an example **Iterative Improvement Prompt** to add text price tags and sound alerts:
+
+\`\`\`text
+ROLE: Senior MQL5 Indicator Architect.
+
+CONTEXT: Here is my working ADR_Levels.mq5 indicator code:
+[PASTE WORKING CODE]
+
+IMPROVEMENT REQUEST:
+1. Add an on-screen chart label on the right side of each line displaying the exact price and distance in pips from the current bid (e.g., "ADR High: 1.0850 (+42 pips)").
+2. Add an input parameter InpEnableAlerts (bool = true). If the current price touches within 5 pips of either 100% ADR level, trigger an Alert() once per bar.
+3. Keep all existing buffer math and styling intact.
+\`\`\`
+
+---
+
+## 🏛️ The "Who Does What" Matrix
+
+Understanding team roles is what turns beginners into master software architects:
+
+| Role | Primary Responsibility | Best Tool |
+| :--- | :--- | :--- |
+| **You (The Architect)** | Trading concept, rule verification, visual chart inspection | Your Eyes & Trading Plan |
+| **ChatGPT** | Clarifying questions, structuring machine facts, edge-case interrogation | ChatGPT-4o / Reasoning |
+| **Claude** | Writing clean, compilable, zero-hallucination MQL5 source code | Claude 3.5 / 3.7 Sonnet |
+| **MetaTrader 5** | Compilation (F7), chart rendering, market tick execution | MetaEditor & MT5 Terminal |
+
+---
+
+## 📜 The 3 Golden Rules of Indicator Architecture
+
+1. **Idea First, Code Last**: Never ask an AI to write MQL5 until you have a finalized 1-page specification with every input, buffer, and formula locked down.
+2. **Buffer Math Over Graphical Objects**: Use \`SetIndexBuffer\` for continuous series lines rather than spawning hundreds of chart objects (\`ObjectCreate\`), which bloat MT5 memory.
+3. **Surgical Corrections Only**: When a compiler error occurs, feed the exact line number and error message back to the AI. Never hit reset on code that is 90% working!
+
+---
+
+## 💻 Verified Reference Answer Key: \`ADR_Levels.mq5\`
+
+Below is the verified, institutional MQL5 source code. You can use this as your reference benchmark:
+
+\`\`\`mql5
+//+------------------------------------------------------------------+
+//|                                                   ADR_Levels.mq5 |
+//|                                  Senior MQL5 Software Architect  |
+//|                         School of AI Trading Architecture (L3.6) |
+//+------------------------------------------------------------------+
+#property copyright "School of AI Trading Architecture"
+#property link      "https://github.com/ai-trading-architecture"
+#property version   "1.00"
+#property indicator_chart_window
+#property indicator_buffers 4
+#property indicator_plots   4
+
+//--- Plot 1: ADR 100% High
+#property indicator_label1  "ADR High (+100%)"
+#property indicator_type1   DRAW_LINE
+#property indicator_color1  clrCrimson
+#property indicator_style1  STYLE_SOLID
+#property indicator_width1  2
+
+//--- Plot 2: ADR 50% Half-High
+#property indicator_label2  "ADR Half-High (+50%)"
+#property indicator_type2   DRAW_LINE
+#property indicator_color2  clrGold
+#property indicator_style2  STYLE_DOT
+#property indicator_width2  1
+
+//--- Plot 3: ADR 50% Half-Low
+#property indicator_label3  "ADR Half-Low (-50%)"
+#property indicator_type3   DRAW_LINE
+#property indicator_color3  clrGold
+#property indicator_style3  STYLE_DOT
+#property indicator_width3  1
+
+//--- Plot 4: ADR 100% Low
+#property indicator_label4  "ADR Low (-100%)"
+#property indicator_type4   DRAW_LINE
+#property indicator_color4  clrDodgerBlue
+#property indicator_style4  STYLE_SOLID
+#property indicator_width4  2
+
+//--- Input Parameters
+input group "--- ADR Parameters ---"
+input int      InpADRPeriod      = 5;          // Lookback Days for ADR Calculation
+input bool     InpShowHalfLevels = true;       // Show 50% Mid-Levels
+
+//--- Indicator Dynamic Buffers
+double BufferADRHigh[];
+double BufferADRHalfHigh[];
+double BufferADRHalfLow[];
+double BufferADRLow[];
+
+//+------------------------------------------------------------------+
+//| Custom indicator initialization function                         |
+//+------------------------------------------------------------------+
+int OnInit()
+{
+   // Bind indicator dynamic arrays to chart data plots
+   SetIndexBuffer(0, BufferADRHigh, INDICATOR_DATA);
+   SetIndexBuffer(1, BufferADRHalfHigh, INDICATOR_DATA);
+   SetIndexBuffer(2, BufferADRHalfLow, INDICATOR_DATA);
+   SetIndexBuffer(3, BufferADRLow, INDICATOR_DATA);
+
+   // Configure empty values so uncalculated historical days don't draw flat lines to 0
+   PlotIndexSetDouble(0, PLOT_EMPTY_VALUE, EMPTY_VALUE);
+   PlotIndexSetDouble(1, PLOT_EMPTY_VALUE, EMPTY_VALUE);
+   PlotIndexSetDouble(2, PLOT_EMPTY_VALUE, EMPTY_VALUE);
+   PlotIndexSetDouble(3, PLOT_EMPTY_VALUE, EMPTY_VALUE);
+
+   // Short name in data window
+   IndicatorSetString(INDICATOR_SHORTNAME, "ADR_Levels (" + IntegerToString(InpADRPeriod) + ")");
+   IndicatorSetInteger(INDICATOR_DIGITS, _Digits);
+
+   return(INIT_SUCCEEDED);
+}
+
+//+------------------------------------------------------------------+
+//| Calculate ADR from completed daily candles                      |
+//+------------------------------------------------------------------+
+double CalculateADR(int days)
+{
+   if(days <= 0) return 0.0;
+   
+   double high[], low[];
+   ArraySetAsSeries(high, true);
+   ArraySetAsSeries(low, true);
+
+   // Fetch completed daily candles (starting from shift 1 to ignore current unclosed day)
+   int copiedHigh = CopyHigh(_Symbol, PERIOD_D1, 1, days, high);
+   int copiedLow  = CopyLow(_Symbol, PERIOD_D1, 1, days, low);
+
+   if(copiedHigh < days || copiedLow < days)
+      return 0.0;
+
+   double sumRange = 0.0;
+   for(int i = 0; i < days; i++)
+   {
+      sumRange += (high[i] - low[i]);
+   }
+
+   return (sumRange / days);
+}
+
+//+------------------------------------------------------------------+
+//| Custom indicator iteration function                              |
+//+------------------------------------------------------------------+
+int OnCalculate(const int rates_total,
+                const int prev_calculated,
+                const datetime &time[],
+                const double &open[],
+                const double &high[],
+                const double &low[],
+                const double &close[],
+                const long &tick_volume[],
+                const long &volume[],
+                const int &spread[])
+{
+   if(rates_total < 2) return 0;
+
+   // Calculate ADR over the specified lookback days
+   double adr = CalculateADR(InpADRPeriod);
+   if(adr <= 0.0) return 0;
+
+   // Get today's daily open price (shift 0 on D1)
+   double openD1[];
+   ArraySetAsSeries(openD1, true);
+   if(CopyOpen(_Symbol, PERIOD_D1, 0, 1, openD1) < 1)
+      return prev_calculated;
+
+   double todayOpen = openD1[0];
+
+   // Calculate the 4 projected price levels
+   double adrHigh     = todayOpen + adr;
+   double adrHalfHigh = todayOpen + (adr * 0.5);
+   double adrHalfLow  = todayOpen - (adr * 0.5);
+   double adrLow      = todayOpen - adr;
+
+   // Determine start of current day in server time
+   datetime timeD1[];
+   ArraySetAsSeries(timeD1, true);
+   if(CopyTime(_Symbol, PERIOD_D1, 0, 1, timeD1) < 1)
+      return prev_calculated;
+   datetime todayStartTime = timeD1[0];
+
+   // Determine start index for recalculation
+   int start = prev_calculated - 1;
+   if(start < 0) start = 0;
+
+   // Fill buffers for current day bars
+   for(int i = start; i < rates_total; i++)
+   {
+      if(time[i] >= todayStartTime)
+      {
+         BufferADRHigh[i] = adrHigh;
+         BufferADRLow[i]  = adrLow;
+
+         if(InpShowHalfLevels)
+         {
+            BufferADRHalfHigh[i] = adrHalfHigh;
+            BufferADRHalfLow[i]  = adrHalfLow;
+         }
+         else
+         {
+            BufferADRHalfHigh[i] = EMPTY_VALUE;
+            BufferADRHalfLow[i]  = EMPTY_VALUE;
+         }
+      }
+      else
+      {
+         // Do not plot on historical days prior to today
+         BufferADRHigh[i]     = EMPTY_VALUE;
+         BufferADRHalfHigh[i] = EMPTY_VALUE;
+         BufferADRHalfLow[i]  = EMPTY_VALUE;
+         BufferADRLow[i]      = EMPTY_VALUE;
+      }
+   }
+
+   return rates_total;
+}
+\`\`\`
+
+---
+
+## 🏆 Graduation Day: The Free Academy Complete!
+
+Congratulations, Strategy Architect! 🎓
+
+By completing **Lesson 3.6**, you have achieved a landmark milestone:
+* You have mastered the **Mindset (Level 1)**: Eliminating emotion and guru talk in favor of strict mathematical Machine Facts.
+* You have mastered the **Mechanics (Level 2)**: Structuring Variables, Conditions, and Functions using plain-English analogies.
+* You have mastered the **Architecture (Level 3)**: Building both autonomous trading robots (The Breakout EA) and custom chart indicators (ADR Levels) using institutional workflows.
+
+### 🌟 What Happens Next?
+When you complete this workshop using the interactive workbench above, **Lesson 3.6 is officially recorded as completed** in your permanent profile!
+
+You will then transition straight into the **Paid Masterclass**:
+* **Level 4 (Middle School)**: Advanced Prompt Engineering formulas, the "Do Not Do This" Shield, Numbered Rule Checklists, and Surgical Bug Fixing without restarting.
+* **Level 5 (High School)**: Prop Firm Safety Shields, Daily Drawdown Circuit Breakers, Floating Equity Trailing Shields, and News Filter integrations.
+* **Level 6 (Undergraduate)**: Custom On-Screen HUD Dashboards, Multi-Day ADR Volatility Gauges, and TradingView Pine Script v6 automation.
+* **Level 7 (Senior Year)**: Advanced Code Audits, Hallucination Hunting, and 2-Stage Out-of-Sample Curve-Fitting Defense.
+* **Level 8 (Graduation Capstone)**: 4 Production Capstones (Volatility Exhaustion Bot, Automated Trade Manager, Prop Firm Challenge EA, and Multi-Bot Control Dashboard) plus official graduation certification.
+
+Click **Complete Workshop & Enter Masterclass** to begin Level 4! 🚀
+`
   }
 ];

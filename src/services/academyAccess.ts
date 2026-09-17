@@ -6,6 +6,7 @@ const TIER_STORAGE_KEY = 'academy_student_tier';
 const TIER_CHANGE_EVENT = 'academy-tier-change';
 
 export const PRACTICAL_EXERCISE_LESSON_ID = 'lesson-3-practical';
+export const INDICATOR_WORKSHOP_LESSON_ID = 'lesson-3-6';
 
 export interface PrerequisiteLessonInfo {
   id: string;
@@ -161,13 +162,19 @@ export function getPracticalExercisePreviewContent(fullContent: string): {
   previewContent: string;
   lockedContentTeaser: string;
 } {
-  const splitMarker = '## 3. Step 2: Prompt Engineering';
-  const splitIndex = fullContent.indexOf(splitMarker);
-  if (splitIndex !== -1) {
-    return {
-      previewContent: fullContent.substring(0, splitIndex).trim(),
-      lockedContentTeaser: fullContent.substring(splitIndex).trim(),
-    };
+  const splitMarkers = [
+    '## 3. Step 2: Prompt Engineering',
+    '## 🧠 Step 4: Why Claude Over ChatGPT for MQL5 Coding?',
+    '### 🍳 The 5-Ingredient Master Coding Prompt for Claude'
+  ];
+  for (const marker of splitMarkers) {
+    const splitIndex = fullContent.indexOf(marker);
+    if (splitIndex !== -1) {
+      return {
+        previewContent: fullContent.substring(0, splitIndex).trim(),
+        lockedContentTeaser: fullContent.substring(splitIndex).trim(),
+      };
+    }
   }
   return {
     previewContent: fullContent,
@@ -275,8 +282,8 @@ export function isLessonUnlockedForTier(
 
   if (tier === 'paid' || tier === 'complimentary') return true;
 
-  // The final practical exercise of the Free Tier requires completing all 14 foundation lessons across Levels 1–3
-  if (lesson.id === PRACTICAL_EXERCISE_LESSON_ID) {
+  // The final practical exercises of the Free Tier require completing all 14 foundation lessons across Levels 1–3
+  if (lesson.id === PRACTICAL_EXERCISE_LESSON_ID || lesson.id === INDICATOR_WORKSHOP_LESSON_ID) {
     return isPracticalExerciseUnlocked(completedLessonIds, tier, isAdmin);
   }
 

@@ -15,6 +15,7 @@ import {
   isLessonVisibleForTier, 
   isLessonUnlockedForTier,
   PRACTICAL_EXERCISE_LESSON_ID,
+  INDICATOR_WORKSHOP_LESSON_ID,
   getPracticalExerciseProgress,
   isPracticalExerciseUnlocked,
   getStoredCompletedLessonIds
@@ -462,7 +463,7 @@ export function LevelHubPage({ levelId, onNavigate }: LevelHubPageProps) {
                   const isDone = completedLessonIds.includes(lesson.id);
                   const isFree = lesson.is_free;
                   const isFirstLesson = idx === 0;
-                  const isPractical = lesson.id === PRACTICAL_EXERCISE_LESSON_ID;
+                  const isPractical = lesson.id === PRACTICAL_EXERCISE_LESSON_ID || lesson.id === INDICATOR_WORKSHOP_LESSON_ID;
                   const practicalProgress = getPracticalExerciseProgress(completedLessonIds);
                   const isPracticalUnlocked = isPracticalExerciseUnlocked(completedLessonIds, studentTier, isAdmin);
 
@@ -525,6 +526,8 @@ export function LevelHubPage({ levelId, onNavigate }: LevelHubPageProps) {
                                 ? 'Bonus Chapter 3.B'
                                 : lesson.id === 'lesson-3-practical'
                                 ? 'Capstone 3.5'
+                                : lesson.id === 'lesson-3-6'
+                                ? 'Workshop 3.6'
                                 : lesson.id === 'lesson-8-bonus'
                                 ? 'Bonus Chapter 8.B'
                                 : levelMeta.levelNumber === 1 && lesson.lesson_number === 1 
@@ -538,6 +541,24 @@ export function LevelHubPage({ levelId, onNavigate }: LevelHubPageProps) {
                                 <Award className="w-2.5 h-2.5 text-emerald-400" />
                                 <span>Fundamentals Bonus • Master Exam</span>
                               </span>
+                            ) : lesson.id === 'lesson-3-6' ? (
+                              <div className="flex flex-wrap items-center gap-1.5">
+                                <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-mono font-bold uppercase bg-red-500/15 text-red-300 border border-red-500/30">
+                                  <Play className="w-2.5 h-2.5 fill-red-400 text-red-400" />
+                                  <span>Video Lesson</span>
+                                </span>
+                                {isPracticalUnlocked ? (
+                                  <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-mono font-bold uppercase bg-emerald-500/15 text-emerald-300 border border-emerald-500/40 shadow-[0_0_10px_rgba(16,185,129,0.2)]">
+                                    <Award className="w-2.5 h-2.5 text-emerald-400" />
+                                    <span>Final Workshop • Build MT5 Indicator 📊</span>
+                                  </span>
+                                ) : (
+                                  <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-mono font-bold uppercase bg-amber-500/15 text-amber-300 border border-amber-500/40">
+                                    <Lock className="w-2.5 h-2.5 text-amber-400" />
+                                    <span>Workshop Locked ({practicalProgress.completedCount}/14 Done)</span>
+                                  </span>
+                                )}
+                              </div>
                             ) : isPractical ? (
                               isPracticalUnlocked ? (
                                 <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-mono font-bold uppercase bg-emerald-500/15 text-emerald-300 border border-emerald-500/40 shadow-[0_0_10px_rgba(16,185,129,0.2)]">

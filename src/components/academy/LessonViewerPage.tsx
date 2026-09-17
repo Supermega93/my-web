@@ -17,11 +17,14 @@ import {
   isLessonUnlockedForTier, 
   isLessonVisibleForTier,
   PRACTICAL_EXERCISE_LESSON_ID,
+  INDICATOR_WORKSHOP_LESSON_ID,
   getPracticalExerciseProgress,
   isPracticalExerciseUnlocked,
   getPracticalExercisePreviewContent,
   getStoredCompletedLessonIds
 } from '../../services/academyAccess.ts';
+import { IndicatorWorkshopWorkbench } from './IndicatorWorkshopWorkbench.tsx';
+import { LessonVideoPlayer } from './LessonVideoPlayer.tsx';
 import { AcademyAuthModal } from './AcademyAuthModal.tsx';
 import { FreeCourseEmailModal } from './FreeCourseEmailModal.tsx';
 import { 
@@ -159,7 +162,9 @@ export function LessonViewerPage({ lessonId, onNavigate, onOpenCheckout }: Lesso
   // Final practical capstone (lesson-3-practical) is locked until Levels 1 to 3 are completed.
   // Paid Tier students unlock Levels 4-8 and lesson-8-bonus.
   const isLessonFree = lesson ? Boolean(lesson.is_free) : true;
-  const isPractical = lesson?.id === PRACTICAL_EXERCISE_LESSON_ID;
+  const isBreakoutWorkshop = lesson?.id === PRACTICAL_EXERCISE_LESSON_ID;
+  const isIndicatorWorkshop = lesson?.id === INDICATOR_WORKSHOP_LESSON_ID;
+  const isPractical = isBreakoutWorkshop || isIndicatorWorkshop;
   const practicalProgress = useMemo(
     () => getPracticalExerciseProgress(completedLessonIds),
     [completedLessonIds]
@@ -383,16 +388,28 @@ export function LessonViewerPage({ lessonId, onNavigate, onOpenCheckout }: Lesso
               {lesson.level_name}
             </span>
 
-            {isPractical ? (
+            {isBreakoutWorkshop ? (
               isPracticalUnlocked ? (
                 <span className="text-xs font-mono font-bold uppercase px-3 py-1 rounded-full bg-emerald-500/15 border border-emerald-500/40 text-emerald-300 flex items-center gap-1.5 shadow-[0_0_12px_rgba(16,185,129,0.2)]">
                   <Award className="w-3.5 h-3.5 text-emerald-400" />
-                  <span>Free Tier Capstone • Workshop Unlocked 🎉</span>
+                  <span>Free Tier Capstone • Breakout EA Unlocked 🎉</span>
                 </span>
               ) : (
                 <span className="text-xs font-mono font-bold uppercase px-3 py-1 rounded-full bg-amber-500/15 border border-amber-500/40 text-amber-300 flex items-center gap-1.5 shadow-[0_0_12px_rgba(245,158,11,0.2)]">
                   <Lock className="w-3.5 h-3.5 text-amber-400" />
                   <span>Free Tier Capstone • Locked ({practicalProgress.completedCount}/14 Completed)</span>
+                </span>
+              )
+            ) : isIndicatorWorkshop ? (
+              isPracticalUnlocked ? (
+                <span className="text-xs font-mono font-bold uppercase px-3 py-1 rounded-full bg-emerald-500/15 border border-emerald-500/40 text-emerald-300 flex items-center gap-1.5 shadow-[0_0_12px_rgba(16,185,129,0.2)]">
+                  <Award className="w-3.5 h-3.5 text-emerald-400" />
+                  <span>Final Workshop • MT5 Indicator Unlocked 🎉</span>
+                </span>
+              ) : (
+                <span className="text-xs font-mono font-bold uppercase px-3 py-1 rounded-full bg-amber-500/15 border border-amber-500/40 text-amber-300 flex items-center gap-1.5 shadow-[0_0_12px_rgba(245,158,11,0.2)]">
+                  <Lock className="w-3.5 h-3.5 text-amber-400" />
+                  <span>Final Workshop • Locked ({practicalProgress.completedCount}/14 Completed)</span>
                 </span>
               )
             ) : lesson.id === 'lesson-3-bonus' ? (
@@ -480,7 +497,7 @@ export function LessonViewerPage({ lessonId, onNavigate, onOpenCheckout }: Lesso
           </div>
         </div>
 
-        {/* Capstone Status Banner for Lesson 3.5 */}
+        {/* Capstone Status Banner for Lesson 3.5 & Lesson 3.6 */}
         {isPractical && (
           isPracticalUnlocked ? (
             <div className="p-5 rounded-2xl bg-gradient-to-r from-emerald-500/15 via-teal-500/10 to-slate-900 border border-emerald-500/40 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 text-emerald-300 shadow-[0_0_25px_rgba(16,185,129,0.15)]">
@@ -490,13 +507,19 @@ export function LessonViewerPage({ lessonId, onNavigate, onOpenCheckout }: Lesso
                 </div>
                 <div>
                   <div className="font-bold text-sm sm:text-base text-white flex items-center gap-2">
-                    <span>🎉 Capstone Unlocked: Strategy Architect Certified</span>
+                    <span>
+                      {isIndicatorWorkshop
+                        ? '🎉 Final Practical Workshop: Build Your First MT5 Indicator'
+                        : '🎉 Capstone Unlocked: Strategy Architect Certified'}
+                    </span>
                     <span className="text-xs px-2.5 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 font-mono font-bold">
                       14/14 Completed (100%)
                     </span>
                   </div>
                   <div className="text-xs text-slate-300 font-normal mt-0.5 max-w-2xl">
-                    You have mastered all foundational lessons across Levels 1 through 3. The full Breakout EA Build Workshop, master prompt recipe, deployment steps, and compilable MQL5 source code are 100% unlocked below!
+                    {isIndicatorWorkshop
+                      ? 'You have unlocked the final practical workshop of the Free Academy! Follow the interactive 8-step workbench below to specify, prompt, compile in MetaEditor, visually test in MT5, and iterate your custom ADR indicator.'
+                      : 'You have mastered all foundational lessons across Levels 1 through 3. The full Breakout EA Build Workshop, master prompt recipe, deployment steps, and compilable MQL5 source code are 100% unlocked below!'}
                   </div>
                 </div>
               </div>
@@ -509,13 +532,15 @@ export function LessonViewerPage({ lessonId, onNavigate, onOpenCheckout }: Lesso
                 </div>
                 <div>
                   <div className="font-bold text-sm sm:text-base text-white flex items-center gap-2">
-                    <span>Workshop Prerequisite Locked</span>
+                    <span>{isIndicatorWorkshop ? 'Indicator Workshop Prerequisite Locked' : 'Workshop Prerequisite Locked'}</span>
                     <span className="text-xs px-2.5 py-0.5 rounded-full bg-amber-500/20 text-amber-400 font-mono font-bold">
                       {practicalProgress.completedCount}/{practicalProgress.totalRequired} Foundation Lessons ({practicalProgress.progressPercent}%)
                     </span>
                   </div>
                   <div className="text-xs text-slate-300 font-normal mt-0.5 max-w-2xl">
-                    Previewing Strategy Definition & Machine Facts below. Complete all 14 foundation lessons across Levels 1–3 to unlock the full 5-Ingredient Master Prompt, MetaEditor Deployment Protocol, and Verified MQL5 Source Code!
+                    {isIndicatorWorkshop
+                      ? 'Previewing Idea & Structural Specifications below. Complete all 14 foundation lessons across Levels 1–3 to unlock the interactive 8-step indicator workbench, Claude coding prompts, compiler error protocol, and full MQL5 source code!'
+                      : 'Previewing Strategy Definition & Machine Facts below. Complete all 14 foundation lessons across Levels 1–3 to unlock the full 5-Ingredient Master Prompt, MetaEditor Deployment Protocol, and Verified MQL5 Source Code!'}
                   </div>
                 </div>
               </div>
@@ -537,6 +562,17 @@ export function LessonViewerPage({ lessonId, onNavigate, onOpenCheckout }: Lesso
         {isPractical && !isPracticalUnlocked ? (
           /* Locked State for Capstone Workshop: Preview Visible + Progress Lock Card */
           <div className="mt-4 p-6 sm:p-10 rounded-2xl bg-slate-900/60 border border-slate-800 shadow-xl space-y-10">
+            {/* Video Lesson Version at the very beginning of Lesson 3.6 */}
+            {isIndicatorWorkshop && (
+              <LessonVideoPlayer
+                videoUrl="https://www.youtube.com/watch?v=MzNUHEDPWPs"
+                videoId="MzNUHEDPWPs"
+                title="Build Your First MT5 Indicator (ADR)"
+                subtitle="Full video lesson version: follow the complete 16-step AI automation workflow, ChatGPT prompt specifications, Claude MQL5 coding, MetaEditor compilation, and MT5 visual chart testing."
+                badgeText="Video Lesson Version"
+              />
+            )}
+
             {/* Strategy Definition & Machine Facts Preview */}
             <BabyPipsContentRenderer content={previewContent} />
 
@@ -551,6 +587,28 @@ export function LessonViewerPage({ lessonId, onNavigate, onOpenCheckout }: Lesso
           </div>
         ) : isUnlocked ? (
           <div className="mt-4 p-6 sm:p-10 rounded-2xl bg-slate-900/60 border border-slate-800 shadow-xl space-y-10">
+            {/* Video Lesson Version at the very beginning of Lesson 3.6 */}
+            {isIndicatorWorkshop && (
+              <LessonVideoPlayer
+                videoUrl="https://www.youtube.com/watch?v=MzNUHEDPWPs"
+                videoId="MzNUHEDPWPs"
+                title="Build Your First MT5 Indicator (ADR)"
+                subtitle="Full video lesson version: follow the complete 16-step AI automation workflow, ChatGPT prompt specifications, Claude MQL5 coding, MetaEditor compilation, and MT5 visual chart testing."
+                badgeText="Video Lesson Version"
+              />
+            )}
+
+            {/* Interactive Indicator Workshop Workbench for Lesson 3.6 */}
+            {isIndicatorWorkshop && (
+              <div className="mb-8">
+                <IndicatorWorkshopWorkbench
+                  onComplete={() => handleMarkComplete('lesson-3-6')}
+                  isCompleted={isCompleted}
+                  onNavigateToMasterclass={() => onNavigate('level-hub', '4')}
+                />
+              </div>
+            )}
+
             {/* Formatted Content with Clean BabyPips Typography */}
             <BabyPipsContentRenderer content={lesson.content} />
 
@@ -714,16 +772,41 @@ export function LessonViewerPage({ lessonId, onNavigate, onOpenCheckout }: Lesso
           </button>
 
           {nextLesson ? (
+            isIndicatorWorkshop && studentTier === 'free' ? (
+              <button
+                onClick={() => onNavigate('level-hub', '4')}
+                className="flex items-center gap-2.5 px-4 py-2.5 rounded-xl bg-gradient-to-r from-cyan-500/20 to-blue-500/20 hover:from-cyan-500/30 hover:to-blue-500/30 border border-cyan-500/40 hover:border-cyan-400 text-xs font-semibold text-cyan-300 hover:text-cyan-200 transition-all group cursor-pointer shadow-[0_0_15px_rgba(6,182,212,0.15)]"
+              >
+                <div className="text-right hidden sm:block">
+                  <div className="text-[10px] text-cyan-400 font-mono">Graduate Free Academy</div>
+                  <div className="line-clamp-1 max-w-[200px]">Unlock Masterclass Pro</div>
+                </div>
+                <span className="sm:hidden">Masterclass</span>
+                <Sparkles className="w-4 h-4 text-cyan-400 group-hover:translate-x-0.5 transition-transform" />
+              </button>
+            ) : (
+              <button
+                onClick={() => onNavigate('lesson-detail', nextLesson.id)}
+                className="flex items-center gap-2.5 px-4 py-2.5 rounded-xl bg-emerald-500/10 hover:bg-emerald-500/20 border border-emerald-500/30 hover:border-emerald-500/60 text-xs font-semibold text-emerald-300 hover:text-emerald-200 transition-all group"
+              >
+                <span className="sm:hidden">Next</span>
+                <div className="text-right hidden sm:block">
+                  <div className="text-[10px] text-slate-400 font-mono">Next Lesson</div>
+                  <div className="line-clamp-1 max-w-[200px]">{nextLesson.title}</div>
+                </div>
+                <ArrowRight className="w-4 h-4 text-emerald-400 group-hover:translate-x-0.5 transition-transform" />
+              </button>
+            )
+          ) : isIndicatorWorkshop ? (
             <button
-              onClick={() => onNavigate('lesson-detail', nextLesson.id)}
-              className="flex items-center gap-2.5 px-4 py-2.5 rounded-xl bg-emerald-500/10 hover:bg-emerald-500/20 border border-emerald-500/30 hover:border-emerald-500/60 text-xs font-semibold text-emerald-300 hover:text-emerald-200 transition-all group"
+              onClick={() => onNavigate('level-hub', '4')}
+              className="flex items-center gap-2.5 px-5 py-2.5 rounded-xl bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-slate-950 font-bold text-xs shadow-[0_0_20px_rgba(6,182,212,0.4)] transition-all group cursor-pointer"
             >
-              <span className="sm:hidden">Next</span>
-              <div className="text-right hidden sm:block">
-                <div className="text-[10px] text-slate-400 font-mono">Next Lesson</div>
-                <div className="line-clamp-1 max-w-[200px]">{nextLesson.title}</div>
+              <div className="text-right">
+                <div className="text-[10px] text-slate-950/80 font-mono uppercase tracking-wider">Graduate to Masterclass</div>
+                <div className="line-clamp-1">Enter Level 4: Middle School</div>
               </div>
-              <ArrowRight className="w-4 h-4 text-emerald-400 group-hover:translate-x-0.5 transition-transform" />
+              <ArrowRight className="w-4 h-4 text-slate-950 group-hover:translate-x-0.5 transition-transform" />
             </button>
           ) : (
             <div />
