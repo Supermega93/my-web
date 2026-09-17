@@ -732,7 +732,7 @@ export function HomePage({
                   <span className="text-4xl font-black text-white font-mono">
                     {formatPrice(featuredEa?.price || 249.00)}
                   </span>
-                  <span className="text-sm font-mono text-emerald-300/70 line-through">$499.00</span>
+                  <span className="text-sm font-mono text-emerald-300/70 line-through">{formatPrice(499.00)}</span>
                   <span className="text-xs font-bold text-slate-950 bg-emerald-300 px-2 py-0.5 rounded-full">50% OFF</span>
                 </div>
                 <div className="text-[11px] text-emerald-200 mt-1 flex items-center gap-1.5 font-mono">
@@ -810,8 +810,8 @@ export function HomePage({
 
               <div>
                 <div className="flex items-baseline gap-2">
-                  <span className="text-4xl font-black text-slate-900 font-mono">From $149</span>
-                  <span className="text-sm font-mono text-slate-400 line-through">$299</span>
+                  <span className="text-4xl font-black text-slate-900 font-mono">From {formatPrice(149)}</span>
+                  <span className="text-sm font-mono text-slate-400 line-through">{formatPrice(299)}</span>
                   <span className="text-xs font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200">50% OFF</span>
                 </div>
                 <div className="text-[11px] text-slate-500 mt-1 flex items-center gap-1.5 font-mono">

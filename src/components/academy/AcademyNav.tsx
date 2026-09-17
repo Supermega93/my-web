@@ -6,6 +6,7 @@ import { Button } from '../common/Button.tsx';
 import { AcademyAuthModal } from './AcademyAuthModal.tsx';
 import { MegAiLogoIcon } from '../common/MegAiLogo.tsx';
 import { CurrencySelector } from '../common/CurrencySelector.tsx';
+import { useCurrency } from '../../context/CurrencyContext.tsx';
 
 interface AcademyNavProps {
   onNavigate: (view: ActiveView, extraId?: string) => void;
@@ -14,6 +15,7 @@ interface AcademyNavProps {
 
 export function AcademyNav({ onNavigate, activeTab }: AcademyNavProps) {
   const { user, logout, isLoggedIn } = useAuth();
+  const { formatPrice } = useCurrency();
   const [authModalOpen, setAuthModalOpen] = useState(false);
 
   return (
@@ -75,7 +77,7 @@ export function AcademyNav({ onNavigate, activeTab }: AcademyNavProps) {
             <Sparkles className="w-3.5 h-3.5 text-amber-400" />
             <span>Masterclass Pricing</span>
             <span className="text-[9px] px-1.5 py-0.2 rounded-full bg-amber-500/20 text-amber-300 font-mono font-bold uppercase">
-              $159+
+              From {formatPrice(159)}
             </span>
           </button>
 

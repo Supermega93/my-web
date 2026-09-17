@@ -4,6 +4,7 @@ import { Product } from '../../types.ts';
 import { STOREFRONT_MEDIA } from '../../constants/media.ts';
 import { Button } from '../common/Button.tsx';
 import { CoverUploader } from '../common/CoverUploader.tsx';
+import { useCurrency } from '../../context/CurrencyContext.tsx';
 import {
   ArrowLeft,
   ArrowRight,
@@ -34,9 +35,10 @@ export function AiPromptHandbookPage({
   const [openFaq, setOpenFaq] = useState<number | null>(0);
   const [coverUrl, setCoverUrl] = useState<string>(product?.image_url || STOREFRONT_MEDIA.paidEbook2.coverUrl);
   const contentRef = useRef<HTMLDivElement>(null);
+  const { formatPrice } = useCurrency();
 
   // Admin-editable price variable with fallback
-  const priceDisplay = product ? `$${product.price.toFixed(2)}` : '$59.00';
+  const priceDisplay = formatPrice(product?.price || 59.00);
 
   const defaultProduct: Product = product || {
     id: 'prod_ebook_ai_prompt',

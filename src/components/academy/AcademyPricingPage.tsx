@@ -22,6 +22,7 @@ import { useAuth } from '../../context/AuthContext.tsx';
 import { Button } from '../common/Button.tsx';
 import { AcademyNav } from './AcademyNav.tsx';
 import { setActiveStudentTier, StudentTier, getActiveStudentTier } from '../../services/academyAccess.ts';
+import { api } from '../../services/api.ts';
 
 interface AcademyPricingPageProps {
   onNavigate: (view: ActiveView, extraId?: string) => void;
@@ -29,11 +30,12 @@ interface AcademyPricingPageProps {
 }
 
 export function AcademyPricingPage({ onNavigate, onOpenAuth }: AcademyPricingPageProps) {
-  const { currentCurrency, formatPrice } = useCurrency();
+  const { currentCurrency, formatPrice, convertAmount } = useCurrency();
   const { user, isAdmin } = useAuth();
   const [selectedTierId, setSelectedTierId] = useState<string>('masterclass-ea');
   const [checkoutModalOpen, setCheckoutModalOpen] = useState(false);
   const [enrolledSuccess, setEnrolledSuccess] = useState(false);
+  const [loading, setLoading] = useState(false);
   const [currentStudentTier, setCurrentStudentTier] = useState<StudentTier>(() => getActiveStudentTier(user, isAdmin));
 
   // The 3 Required Masterclass Pricing Packages
@@ -118,16 +120,33 @@ export function AcademyPricingPage({ onNavigate, onOpenAuth }: AcademyPricingPag
     setCheckoutModalOpen(true);
   };
 
-  const handleConfirmEnrollment = () => {
-    // Elevate active session tier to paid
-    setActiveStudentTier('paid');
-    setCurrentStudentTier('paid');
-    setEnrolledSuccess(true);
-    setTimeout(() => {
-      setCheckoutModalOpen(false);
-      setEnrolledSuccess(false);
-      onNavigate('level-hub', '4');
-    }, 1800);
+  const handleConfirmEnrollment = async () => {
+    try {
+      setLoading(true);
+      const convertedAmount = convertAmount(activeSelectedPackage.usdPrice);
+      await api.createOrder({
+        productId: activeSelectedPackage.id,
+        amount: currentCurrency.code === 'USD' ? activeSelectedPackage.usdPrice : convertedAmount,
+        currency: currentCurrency.code,
+        customerEmail: user?.email || 'student@academy.com',
+        customerName: user?.name || 'Academy Student',
+        paymentMethod: 'card',
+        tierName: activeSelectedPackage.name,
+      });
+    } catch (e) {
+      console.warn('Enrollment order record:', e);
+    } finally {
+      // Elevate active session tier to paid
+      setActiveStudentTier('paid');
+      setCurrentStudentTier('paid');
+      setEnrolledSuccess(true);
+      setLoading(false);
+      setTimeout(() => {
+        setCheckoutModalOpen(false);
+        setEnrolledSuccess(false);
+        onNavigate('level-hub', '4');
+      }, 1800);
+    }
   };
 
   return (
@@ -384,7 +403,12 @@ export function AcademyPricingPage({ onNavigate, onOpenAuth }: AcademyPricingPag
                   </div>
                   <div className="flex justify-between items-center">
                     <span className="text-slate-600 font-medium">Total Amount:</span>
-                    <span className="font-bold text-slate-900 font-mono text-base">{activeSelectedPackage.displayPrice}</span>
+                    <div className="text-right">
+                      <span className="font-bold text-slate-900 font-mono text-base">{activeSelectedPackage.displayPrice}</span>
+                      {currentCurrency.code !== 'USD' && (
+                        <span className="text-[10px] text-slate-500 font-mono block">Base: ${activeSelectedPackage.usdPrice.toFixed(2)} USD</span>
+                      )}
+                    </div>
                   </div>
                   <div className="flex justify-between items-center">
                     <span className="text-slate-600 font-medium">Access Period:</span>

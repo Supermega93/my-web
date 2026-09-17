@@ -866,6 +866,21 @@ function seedInitialData() {
     } catch (lessonErr) {
       console.warn('[Database] Academy lessons seed notice:', lessonErr);
     }
+    // Seed masterclass pricing packages into products table
+    const masterclasses = [
+      { id: 'masterclass', name: 'Masterclass Core Curriculum', type: 'service', price: 159.0, desc: 'Complete mastery of Levels 4 through 8, advanced AI prompt engineering & certification.' },
+      { id: 'masterclass-ea', name: 'Masterclass + Adaptive Liquidity Pro', type: 'service', price: 199.0, desc: 'The complete Masterclass combined with our flagship institutional trading robot.' },
+      { id: 'premium', name: 'Premium VIP Masterclass', type: 'service', price: 299.0, desc: 'The ultimate professional trading architecture mentorship with extended EA license.' }
+    ];
+    for (const mc of masterclasses) {
+      const existing = db.prepare('SELECT id FROM products WHERE id = ?').get(mc.id);
+      if (!existing) {
+        db.prepare(`
+          INSERT INTO products (id, name, type, description, short_description, price, currency, platform, active, created_at, updated_at)
+          VALUES (?, ?, ?, ?, ?, ?, 'USD', 'Academy Web & Discord', 1, ?, ?)
+        `).run(mc.id, mc.name, mc.type, mc.desc, mc.desc, mc.price, now, now);
+      }
+    }
   } catch (err) {
     console.error('Failed to sync product updates:', err);
   }

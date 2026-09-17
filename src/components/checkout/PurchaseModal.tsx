@@ -31,7 +31,7 @@ export function PurchaseModal({
   onPurchaseSuccess,
 }: PurchaseModalProps) {
   const { user } = useAuth();
-  const { currentCurrency, formatPrice: formatCurrencyPrice } = useCurrency();
+  const { currentCurrency, formatPrice: formatCurrencyPrice, convertAmount } = useCurrency();
   const [customerName, setCustomerName] = useState(user?.name || '');
   const [customerEmail, setCustomerEmail] = useState(user?.email || '');
   const [paymentMethod, setPaymentMethod] = useState<'card' | 'crypto'>('card');
@@ -53,10 +53,11 @@ export function PurchaseModal({
 
     try {
       setLoading(true);
+      const convertedTotal = convertAmount(product.price);
       const res = await api.createOrder({
         productId: product.id,
-        amount: product.price,
-        currency: product.currency || 'USD',
+        amount: currentCurrency.code === 'USD' ? product.price : convertedTotal,
+        currency: currentCurrency.code,
         customerEmail,
         customerName: customerName || 'Trader',
         paymentMethod,
@@ -132,6 +133,19 @@ export function PurchaseModal({
             <p className="text-xs text-slate-400 font-mono">
               Transaction ID: <span className="text-slate-300">{orderResult.transactionId}</span>
             </p>
+            <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-slate-900 border border-slate-800 text-xs font-mono">
+              <span className="text-slate-400">Total Paid:</span>
+              <span className="font-bold text-emerald-400">
+                {currentCurrency.code === 'USD'
+                  ? `$${product.price.toFixed(2)} USD`
+                  : `${formatCurrencyPrice(product.price)} (${currentCurrency.code})`}
+              </span>
+              {currentCurrency.code !== 'USD' && (
+                <span className="text-slate-500 text-[10px]">
+                  • Base ${product.price.toFixed(2)} USD
+                </span>
+              )}
+            </div>
           </div>
 
           {/* License Key Box (for EAs) */}
@@ -218,11 +232,11 @@ export function PurchaseModal({
             </div>
             <div className="text-right font-mono">
               <span className="text-lg font-bold text-emerald-400">
-                {formatCurrencyPrice(product.price, 'USD')}
+                {formatCurrencyPrice(product.price)}
               </span>
               {currentCurrency.code !== 'USD' && (
                 <span className="text-[10px] text-slate-400 block font-mono">
-                  Settled as ${product.price.toFixed(2)} USD
+                  Base USD: ${product.price.toFixed(2)} USD
                 </span>
               )}
             </div>
@@ -304,8 +318,8 @@ export function PurchaseModal({
           </div>
 
           {currentCurrency.code !== 'USD' && (
-            <p className="text-[10px] text-slate-500 font-mono text-center">
-              Processed in USD (${product.price.toFixed(2)}). Your card/bank will convert to ~{formatCurrencyPrice(product.price, 'USD')} at standard network rates.
+            <p className="text-[10px] text-slate-400 font-mono text-center">
+              Converted seamlessly to {currentCurrency.code} ({formatCurrencyPrice(product.price)}) from base ${product.price.toFixed(2)} USD at real-time interbank rates.
             </p>
           )}
 
@@ -330,7 +344,7 @@ export function PurchaseModal({
               {loading
                 ? 'Authorizing...'
                 : currentCurrency.code !== 'USD'
-                ? `Confirm & Pay ${formatCurrencyPrice(product.price, 'USD')}`
+                ? `Confirm & Pay ${formatCurrencyPrice(product.price)}`
                 : `Confirm & Pay $${product.price.toFixed(2)} USD`}
             </Button>
           </div>

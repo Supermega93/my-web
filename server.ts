@@ -663,9 +663,18 @@ app.post('/api/orders', (req, res) => {
       return res.status(400).json({ error: 'Product ID is required.' });
     }
 
-    const product = dbQueries.getProductById(productId) as any;
+    let product = dbQueries.getProductById(productId) as any;
     if (!product) {
-      return res.status(404).json({ error: 'Product not found.' });
+      const masterclassCatalog: Record<string, any> = {
+        'masterclass': { id: 'masterclass', name: 'Masterclass Core Curriculum', type: 'service', price: 159.0, currency: 'USD' },
+        'masterclass-ea': { id: 'masterclass-ea', name: 'Masterclass + Adaptive Liquidity Pro', type: 'service', price: 199.0, currency: 'USD' },
+        'premium': { id: 'premium', name: 'Premium VIP Masterclass', type: 'service', price: 299.0, currency: 'USD' }
+      };
+      if (masterclassCatalog[productId]) {
+        product = masterclassCatalog[productId];
+      } else {
+        return res.status(404).json({ error: 'Product not found.' });
+      }
     }
 
     // If no authenticated user, find or create customer

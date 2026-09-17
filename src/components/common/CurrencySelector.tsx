@@ -65,16 +65,30 @@ export const CurrencySelector: React.FC<CurrencySelectorProps> = ({
 
       {/* Custom dropdown for desktop and tablets */}
       {isOpen && (
-        <div className="absolute right-0 mt-2 w-64 max-w-[calc(100vw-2rem)] rounded-2xl bg-white border border-slate-200 shadow-xl z-50 overflow-hidden animate-in fade-in-50 zoom-in-95 duration-150">
-          <div className="p-3 border-b border-slate-100 bg-slate-50/80">
+        <div
+          className={`absolute right-0 mt-2 w-64 max-w-[calc(100vw-2rem)] rounded-2xl shadow-xl z-50 overflow-hidden border animate-in fade-in-50 zoom-in-95 duration-150 ${
+            variant === 'dark'
+              ? 'bg-slate-900 border-slate-800 text-slate-100 shadow-2xl'
+              : 'bg-white border-slate-200 text-slate-800'
+          }`}
+        >
+          <div
+            className={`p-3 border-b ${
+              variant === 'dark' ? 'border-slate-800 bg-slate-950/60' : 'border-slate-100 bg-slate-50/80'
+            }`}
+          >
             <div className="flex items-center justify-between">
-              <span className="text-[11px] font-mono uppercase tracking-wider text-slate-500 font-bold flex items-center gap-1">
-                <Globe className="w-3 h-3 text-emerald-600" />
-                Regional Currency
+              <span
+                className={`text-[11px] font-mono uppercase tracking-wider font-bold flex items-center gap-1 ${
+                  variant === 'dark' ? 'text-slate-400' : 'text-slate-500'
+                }`}
+              >
+                <Globe className="w-3 h-3 text-emerald-500" />
+                Select Currency
               </span>
               {isAutoDetected ? (
-                <span className="inline-flex items-center gap-1 text-[9px] font-mono px-1.5 py-0.5 rounded-full bg-emerald-100 text-emerald-800 font-semibold">
-                  <Sparkles className="w-2.5 h-2.5 text-emerald-600" />
+                <span className="inline-flex items-center gap-1 text-[9px] font-mono px-1.5 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 font-semibold border border-emerald-500/20">
+                  <Sparkles className="w-2.5 h-2.5 text-emerald-400" />
                   Auto-detected
                 </span>
               ) : (
@@ -84,18 +98,22 @@ export const CurrencySelector: React.FC<CurrencySelectorProps> = ({
                     resetToAutoDetect();
                     setIsOpen(false);
                   }}
-                  className="text-[10px] text-emerald-700 hover:text-emerald-900 underline cursor-pointer"
+                  className="text-[10px] text-emerald-500 hover:text-emerald-400 underline cursor-pointer"
                 >
                   Auto-detect
                 </button>
               )}
             </div>
-            <p className="text-[10px] text-slate-500 mt-0.5">
-              Prices adjust automatically. Checkout processed seamlessly in USD/equivalent.
+            <p className={`text-[10px] mt-0.5 ${variant === 'dark' ? 'text-slate-400' : 'text-slate-500'}`}>
+              Prices convert automatically. Base catalog prices stay USD.
             </p>
           </div>
 
-          <div className="max-h-64 overflow-y-auto py-1 divide-y divide-slate-50">
+          <div
+            className={`max-h-64 overflow-y-auto py-1 divide-y ${
+              variant === 'dark' ? 'divide-slate-800/60' : 'divide-slate-50'
+            }`}
+          >
             {supportedCurrencies.map((c) => {
               const isSelected = c.code === currentCurrency.code;
               return (
@@ -106,20 +124,30 @@ export const CurrencySelector: React.FC<CurrencySelectorProps> = ({
                     setCurrency(c.code);
                     setIsOpen(false);
                   }}
-                  className={`w-full text-left px-3 py-2 text-xs flex items-center justify-between hover:bg-slate-50 transition-colors cursor-pointer ${
-                    isSelected ? 'bg-emerald-50/70 text-emerald-900 font-bold' : 'text-slate-700'
+                  className={`w-full text-left px-3 py-2 text-xs flex items-center justify-between transition-colors cursor-pointer ${
+                    isSelected
+                      ? variant === 'dark'
+                        ? 'bg-emerald-500/15 text-emerald-300 font-bold'
+                        : 'bg-emerald-50/80 text-emerald-900 font-bold'
+                      : variant === 'dark'
+                      ? 'text-slate-300 hover:bg-slate-800/70'
+                      : 'text-slate-700 hover:bg-slate-50'
                   }`}
                 >
                   <div className="flex items-center gap-2.5">
                     <span className="text-base select-none">{c.flag}</span>
                     <div className="flex flex-col">
                       <span className="font-semibold leading-tight">{c.name}</span>
-                      <span className="text-[10px] font-mono text-slate-400">
+                      <span
+                        className={`text-[10px] font-mono ${
+                          variant === 'dark' ? 'text-slate-400' : 'text-slate-400'
+                        }`}
+                      >
                         {c.code} • {c.symbol}
                       </span>
                     </div>
                   </div>
-                  {isSelected && <Check className="w-3.5 h-3.5 text-emerald-600 shrink-0" />}
+                  {isSelected && <Check className="w-3.5 h-3.5 text-emerald-500 shrink-0" />}
                 </button>
               );
             })}

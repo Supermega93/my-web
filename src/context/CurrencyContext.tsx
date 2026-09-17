@@ -88,25 +88,58 @@ interface CurrencyContextType {
 const CurrencyContext = createContext<CurrencyContextType | undefined>(undefined);
 
 export const CurrencyProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
+  const [currencies, setCurrencies] = useState<Record<string, CurrencyConfig>>(SUPPORTED_CURRENCIES);
   const [selectedCode, setSelectedCode] = useState<string>('USD');
-  const [isAutoDetected, setIsAutoDetected] = useState<boolean>(true);
+  const [isAutoDetected, setIsAutoDetected] = useState<boolean>(false);
 
+  // Initial load: Default stays USD unless the user explicitly saved a preference
   useEffect(() => {
     const saved = localStorage.getItem('mega_preferred_currency');
-    if (saved && SUPPORTED_CURRENCIES[saved]) {
+    if (saved && (currencies[saved] || SUPPORTED_CURRENCIES[saved])) {
       setSelectedCode(saved);
       setIsAutoDetected(false);
     } else {
-      const detected = detectUserCurrency();
-      if (SUPPORTED_CURRENCIES[detected]) {
-        setSelectedCode(detected);
-        setIsAutoDetected(true);
-      }
+      // Must strictly default to USD
+      setSelectedCode('USD');
+      setIsAutoDetected(false);
     }
   }, []);
 
+  // Adaptive currency system: non-blocking background fetch of latest rates to keep rates adaptive
+  useEffect(() => {
+    let isMounted = true;
+    const fetchLatestRates = async () => {
+      try {
+        const res = await fetch('https://open.er-api.com/v6/latest/USD');
+        if (!res.ok) return;
+        const data = await res.json();
+        if (data && data.rates && isMounted) {
+          setCurrencies((prev) => {
+            const updated = { ...prev };
+            Object.keys(updated).forEach((code) => {
+              if (data.rates[code] && typeof data.rates[code] === 'number') {
+                updated[code] = {
+                  ...updated[code],
+                  rate: data.rates[code],
+                };
+              }
+            });
+            return updated;
+          });
+        }
+      } catch {
+        // Graceful fallback: continue using adaptive fallback rates
+      }
+    };
+
+    fetchLatestRates();
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
   const setCurrency = (currencyCode: string) => {
-    if (SUPPORTED_CURRENCIES[currencyCode]) {
+    if (currencies[currencyCode] || SUPPORTED_CURRENCIES[currencyCode]) {
       setSelectedCode(currencyCode);
       setIsAutoDetected(false);
       localStorage.setItem('mega_preferred_currency', currencyCode);
@@ -114,19 +147,22 @@ export const CurrencyProvider: React.FC<{ children: ReactNode }> = ({ children }
   };
 
   const resetToAutoDetect = () => {
-    localStorage.removeItem('mega_preferred_currency');
     const detected = detectUserCurrency();
-    setSelectedCode(detected);
-    setIsAutoDetected(true);
+    if (currencies[detected] || SUPPORTED_CURRENCIES[detected]) {
+      setSelectedCode(detected);
+      setIsAutoDetected(true);
+      localStorage.setItem('mega_preferred_currency', detected);
+    }
   };
 
-  const currentCurrency = SUPPORTED_CURRENCIES[selectedCode] || SUPPORTED_CURRENCIES.USD;
+  const currentCurrency = currencies[selectedCode] || SUPPORTED_CURRENCIES[selectedCode] || SUPPORTED_CURRENCIES.USD;
 
   const convertAmount = (usdAmount: number, targetCurrencyCode?: string): number => {
     const target = targetCurrencyCode 
-      ? (SUPPORTED_CURRENCIES[targetCurrencyCode] || currentCurrency) 
+      ? (currencies[targetCurrencyCode] || SUPPORTED_CURRENCIES[targetCurrencyCode] || currentCurrency) 
       : currentCurrency;
-    return usdAmount * target.rate;
+    const raw = usdAmount * target.rate;
+    return target.decimals === 0 ? Math.round(raw) : Math.round(raw * 100) / 100;
   };
 
   const formatPrice = (usdAmount?: number, customCurrencyCode?: string): string => {
@@ -140,8 +176,8 @@ export const CurrencyProvider: React.FC<{ children: ReactNode }> = ({ children }
     // If a non-USD currency code is explicitly requested, honor it.
     // Otherwise, if customCurrencyCode is omitted or is 'USD' (the base product currency),
     // convert it to currentCurrency so the user's currency selection always takes effect!
-    const target = (customCurrencyCode && customCurrencyCode !== 'USD' && SUPPORTED_CURRENCIES[customCurrencyCode])
-      ? SUPPORTED_CURRENCIES[customCurrencyCode]
+    const target = (customCurrencyCode && customCurrencyCode !== 'USD' && (currencies[customCurrencyCode] || SUPPORTED_CURRENCIES[customCurrencyCode]))
+      ? (currencies[customCurrencyCode] || SUPPORTED_CURRENCIES[customCurrencyCode])
       : currentCurrency;
 
     const converted = usdAmount * target.rate;
@@ -175,7 +211,7 @@ export const CurrencyProvider: React.FC<{ children: ReactNode }> = ({ children }
         convertAmount,
         isAutoDetected,
         resetToAutoDetect,
-        supportedCurrencies: Object.values(SUPPORTED_CURRENCIES),
+        supportedCurrencies: Object.values(currencies),
       }}
     >
       {children}
