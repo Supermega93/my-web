@@ -661,8 +661,14 @@ export function buildRefinedStrategySpecification(
 }
 
 /**
- * Generates the detailed AI Coding Prompt for Claude, ChatGPT, Gemini, or other LLMs.
- * Preserves the user's strategy exactly. Instructs LLM to clarify rather than invent.
+ * Generates a comprehensive, 20-section implementation-ready AI Coding Prompt
+ * for ChatGPT, Claude, Gemini, or other LLMs.
+ * 
+ * DIRECTIVES:
+ * - The trader's refined specification is the ONLY source of truth.
+ * - The AI must NOT invent or add trading logic.
+ * - Dynamic: omits irrelevant sections (e.g. EA orders for indicators, Pine Script specifics for MT5).
+ * - Acts as a professional developer handoff document.
  */
 export function buildRefinedCodingPrompt(
   components: StrategyComponent[],
@@ -672,23 +678,33 @@ export function buildRefinedCodingPrompt(
 ): string {
   const getComp = (key: string) => components.find(c => c.key === key)?.value || '';
 
-  const instrument = getComp('instrument') || 'Defined in specification';
-  const timeframe = getComp('timeframe') || 'Defined in specification';
+  const instrument = getComp('instrument') || 'Trader specified in specification';
+  const timeframe = getComp('timeframe') || 'Trader specified in specification';
+  const direction = getComp('direction') || 'Long & Short';
   const sessions = getComp('sessions');
-  const setup = getComp('setup') || 'Defined in specification';
-  const entryRules = getComp('entryRules') || 'Defined in specification';
+  const tradingDays = getComp('tradingDays');
+  const setup = getComp('setup') || 'Defined in specification below';
+  const entryRules = getComp('entryRules') || 'Defined in specification below';
   const confirmation = getComp('confirmationRules');
-  const stopLoss = getComp('stopLoss') || 'Defined in specification';
-  const exitRules = getComp('exitRules') || 'Defined in specification';
-  const risk = getComp('riskPerTrade') || 'Defined in specification';
+  const entryTrigger = getComp('entryTriggerType') || 'Candle Close';
+  const stopLoss = getComp('stopLoss');
+  const takeProfit = getComp('takeProfit');
+  const exitRules = getComp('exitRules');
+  const risk = getComp('riskPerTrade');
   const breakEven = getComp('breakEven');
   const trailingStop = getComp('trailingStop');
   const news = getComp('newsFilter');
   const maxTrades = getComp('maxTradesPerDay');
   const maxDailyLoss = getComp('maxDailyLoss');
+  const maxSpread = getComp('maxSpread');
   const plots = getComp('indicatorPlots');
   const alerts = getComp('alertTypes');
+  const additionalRules = getComp('additionalRules');
 
+  const isIndicator = buildType === 'Indicator';
+  const isPineScript = platform === 'TradingView';
+
+  // Language mapping
   const languageMap: Record<string, string> = {
     'MT5': 'MQL5 (MetaTrader 5)',
     'MT4': 'MQL4 (MetaTrader 4)',
@@ -697,93 +713,276 @@ export function buildRefinedCodingPrompt(
   };
   const targetLang = languageMap[platform] || 'MQL5 (MetaTrader 5)';
 
-  if (buildType === 'Indicator') {
-    return `==================================================
-AI CODING PROMPT — TECHNICAL INDICATOR SPECIFICATION
-==================================================
-
-[ROLE]
-You are a senior algorithmic trading and indicator programmer specializing in ${targetLang}.
-Your task is to write clean, modular, production-ready indicator code strictly based on the trader's verified strategy specification below.
-
-[PHILOSOPHY & DIRECTIVES]
-The trader is the strategist. The specification below is the absolute source of truth.
-• DO NOT add unsolicited indicators or filters that the trader did not request.
-• DO NOT invent new calculation conditions or alter visual rules.
-• Ensure the indicator is strictly NON-REPAINTING on closed bars.
-• If any technical parameter required to compile the code is missing or ambiguous, ask the trader for clarification rather than assuming or inventing a value.
-
-[ORIGINAL TRADER IDEA]
-"${originalIdea.trim() || 'Refer to refined specification below.'}"
-
-[TARGET SPECIFICATION]
-• Target Platform: ${platform}
-• Programming Language: ${targetLang}
-• Instrument / Market: ${instrument}
-• Timeframe: ${timeframe}
-${sessions ? `• Active Sessions: ${sessions}` : ''}
-• Core Setup Model: ${setup}
-• Detection / Signal Logic: ${entryRules}
-${confirmation ? `• Confirmation Rule: ${confirmation}` : ''}
-• Visual Plots & Overlay: ${plots || 'Signal arrows / visual markers on chart'}
-• Alerts & Notifications: ${alerts || 'Terminal popup and sound alert on candle close'}
-
-[IMPLEMENTATION REQUIREMENTS]
-1. Write complete, robust, compilable code without placeholders or omitted functions.
-2. Ensure calculation performance is optimized (e.g. use prev_calculated in MQL or barstate in Pine Script).
-3. Expose key visual inputs (colors, line widths, arrow codes, alert toggles) as configurable user inputs.
-4. Add clear comments mapping each block of code directly to the trader's stated rules.
-`;
+  // Program Type
+  let programType = 'Expert Advisor (Automated Trading Robot)';
+  if (isIndicator) {
+    programType = isPineScript ? 'TradingView Indicator' : 'Technical Indicator';
+  } else if (isPineScript) {
+    programType = 'TradingView Strategy (strategy.*)';
   }
 
-  return `==================================================
-AI CODING PROMPT — EXPERT ADVISOR SPECIFICATION
-==================================================
+  // Section 1: Role
+  const roleText = isIndicator
+    ? `You are a senior algorithmic trading and technical indicator developer specializing in ${targetLang}. Your task is to write clean, modular, production-ready, non-repainting indicator code strictly based on the trader's verified strategy specification below.`
+    : `You are a senior quantitative developer and automated execution engineer specializing in ${targetLang}. Your task is to write clean, robust, institutional-grade automated trading code strictly based on the trader's verified strategy specification below.`;
 
-[ROLE]
-You are a senior quantitative developer specializing in automated execution and algorithmic trading robots in ${targetLang}.
-Your task is to write clean, robust, production-ready Expert Advisor code strictly based on the trader's verified strategy specification below.
+  // Section 5: Strategy Overview
+  const strategyOverview = [
+    setup ? `• Model Setup: ${setup}` : '',
+    entryRules ? `• Signal Trigger: ${entryRules}` : '',
+    confirmation ? `• Confirmation: ${confirmation}` : '',
+    stopLoss ? `• Stop Loss: ${stopLoss}` : '',
+    (takeProfit || exitRules) ? `• Exit Target: ${takeProfit || exitRules}` : '',
+    originalIdea.trim() ? `• Original Trader Intent: "${originalIdea.trim()}"` : '',
+  ].filter(Boolean).join('\n');
 
-[PHILOSOPHY & DIRECTIVES]
-The trader is the strategist. The specification below is the absolute source of truth.
-• DO NOT add unsolicited indicators (no RSI, EMA, ATR, MACD, etc. unless explicitly specified below).
-• DO NOT add unsolicited filters, trend filters, or extra confirmation rules.
-• DO NOT alter the trader's risk parameters, stop-loss method, or take-profit logic.
-• If any technical parameter required to complete execution is missing or ambiguous, ask the trader for clarification rather than inventing a rule.
+  // Section 6: User-Defined Inputs
+  const userInputs: string[] = [];
+  components
+    .filter(c => c.value && c.value.trim().length > 0)
+    .forEach((c) => {
+      userInputs.push(
+        `- Input Name: ${c.label} (${c.key})\n  • What it controls: Configurable setting for ${c.label.toLowerCase()}\n  • Specified Value: "${c.value}"\n  • Configurable: Yes\n  • Note: Use this exact specified value; do NOT invent a different default.`
+      );
+    });
 
-[ORIGINAL TRADER IDEA]
-"${originalIdea.trim() || 'Refer to refined specification below.'}"
+  // Section 7: Market / Symbol Conditions
+  const marketConditions = [
+    `• Instrument / Symbol: ${instrument}`,
+    `• Execution Timeframe: ${timeframe}`,
+    `• Allowed Trade Direction: ${direction}`,
+    sessions ? `• Active Trading Session(s): ${sessions}` : '• Active Trading Session(s): Any session unless restricted by user inputs',
+    tradingDays ? `• Active Trading Days: ${tradingDays}` : '',
+    maxSpread ? `• Maximum Allowable Spread: ${maxSpread}` : '',
+  ].filter(Boolean).join('\n');
 
-[TARGET SPECIFICATION]
-• Target Platform: ${platform}
-• Programming Language: ${targetLang}
-• Instrument / Market: ${instrument}
-• Execution Timeframe: ${timeframe}
-${sessions ? `• Permitted Trading Session: ${sessions}` : ''}
-• Primary Setup Model: ${setup}
-• Entry Rules:
-  ${entryRules}
-${confirmation ? `• Confirmation Trigger: ${confirmation}` : ''}
-• Stop Loss Logic:
-  ${stopLoss}
-• Exit Logic / Take Profit:
-  ${exitRules}
-• Risk & Position Sizing:
-  ${risk}
-${breakEven ? `• Break-Even Mechanism: ${breakEven}` : ''}
-${trailingStop ? `• Trailing Stop Mechanism: ${trailingStop}` : ''}
-${maxTrades ? `• Maximum Daily Trades: ${maxTrades}` : ''}
-${maxDailyLoss ? `• Maximum Daily Loss Guard: ${maxDailyLoss}` : ''}
-${news ? `• News Restriction: ${news}` : ''}
+  // Section 8: Calculations
+  const calculationsList: string[] = [];
+  if (setup.toLowerCase().includes('high') || setup.toLowerCase().includes('low') || setup.toLowerCase().includes('breakout') || setup.toLowerCase().includes('range')) {
+    calculationsList.push('1. Price Extremum Calculation: Accurately compute session or bar high/low boundaries strictly according to the stated timeframe.');
+  }
+  if (setup.toLowerCase().includes('moving average') || setup.toLowerCase().includes('ema') || setup.toLowerCase().includes('sma')) {
+    calculationsList.push('2. Moving Average Formula: Compute moving average values using standard mathematical smoothing as specified.');
+  }
+  if (setup.toLowerCase().includes('atr') || stopLoss.toLowerCase().includes('atr') || trailingStop.toLowerCase().includes('atr')) {
+    calculationsList.push('3. Volatility / ATR Metric: Calculate Average True Range (ATR) strictly over the user-defined period for buffer or trailing calculations.');
+  }
+  if (risk && !isIndicator) {
+    calculationsList.push(`4. Position Sizing Calculation: Compute exact order volume from the user-specified risk rule ("${risk}") relative to the distance between entry price and Stop Loss price. Ensure broker lot-step rounding and minimum/maximum volume limits.`);
+  }
+  if (calculationsList.length === 0) {
+    calculationsList.push(`1. Calculate technical setup conditions strictly matching: "${setup}". DO NOT introduce unrequested indicators or mathematical formulas.`);
+  }
 
-[EXECUTION ARCHITECTURE REQUIREMENTS]
-1. Use standard modular structure: initialization, tick handling, and cleanup.
-2. Ensure strict one-trade-per-signal execution with unique magic number and slippage handling.
-3. Calculate lot sizing dynamically based on the trader's stated risk rule (${risk}) and the distance to the Stop Loss.
-4. Expose all core strategy parameters as adjustable user inputs with clear tooltips.
-5. Provide comprehensive error logging for order transmission and trade server response codes.
-6. Provide full, compilable code ready for testing.
-`;
+  // Section 9: Entry Logic (Numbered format)
+  const entryLines: string[] = [];
+  entryLines.push('LONG ENTRY CONDITIONS:');
+  entryLines.push(`1. Direction filter allows Long trades (Direction = "${direction}").`);
+  entryLines.push(`2. Market setup condition is satisfied: ${setup}.`);
+  entryLines.push(`3. Specific Long trigger occurs: ${entryRules}.`);
+  if (confirmation) {
+    entryLines.push(`4. Confirmation rule is verified: ${confirmation}.`);
+  }
+  entryLines.push(`5. Trigger timing: Enter strictly on ${entryTrigger}.`);
+  entryLines.push('');
+  entryLines.push('SHORT ENTRY CONDITIONS:');
+  entryLines.push(`1. Direction filter allows Short trades (Direction = "${direction}").`);
+  entryLines.push(`2. Market setup condition is satisfied: ${setup}.`);
+  entryLines.push(`3. Specific Short trigger occurs: ${entryRules}.`);
+  if (confirmation) {
+    entryLines.push(`4. Confirmation rule is verified: ${confirmation}.`);
+  }
+  entryLines.push(`5. Trigger timing: Enter strictly on ${entryTrigger}.`);
+
+  // Section 10: Exit Logic
+  const exitLines: string[] = [];
+  if (stopLoss) exitLines.push(`• Stop Loss: ${stopLoss}`);
+  if (takeProfit) exitLines.push(`• Take Profit: ${takeProfit}`);
+  if (exitRules && exitRules !== takeProfit) exitLines.push(`• Additional Exit Rules: ${exitRules}`);
+  if (breakEven) exitLines.push(`• Break-Even Exit: Move Stop Loss to entry price when price reaches ${breakEven}`);
+  if (trailingStop) exitLines.push(`• Trailing Stop Exit: Trail Stop Loss by ${trailingStop}`);
+
+  // Section 11: Risk Management
+  const riskLines: string[] = [];
+  if (risk) riskLines.push(`• Risk Per Trade: ${risk}`);
+  if (maxTrades) riskLines.push(`• Maximum Trades Per Day: ${maxTrades}`);
+  if (maxDailyLoss) riskLines.push(`• Maximum Daily Loss / Drawdown Limit: ${maxDailyLoss}`);
+  if (news) riskLines.push(`• News Restriction: ${news}`);
+
+  // Section 12: Trade Management
+  const tradeMgmtLines: string[] = [];
+  if (breakEven) tradeMgmtLines.push(`• Break-Even Modification: When profit reaches ${breakEven}, modify position Stop Loss to entry price (plus optional spread buffer). Ensure modification occurs once only.`);
+  if (trailingStop) tradeMgmtLines.push(`• Trailing Stop Adjustment: Continuously update position Stop Loss by ${trailingStop} strictly after favorable market progression.`);
+  if (tradeMgmtLines.length === 0) {
+    tradeMgmtLines.push('• Maintain position until either defined Stop Loss or Take Profit is struck. No unrequested trade modifications.');
+  }
+
+  // Section 13: Session / Time Logic
+  const sessionLines: string[] = [];
+  if (sessions) {
+    sessionLines.push(`• Trading Sessions: ${sessions}`);
+    sessionLines.push('• New entries are strictly restricted to the specified session hours.');
+    sessionLines.push('• Timezone handling: Expose session start hour/minute and end hour/minute as configurable broker-time inputs. Do not hardcode an assumed local timezone.');
+  } else {
+    sessionLines.push('• No restrictive session window specified; allow evaluation across all active market hours.');
+  }
+
+  // Section 14: Indicator Visuals (Only if Indicator or visual plots defined)
+  const visualLines: string[] = [];
+  if (isIndicator || plots) {
+    visualLines.push(plots || '• Signal arrows, visual highlight markers, and level lines matching the setup rules.');
+    visualLines.push('• Use distinct, high-contrast colors for bullish vs. bearish plots.');
+    visualLines.push('• Ensure visual buffers are non-repainting on confirmed closed bars.');
+  }
+
+  // Section 15: Alerts
+  const alertLines: string[] = [];
+  if (alerts) {
+    alertLines.push(`• Alert Types: ${alerts}`);
+  } else {
+    alertLines.push('• Provide standard terminal popup and sound alert when a verified entry signal occurs on candle close.');
+  }
+  if (isPineScript) {
+    alertLines.push('• Include alertcondition() calls with dynamic placeholders ({{ticker}}, {{close}}, {{time}}).');
+  }
+
+  // Section 16: EA-Specific Requirements (Only if EA)
+  const eaRequirements: string[] = [];
+  if (!isIndicator) {
+    eaRequirements.push('1. Magic Number & Identifier: Provide unique integer Magic Number input to track and manage this strategy\'s orders independently.');
+    eaRequirements.push('2. Duplicate Trade Prevention: Prevent multiple simultaneous entries on the same bar or for the same signal event.');
+    eaRequirements.push('3. Execution & Deviation: Use standard slippage/deviation settings suitable for market execution.');
+    eaRequirements.push('4. Spread Protection: Check current spread before executing; abort if spread exceeds the user-defined maximum.');
+    eaRequirements.push('5. Instrument & Timeframe Isolation: Ensure logic calculates on the chart symbol and chart period unless explicitly multi-timeframe.');
+    if (platform === 'MT5') {
+      eaRequirements.push('6. MQL5 Architecture: Utilize CTrade standard library class for order management, with proper MqlTradeRequest and MqlTradeResult handling.');
+    } else if (platform === 'MT4') {
+      eaRequirements.push('6. MQL4 Architecture: Utilize OrderSend, OrderClose, OrderModify with ticket tracking and GetLastError() logging.');
+    } else if (isPineScript) {
+      eaRequirements.push('6. TradingView Strategy Architecture: Utilize strategy.entry(), strategy.exit(), strategy.close() with calc_on_order_fills=true.');
+    }
+  }
+
+  // Construct structured prompt output
+  const sections: string[] = [];
+
+  sections.push(`================================================================================
+AI CODING PROMPT — ${programType.toUpperCase()}
+================================================================================
+
+[SECTION 1: ROLE / OBJECTIVE]
+${roleText}
+
+[SECTION 2: PLATFORM]
+${platform}
+
+[SECTION 3: PROGRAM TYPE]
+${programType}
+
+[SECTION 4: PROGRAMMING LANGUAGE]
+${targetLang}
+
+[SECTION 5: STRATEGY OVERVIEW]
+${strategyOverview || 'Refer to the comprehensive technical rules detailed below.'}
+
+[SECTION 6: USER-DEFINED INPUTS]
+List of parameters explicitly defined by the trader to expose as configurable inputs:
+${userInputs.length > 0 ? userInputs.join('\n\n') : 'No custom numerical inputs specified; expose standard period, stop loss, and risk inputs.'}
+* DIRECTIVE: Expose these as configurable inputs. DO NOT invent default values or thresholds where the user did not provide one.
+
+[SECTION 7: MARKET / SYMBOL CONDITIONS]
+${marketConditions}
+
+[SECTION 8: CALCULATIONS]
+Implement the following mathematical and technical calculations required by the strategy:
+${calculationsList.join('\n')}
+* DIRECTIVE: Explain and calculate precisely how these values are derived. DO NOT introduce calculations that were not specified by the trader.
+
+[SECTION 9: ENTRY LOGIC]
+Translate the trader's entry conditions into precise implementation rules:
+${entryLines.join('\n')}
+* DIRECTIVE: Do NOT add confirmation rules, indicators, moving averages, RSI, or filters that the trader did not explicitly specify.`);
+
+  // Section 10: Exit Logic (Omit if indicator with no trade exits)
+  if (!isIndicator && exitLines.length > 0) {
+    sections.push(`[SECTION 10: EXIT LOGIC]
+Clearly define every exit condition specified by the trader:
+${exitLines.join('\n')}
+* DIRECTIVE: Only include the exit mechanisms actually specified above. Do not add arbitrary take profit or trailing rules.`);
+  }
+
+  // Section 11: Risk Management (Omit if indicator)
+  if (!isIndicator && riskLines.length > 0) {
+    sections.push(`[SECTION 11: RISK MANAGEMENT]
+Implement the user's specified risk and exposure controls:
+${riskLines.join('\n')}
+* DIRECTIVE: Adhere strictly to the stated risk parameters. Do not invent missing rules.`);
+  }
+
+  // Section 12: Trade Management (Omit if indicator)
+  if (!isIndicator) {
+    sections.push(`[SECTION 12: TRADE MANAGEMENT]
+Post-entry position management lifecycle:
+${tradeMgmtLines.join('\n')}
+* DIRECTIVE: Execute only the specified post-entry actions.`);
+  }
+
+  // Section 13: Session / Time Logic
+  sections.push(`[SECTION 13: SESSION / TIME LOGIC]
+Timing and session parameters:
+${sessionLines.join('\n')}`);
+
+  // Section 14: Indicator Visuals (Include if indicator or plots defined)
+  if (isIndicator || visualLines.length > 0) {
+    sections.push(`[SECTION 14: INDICATOR VISUALS]
+Chart presentation requirements:
+${visualLines.join('\n')}`);
+  }
+
+  // Section 15: Alerts
+  sections.push(`[SECTION 15: ALERTS]
+Notification and alert triggers:
+${alertLines.join('\n')}`);
+
+  // Section 16: EA-Specific Requirements (Omit if indicator)
+  if (!isIndicator) {
+    sections.push(`[SECTION 16: EA-SPECIFIC IMPLEMENTATION REQUIREMENTS]
+Execution safety and system infrastructure:
+${eaRequirements.join('\n')}
+* IMPORTANT: These are technical implementation details required to safely execute the defined strategy. They must NOT be used to invent new trading logic.`);
+  }
+
+  // Section 17: Code Quality Requirements
+  sections.push(`[SECTION 17: CODE QUALITY REQUIREMENTS]
+1. Produce complete, working, compilable code without placeholders, omitted functions, or "insert logic here" comments.
+2. Structure the code modularly (Initialization, Main Event Handler, Signal Evaluation, Execution/Visuals, Cleanup).
+3. Use descriptive, professional variable and function naming.
+4. Add clear comments mapping each block of code directly to the trader's rules.
+5. Avoid unnecessary complexity or external library dependencies beyond standard platform libraries.`);
+
+  // Section 18: Error Handling
+  sections.push(`[SECTION 18: ERROR HANDLING]
+${isIndicator 
+  ? '1. Handle array out-of-bound errors and division-by-zero checks gracefully.\n2. Ensure proper handling of history download delays (prev_calculated / bar_index checks).\n3. Protect against uninitialized buffer values.' 
+  : '1. Check return codes on all trade orders (e.g. TRADE_RETCODE_DONE in MQL5, ERR_NO_ERROR in MQL4).\n2. Implement retry logic for transient broker errors (requotes, busy trade server).\n3. Validate price distances against broker FreezeLevel and StopLevel before placing or modifying stops.\n4. Protect against zero-divide in lot sizing formulas.'}`);
+
+  // Section 19: Testing Requirements
+  sections.push(`[SECTION 19: TESTING CHECKLIST]
+Verify that the generated code passes the following test criteria:
+• Signal Verification: Long and Short signals trigger at the exact conditions defined in Section 9.
+• Bar Close Confirmation: Logic checks bar completion before executing if candle close trigger is specified.
+${!isIndicator ? '• Stop Loss & Take Profit: Verified on every opened trade.\n• Risk Calculation: Dynamic lots adjust accurately to account balance/equity changes.\n• Spread Filter: Blocks entries when market spread widens beyond specified limit.\n• One Trade Per Signal: Duplicate orders are prevented.' : '• Non-Repainting: Historical buffer values remain static after candle close.\n• Visual Clarity: Chart plots, arrows, and lines appear correctly without visual clutter.'}
+• Alert Accuracy: Triggers fire at the exact moment of signal verification.`);
+
+  // Section 20: Important Implementation Rules
+  sections.push(`[SECTION 20: IMPORTANT IMPLEMENTATION RULES]
+• "Do not add, remove, optimize, reinterpret, or modify any trading rule contained in the specification."
+• "The specification is the source of truth."
+• "If something is genuinely ambiguous, identify the ambiguity before making a trading assumption."
+• "Do not introduce indicators, filters, confirmations, exits, risk rules or other strategy logic that are not contained in the specification."
+================================================================================`);
+
+  return sections.join('\n\n');
 }
 
 /**

@@ -24,54 +24,57 @@ export const StrategyArchitectsSection: React.FC<StrategyArchitectsSectionProps>
   const architects = [
     {
       id: 'mega',
-      name: 'Mega',
-      title: 'Lead Strategy Architect & Senior MQL5 Engineer',
+      name: 'MEGA',
+      title: 'Lead Strategy Architect',
       roleBadge: 'Lead Architect',
       experience: '12+ Years Systematic Trading',
       avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=240&auto=format&fit=crop&q=80',
       icon: <Cpu className="w-5 h-5 text-emerald-600" />,
-      bio: 'Pioneered Mega AI Labs quantitative architecture. Oversees execution safety, prop firm risk preservation, and institutional order flow automation.',
+      profile: 'Leads the strategy intake and architectural review process. Focuses on ensuring trading ideas are translated into robust, executable rules without altering the trader\'s core edge.',
+      approach: 'The trader is the strategist. We ensure the logic is bulletproof.',
       specialties: [
-        'MQL5 Expert Advisor Architecture',
-        'Prop Firm Risk & Daily Loss Shields',
-        'ICT / Liquidity Sweep Mechanics',
-        'Zero-Martingale Execution Modeling'
+        'Institutional strategy systems',
+        'Execution architecture & MQL5 logic',
+        'Prop firm risk preservation',
+        'Edge preservation modeling'
       ],
-      deliverable: 'Automated EAs & Source Code'
+      deliverable: 'MQL5 Architecture & Custom Build'
     },
     {
       id: 'alex-mason',
-      name: 'Alex Mason',
-      title: 'Quantitative Systems & Algorithmic Design Specialist',
-      roleBadge: 'Quantitative Architect',
+      name: 'ALEX MASON',
+      title: 'Strategy Systems Architect',
+      roleBadge: 'Systems Architect',
       experience: '9+ Years Quantitative Modeling',
       avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=240&auto=format&fit=crop&q=80',
       icon: <Terminal className="w-5 h-5 text-teal-600" />,
-      bio: 'Specializes in mathematical edge extraction, session volatility mechanics, and converting complex discretionary trader logic into strict algorithmic rules.',
+      profile: 'Specialises in clarifying trader logic, defining structural boundaries, and ensuring strategy inputs, conditions, and execution rules are fully specified.',
+      approach: 'Clear rules create consistent execution.',
       specialties: [
-        'Session Breakout & London Models',
-        'Multi-Timeframe Structure Confirmation',
-        'Dynamic ATR Risk & Trailing Stops',
-        'Tick-Data Backtesting Telemetry'
+        'Algorithmic workflow design',
+        'Multi-timeframe confirmation models',
+        'Session-based mechanics',
+        'Structural boundary definition'
       ],
-      deliverable: 'Refined Specifications & Coding Prompts'
+      deliverable: 'Refined Specifications & Prompts'
     },
     {
       id: 'daniel-reyes',
-      name: 'Daniel Reyes',
-      title: 'Technical Indicator & Visual Scanner Architect',
+      name: 'DANIEL REYES',
+      title: 'TradingView & Indicator Architect',
       roleBadge: 'Indicator Architect',
       experience: '8+ Years MQL5 / Pine Script Dev',
       avatar: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=240&auto=format&fit=crop&q=80',
       icon: <Sliders className="w-5 h-5 text-emerald-600" />,
-      bio: 'Expert in high-performance chart visualization, non-repainting buffer calculations, multi-pair market scanners, and instant push alert frameworks.',
+      profile: 'Focuses on visual execution, indicator-driven logic, alert conditions, and bridging TradingView strategies into production-ready specifications.',
+      approach: 'Visual clarity must match execution precision.',
       specialties: [
-        'Non-Repainting MQL5 Indicators',
-        'Fair Value Gap (FVG) & Zone Mapping',
-        'Multi-Pair Volatility Dashboards',
-        'Mobile Push, Sound & Popup Alerts'
+        'Pine Script strategy design',
+        'TradingView-to-MT5 workflow translation',
+        'Technical indicator structure & alerts',
+        'Non-repainting buffer verification'
       ],
-      deliverable: 'Custom Indicators & Alert Suites'
+      deliverable: 'Indicators & Translation Workflows'
     }
   ];
 
@@ -89,7 +92,7 @@ export const StrategyArchitectsSection: React.FC<StrategyArchitectsSectionProps>
           Meet the Strategy Architects
         </h2>
         <p className="text-slate-600 text-base sm:text-lg max-w-2xl mx-auto font-normal leading-relaxed">
-          The trader is the strategist. Our architects clarify, structure, and turn your trading ideas into production-grade automated systems without altering your rules.
+          Your strategy. Your rules. Our architecture. The trader provides the strategy, while our architects clarify, structure and prepare it for automated execution without changing the trading logic.
         </p>
       </div>
 
@@ -128,20 +131,25 @@ export const StrategyArchitectsSection: React.FC<StrategyArchitectsSectionProps>
                 </div>
               </div>
 
-              {/* Title & Bio */}
+              {/* Title & Profile */}
               <div className="space-y-2">
                 <p className="text-xs font-mono font-bold text-emerald-800">
                   {arch.title}
                 </p>
                 <p className="text-xs text-slate-600 leading-relaxed">
-                  {arch.bio}
+                  {arch.profile}
                 </p>
               </div>
 
+              {/* Philosophy / Approach Quote */}
+              <div className="p-3 rounded-xl bg-slate-50 border border-slate-200/80 text-xs italic text-slate-700">
+                "{arch.approach}"
+              </div>
+
               {/* Specialties List */}
-              <div className="space-y-2 pt-3 border-t border-slate-100">
+              <div className="space-y-2 pt-2 border-t border-slate-100">
                 <span className="text-[11px] font-mono font-bold text-slate-400 uppercase tracking-wider block">
-                  Core Architectural Focus:
+                  Core Specialisation:
                 </span>
                 <div className="space-y-1.5 text-xs text-slate-700">
                   {arch.specialties.map((spec, i) => (
@@ -163,28 +171,36 @@ export const StrategyArchitectsSection: React.FC<StrategyArchitectsSectionProps>
         ))}
       </div>
 
-      {/* Interactive CTA Dock linking to Strategy Architect */}
+      {/* Dual Support Dock: AI Self-Coding & Custom Build */}
       <div className="mt-12 p-8 rounded-3xl bg-slate-900 text-white shadow-xl flex flex-col md:flex-row items-center justify-between gap-6">
         <div className="space-y-2 text-center md:text-left">
           <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-500/20 text-emerald-300 text-xs font-mono font-bold uppercase border border-emerald-500/30">
             <Sparkles className="w-3.5 h-3.5" />
-            <span>Interactive Strategy Intake</span>
+            <span>AI Self-Coding or Custom Build</span>
           </div>
           <h3 className="text-xl sm:text-2xl font-black text-white">
             Ready to Structure Your Strategy?
           </h3>
           <p className="text-xs sm:text-sm text-slate-400 max-w-xl">
-            Describe your idea in plain English. The AI Strategy Architect will extract your logic, verify components, and prepare your specification for coding or custom build.
+            Generate an institutional 20-section coding prompt to build it yourself with ChatGPT/Claude, or hand it to our Strategy Architects for a verified custom build.
           </p>
         </div>
 
-        <button
-          onClick={() => onNavigate('prompt-architect')}
-          className="px-8 py-4 rounded-2xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-black text-sm tracking-wide transition-all shadow-md shadow-emerald-500/20 flex items-center gap-2.5 shrink-0 cursor-pointer group"
-        >
-          <span>Launch AI Strategy Architect</span>
-          <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
-        </button>
+        <div className="flex flex-col sm:flex-row items-center gap-3 shrink-0">
+          <button
+            onClick={() => onNavigate('prompt-architect')}
+            className="w-full sm:w-auto px-6 py-3.5 rounded-2xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-black text-sm tracking-wide transition-all shadow-md shadow-emerald-500/20 flex items-center justify-center gap-2 cursor-pointer group"
+          >
+            <span>Launch Strategy Architect</span>
+            <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+          </button>
+          <button
+            onClick={() => onNavigate('custom-ea')}
+            className="w-full sm:w-auto px-6 py-3.5 rounded-2xl bg-slate-800 hover:bg-slate-700 text-white font-bold text-sm tracking-wide transition-all border border-slate-700 flex items-center justify-center gap-2 cursor-pointer"
+          >
+            <span>Custom EA Services</span>
+          </button>
+        </div>
       </div>
     </section>
   );

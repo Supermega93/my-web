@@ -32,7 +32,7 @@ export function LessonExerciseDocCard({ type, className = '' }: LessonExerciseDo
         downloadUrl: '/api/academy/download/indicator',
         directViewUrl: '/downloads/From_Trading_Idea_to_MT5_Indicator_Guide.pdf',
         fileName: 'From-Trading-Idea-to-MT5-Indicator-Guide.pdf',
-        fileSize: '~18 KB',
+        fileSize: '~34 KB',
         workedExample: 'Average Daily Range (ADR) Breakout Indicator for MT5',
         highlights: [
           'The complete 16-step AI automation workflow (Idea → Specification → Claude Prompt → Code → MT5)',
@@ -51,8 +51,8 @@ export function LessonExerciseDocCard({ type, className = '' }: LessonExerciseDo
         downloadUrl: '/api/academy/download/ea',
         directViewUrl: '/downloads/From_Trading_Idea_to_MT5_EA_Guide.pdf',
         fileName: 'From-Trading-Idea-to-MT5-EA-Guide.pdf',
-        fileSize: '~15 KB',
-        workedExample: 'Previous-Day High/Low Breakout Expert Advisor with Independent Daily Limits',
+        fileSize: '~61 KB',
+        workedExample: 'Previous-Day High/Low Breakout EA (MQL5)',
         highlights: [
           'Full strategy design: D1 previous bar breakout logic, fixed SL/TP, max daily trades & spread filter',
           'Role separation: ChatGPT for strategy specifications, Claude for rock-solid MQL5 programming',
@@ -152,6 +152,7 @@ export function LessonExerciseDocCard({ type, className = '' }: LessonExerciseDo
         {/* Action Panel */}
         <div className="lg:w-72 shrink-0 flex flex-col gap-3 justify-center pt-2 lg:pt-6 border-t lg:border-t-0 lg:border-l border-slate-200/80 lg:pl-6">
           <Button
+            id={`download-${type}-exercise-btn`}
             variant="primary"
             size="lg"
             fullWidth
@@ -164,6 +165,7 @@ export function LessonExerciseDocCard({ type, className = '' }: LessonExerciseDo
           </Button>
 
           <a
+            id={`preview-${type}-exercise-btn`}
             href={docDetails.directViewUrl}
             target="_blank"
             rel="noopener noreferrer"

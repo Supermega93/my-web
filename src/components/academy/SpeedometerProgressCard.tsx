@@ -27,7 +27,7 @@ export function SpeedometerProgressCard({
   const needleRotation = -90 + (percentage / 100) * 180;
 
   return (
-    <div className="w-full max-w-4xl mx-auto rounded-3xl bg-slate-900/80 border border-slate-800 shadow-2xl p-6 sm:p-10 transition-all hover:border-slate-700/80">
+    <div className="w-full max-w-4xl mx-auto rounded-3xl bg-white border border-slate-200/90 shadow-sm hover:shadow-md p-6 sm:p-10 transition-all hover:border-slate-300 text-slate-900">
       <div className="grid grid-cols-1 md:grid-cols-12 gap-8 items-center">
         
         {/* Left: Speedometer / Tachometer Gauge (Cols 1-5) */}
@@ -41,13 +41,13 @@ export function SpeedometerProgressCard({
               <defs>
                 <linearGradient id="gaugeGradient" x1="0%" y1="0%" x2="100%" y2="0%">
                   <stop offset="0%" stopColor="#06B6D4" />
-                  <stop offset="60%" stopColor="#10B981" />
-                  <stop offset="100%" stopColor="#34D399" />
+                  <stop offset="60%" stopColor="#059669" />
+                  <stop offset="100%" stopColor="#10B981" />
                 </linearGradient>
 
                 <linearGradient id="gaugeTrack" x1="0%" y1="0%" x2="100%" y2="0%">
-                  <stop offset="0%" stopColor="#1E293B" />
-                  <stop offset="100%" stopColor="#334155" />
+                  <stop offset="0%" stopColor="#E2E8F0" />
+                  <stop offset="100%" stopColor="#CBD5E1" />
                 </linearGradient>
               </defs>
 
@@ -75,7 +75,7 @@ export function SpeedometerProgressCard({
               )}
 
               {/* Gauge Tick Marks */}
-              <g stroke="#64748B" strokeWidth="1.5" opacity="0.6">
+              <g stroke="#94A3B8" strokeWidth="1.5" opacity="0.7">
                 <line x1="22" y1="100" x2="30" y2="100" />
                 <line x1="32" y1="65" x2="39" y2="70" />
                 <line x1="60" y1="36" x2="65" y2="43" />
@@ -89,11 +89,11 @@ export function SpeedometerProgressCard({
               {isLoggedIn ? (
                 <g transform="translate(100, 100)">
                   <g transform={`rotate(${needleRotation})`} className="transition-transform duration-700 ease-out">
-                    <polygon points="-3,0 0,-78 3,0" fill="#F8FAFC" />
-                    <circle cx="0" cy="-78" r="3" fill="#10B981" />
+                    <polygon points="-3,0 0,-78 3,0" fill="#0F172A" />
+                    <circle cx="0" cy="-78" r="3" fill="#059669" />
                   </g>
                   {/* Pivot Center */}
-                  <circle cx="0" cy="0" r="10" fill="#0F172A" stroke="#10B981" strokeWidth="3" />
+                  <circle cx="0" cy="0" r="10" fill="#0F172A" stroke="#059669" strokeWidth="3" />
                   <circle cx="0" cy="0" r="4" fill="#34D399" />
                 </g>
               ) : null}
@@ -106,10 +106,10 @@ export function SpeedometerProgressCard({
                 className="absolute bottom-2 left-1/2 -translate-x-1/2 flex flex-col items-center justify-center cursor-pointer group"
                 title="Click to sign in and unlock progress tracking"
               >
-                <div className="w-16 h-16 rounded-full bg-gradient-to-br from-sky-500 to-blue-700 border-2 border-sky-300 shadow-[0_0_20px_rgba(56,189,248,0.4)] flex items-center justify-center text-white group-hover:scale-105 transition-transform">
+                <div className="w-16 h-16 rounded-full bg-gradient-to-br from-sky-500 to-blue-600 border-2 border-white shadow-md flex items-center justify-center text-white group-hover:scale-105 transition-transform">
                   <Lock className="w-7 h-7 stroke-[2.5]" />
                 </div>
-                <div className="text-[9px] font-mono font-bold tracking-tight text-sky-400 mt-1 uppercase max-w-[120px] text-center leading-tight">
+                <div className="text-[9px] font-mono font-bold tracking-tight text-sky-700 mt-1 uppercase max-w-[120px] text-center leading-tight">
                   Sign in to unlock progress tracking
                 </div>
               </div>
@@ -118,10 +118,10 @@ export function SpeedometerProgressCard({
 
           {/* Lessons Completed Counter (matching n.png) */}
           <div className="mt-3 space-y-1">
-            <div className="text-2xl sm:text-3xl font-black text-white font-mono tracking-tight">
+            <div className="text-2xl sm:text-3xl font-black text-slate-900 font-mono tracking-tight">
               {completedCount} of {totalCount}
             </div>
-            <div className="inline-block px-3 py-0.5 rounded-full bg-slate-800/90 text-slate-300 text-[11px] font-mono tracking-wide">
+            <div className="inline-block px-3 py-0.5 rounded-full bg-slate-100 text-slate-700 text-[11px] font-mono tracking-wide border border-slate-200">
               Lessons Completed {percentage > 0 ? `(${percentage}%)` : ''}
             </div>
           </div>
@@ -129,18 +129,18 @@ export function SpeedometerProgressCard({
 
         {/* Right: Copy & CTA Button (Cols 6-12, matching BabyPips n.png) */}
         <div className="md:col-span-7 space-y-4 text-left">
-          <h2 className="text-2xl sm:text-3xl font-extrabold text-white tracking-tight">
+          <h2 className="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight">
             Track Your Progress!
           </h2>
-          <p className="text-sm sm:text-base text-slate-300 leading-relaxed font-normal">
-            Wish there was a way to keep track of lessons you've completed? <span className="text-emerald-400 italic font-semibold">Wish granted!</span> Just sign in to unlock this feature and we'll display helpful markers &amp; meters along the way showing just how much you've accomplished!
+          <p className="text-sm sm:text-base text-slate-600 leading-relaxed font-normal">
+            Wish there was a way to keep track of lessons you've completed? <span className="text-emerald-700 italic font-semibold">Wish granted!</span> Just sign in to unlock this feature and we'll display helpful markers &amp; meters along the way showing just how much you've accomplished!
           </p>
 
           <div className="pt-2">
             {!isLoggedIn ? (
               <button
                 onClick={onSignInClick}
-                className="px-6 py-3.5 rounded-full bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-black text-sm tracking-wide transition-all shadow-[0_0_25px_rgba(16,185,129,0.35)] hover:shadow-[0_0_35px_rgba(16,185,129,0.5)] hover:scale-[1.02] flex items-center gap-2.5 cursor-pointer"
+                className="px-6 py-3.5 rounded-full bg-emerald-600 hover:bg-emerald-500 text-white font-black text-sm tracking-wide transition-all shadow-sm hover:shadow-md hover:scale-[1.01] flex items-center gap-2.5 cursor-pointer"
               >
                 <span>Unlock Tracking, Sign In</span>
                 <ArrowRight className="w-4 h-4 stroke-[3]" />
@@ -149,13 +149,13 @@ export function SpeedometerProgressCard({
               <div className="flex flex-wrap items-center gap-3">
                 <button
                   onClick={onContinueClick}
-                  className="px-6 py-3.5 rounded-full bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-black text-sm tracking-wide transition-all shadow-[0_0_25px_rgba(16,185,129,0.35)] hover:scale-[1.02] flex items-center gap-2 cursor-pointer"
+                  className="px-6 py-3.5 rounded-full bg-emerald-600 hover:bg-emerald-500 text-white font-black text-sm tracking-wide transition-all shadow-sm hover:scale-[1.01] flex items-center gap-2 cursor-pointer"
                 >
                   <span>Continue Curriculum</span>
                   <ArrowRight className="w-4 h-4" />
                 </button>
-                <div className="flex items-center gap-2 text-xs font-mono text-emerald-400 px-3 py-1.5 rounded-full bg-emerald-500/10 border border-emerald-500/30">
-                  <CheckCircle2 className="w-3.5 h-3.5" />
+                <div className="flex items-center gap-2 text-xs font-mono text-emerald-800 px-3 py-1.5 rounded-full bg-emerald-50 border border-emerald-200">
+                  <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
                   <span>Tracking Active for {userName || 'Trader'}</span>
                 </div>
               </div>

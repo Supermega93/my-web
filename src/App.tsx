@@ -336,6 +336,7 @@ function AppContent() {
           <CustomEaPage
             onTriggerBuildMyEa={handleTriggerBuildMyEa}
             onExploreEas={() => handleNavigate('eas')}
+            onNavigate={handleNavigate}
           />
         )}
 

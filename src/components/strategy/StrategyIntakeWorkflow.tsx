@@ -39,6 +39,7 @@ import {
   calculateDevelopmentPricingEstimate,
   componentsToStructuredData
 } from '../../lib/strategyEngine.ts';
+import { CustomEaPricingCards } from '../custom-ea/CustomEaPricingTiers.tsx';
 import { useAuth } from '../../context/AuthContext.tsx';
 import { useCurrency } from '../../context/CurrencyContext.tsx';
 import { api } from '../../services/api.ts';
@@ -95,6 +96,7 @@ export const StrategyIntakeWorkflow: React.FC<StrategyIntakeWorkflowProps> = ({
   const [isAdjustmentSaved, setIsAdjustmentSaved] = useState<boolean>(false);
 
   // Custom Build Submission form
+  const [selectedPackageTier, setSelectedPackageTier] = useState<string>('Intermediate');
   const [clientName, setClientName] = useState<string>(user?.name || '');
   const [clientEmail, setClientEmail] = useState<string>(user?.email || '');
   const [clientPhone, setClientPhone] = useState<string>('');
@@ -352,6 +354,7 @@ export const StrategyIntakeWorkflow: React.FC<StrategyIntakeWorkflowProps> = ({
       additional_rules: additionalNotes.trim() || structuredObj.additionalRules || '',
       missing_information: pendingClarifications.map(c => c.label).join(', ') || 'None - Fully Defined',
       submission_type: 'AI Strategy Architect Custom Build',
+      selected_package: selectedPackageTier,
       pricing_estimate: {
         baseTier: pricingEstimate.baseTierName,
         baseMin: pricingEstimate.baseMin,
@@ -1094,10 +1097,10 @@ export const StrategyIntakeWorkflow: React.FC<StrategyIntakeWorkflowProps> = ({
                 Custom Development Scoping
               </span>
               <h2 className="text-2xl sm:text-3xl font-black text-slate-900 mt-1">
-                YOUR STRATEGY IS READY FOR DEVELOPMENT
+                PRICING YOUR STRATEGY FOR CUSTOM BUILD
               </h2>
               <p className="text-xs text-slate-500 mt-1">
-                Transparent development estimate based on the verified components of your strategy.
+                Select a development package for the strategy you created with the Strategy Architect. All tiers include clean source code, testing, and direct engineering support.
               </p>
             </div>
 
@@ -1110,66 +1113,13 @@ export const StrategyIntakeWorkflow: React.FC<StrategyIntakeWorkflowProps> = ({
             </button>
           </div>
 
-          {/* ESTIMATED DEVELOPMENT RANGE CARD (Requirement 9) */}
-          <div className="p-6 sm:p-8 rounded-3xl bg-slate-900 text-white shadow-xl space-y-6">
-            <div>
-              <span className="text-xs font-mono uppercase tracking-wider text-emerald-400 font-bold">
-                Transparent Pricing Architecture
-              </span>
-              <h3 className="text-xl font-black text-white mt-1">
-                Estimated Development Range
-              </h3>
-            </div>
-
-            <div className="space-y-4 pt-2 border-t border-slate-800">
-              {/* Base Development */}
-              <div className="flex items-center justify-between text-sm sm:text-base">
-                <span className="text-slate-300 font-medium">
-                  BASE DEVELOPMENT ({pricingEstimate.baseTierName})
-                </span>
-                <span className="font-mono font-bold text-white">
-                  {formatPrice(pricingEstimate.baseMin)} – {formatPrice(pricingEstimate.baseMax)}
-                </span>
-              </div>
-
-              {/* Additional Features */}
-              {pricingEstimate.features.length > 0 && (
-                <div className="space-y-2 pt-2 border-t border-slate-800/80">
-                  <span className="text-xs font-mono uppercase text-slate-400 font-bold block">
-                    ADDITIONAL DETECTED FEATURES:
-                  </span>
-                  {pricingEstimate.features.map((feat, idx) => (
-                    <div key={idx} className="flex items-center justify-between text-xs sm:text-sm pl-3 border-l-2 border-emerald-500/50">
-                      <span className="text-slate-300">{feat.name}</span>
-                      <span className="font-mono text-emerald-400 font-semibold">
-                        {formatPrice(feat.min)} – {formatPrice(feat.max)}
-                      </span>
-                    </div>
-                  ))}
-                </div>
-              )}
-
-              {/* Estimated Total */}
-              <div className="pt-4 border-t border-slate-700 flex items-baseline justify-between">
-                <div>
-                  <span className="text-xs font-mono text-slate-400 uppercase tracking-wider block">
-                    ESTIMATED TOTAL ({currentCurrency.code})
-                  </span>
-                  <span className="text-2xl sm:text-3xl font-black font-mono text-emerald-400">
-                    {formatPrice(pricingEstimate.totalMin)} – {formatPrice(pricingEstimate.totalMax)}
-                  </span>
-                </div>
-                <span className="text-[11px] font-mono text-slate-400">
-                  Includes full source code (.mq5 / .mq4)
-                </span>
-              </div>
-            </div>
-
-            {/* Pricing Disclaimer Note */}
-            <div className="p-4 rounded-xl bg-slate-800/80 border border-slate-700 text-xs text-slate-400 leading-relaxed">
-              <span className="text-slate-200 font-bold">Pricing Guarantee: </span>
-              Final pricing is confirmed after technical review. Additional requirements or features may change the final quotation. You will receive a formal confirmation quote before any work begins.
-            </div>
+          {/* REUSED CUSTOM EA PRICING CARDS (Requirement: Exact match to Custom EA pricing) */}
+          <div className="space-y-4">
+            <CustomEaPricingCards
+              selectedPackageName={selectedPackageTier}
+              onSelectPackage={(pkg) => setSelectedPackageTier(pkg)}
+              buttonLabel="Select Tier"
+            />
           </div>
 
           {/* CLIENT CONTACT & SUBMISSION FORM (Requirement 10) */}
@@ -1261,10 +1211,10 @@ export const StrategyIntakeWorkflow: React.FC<StrategyIntakeWorkflowProps> = ({
             <div className="p-4 rounded-2xl bg-emerald-50/60 border border-emerald-200 text-xs text-emerald-950 space-y-1.5">
               <span className="font-bold block">What will be submitted to Mega AI Labs:</span>
               <ul className="list-disc list-inside space-y-1 text-slate-700">
+                <li>Selected Development Package: <span className="font-bold font-mono text-emerald-800 uppercase">{selectedPackageTier} Tier</span></li>
                 <li>Your original strategy concept description</li>
                 <li>Your structured & refined specification ({components.length} parameters)</li>
                 <li>Generated AI Coding Prompt for {platform}</li>
-                <li>Estimated development range ({formatPrice(pricingEstimate.totalMin)} – {formatPrice(pricingEstimate.totalMax)})</li>
               </ul>
             </div>
 
