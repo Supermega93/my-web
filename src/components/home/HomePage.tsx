@@ -6,6 +6,7 @@ import { Button } from '../common/Button.tsx';
 import { useCurrency } from '../../context/CurrencyContext.tsx';
 import { HomeFreeAcademySection } from './HomeFreeAcademySection.tsx';
 import { FuturisticRobotHero } from './FuturisticRobotHero.tsx';
+import { StrategyArchitectsSection } from './StrategyArchitectsSection.tsx';
 import { PillIconBadge } from '../common/PillIconBadge.tsx';
 import { 
   ArrowRight, 
@@ -343,6 +344,9 @@ export function HomePage({
           />
         </div>
       </section>
+
+      {/* MEET THE STRATEGY ARCHITECTS SECTION */}
+      <StrategyArchitectsSection onNavigate={onNavigate} />
 
       {/* 4. FREE EBOOK LEAD MAGNET SECTION */}
       <section className="py-20 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 border-t border-slate-200/80">

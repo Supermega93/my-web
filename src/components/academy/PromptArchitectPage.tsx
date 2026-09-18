@@ -70,34 +70,36 @@ export function PromptArchitectPage({ onNavigate, onTriggerBuildMyEa }: PromptAr
             Free Tools
           </button>
           <span>/</span>
-          <span className="text-slate-800 font-semibold">AI Strategy Builder</span>
+          <span className="text-slate-800 font-semibold">AI Strategy Architect</span>
         </nav>
 
         {/* Header Section */}
         <div className="text-center max-w-3xl mx-auto mb-10 space-y-4">
           <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-emerald-50 border border-emerald-200/80 text-emerald-800 text-xs font-mono font-bold uppercase tracking-wider shadow-xs">
             <Sparkles className="w-3.5 h-3.5 text-emerald-700" />
-            <span>FREE AI STRATEGY BUILDER</span>
+            <span>AI STRATEGY ARCHITECT</span>
           </div>
           
           <h1 className="text-3xl sm:text-4xl md:text-5xl font-black tracking-tight text-slate-900 leading-tight">
-            AI Strategy Builder
+            AI Strategy Architect
           </h1>
           
           <p className="text-base sm:text-lg text-slate-600 font-normal leading-relaxed">
-            Turn your trading strategy into a clear, structured specification. Your description is the primary source of truth — the AI organizes and clarifies your rules without redesigning or inventing.
+            The trader is the strategist. The AI is the clarification and structuring assistant. Turn your trading idea into a clean, structured specification without changing your logic or inventing rules.
           </p>
 
           {/* Workflow Sequence Banner */}
           <div className="pt-2">
             <div className="inline-flex flex-wrap items-center justify-center gap-1.5 sm:gap-2 px-4 py-2 rounded-2xl bg-white border border-slate-200/80 shadow-xs text-xs font-mono text-slate-600">
-              <span className="text-emerald-800 font-bold">1 DESCRIBE STRATEGY</span>
+              <span className="text-emerald-800 font-bold">1 TRADER'S IDEA</span>
               <ArrowRight className="w-3 h-3 text-slate-400" />
-              <span className="text-emerald-800 font-bold">2 AI STRUCTURES</span>
+              <span className="text-emerald-800 font-bold">2 CLARIFY & STRUCTURE</span>
               <ArrowRight className="w-3 h-3 text-slate-400" />
-              <span className="text-emerald-800 font-bold">3 REVIEW & CLARIFY</span>
+              <span className="text-emerald-800 font-bold">3 REFINED SPECIFICATION</span>
               <ArrowRight className="w-3 h-3 text-slate-400" />
-              <span className="text-emerald-800 font-bold">4 PROMPT OR CLEAR STRATEGY</span>
+              <span className="text-emerald-800 font-bold">4 AI CODING PROMPT</span>
+              <ArrowRight className="w-3 h-3 text-slate-400" />
+              <span className="text-emerald-800 font-bold">5 CUSTOM BUILD</span>
             </div>
           </div>
         </div>
