@@ -33,6 +33,7 @@ import { PromptArchitectPage } from './components/academy/PromptArchitectPage.ts
 import { LevelHubPage } from './components/academy/LevelHubPage.tsx';
 import { AcademyPricingPage } from './components/academy/AcademyPricingPage.tsx';
 import { MegaAiChat } from './components/common/MegaAiChat.tsx';
+import { WhatsAppFloatingButton } from './components/common/WhatsAppFloatingButton.tsx';
 
 function AppContent() {
   const { user, loading: authLoading } = useAuth();
@@ -441,6 +442,9 @@ function AppContent() {
         onNavigate={handleNavigate}
         onTriggerBuildMyEa={handleTriggerBuildMyEa}
       />
+
+      {/* Floating WhatsApp Contact Button (Bottom-Left) */}
+      <WhatsAppFloatingButton />
     </div>
   );
 }
