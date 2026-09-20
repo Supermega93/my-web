@@ -220,7 +220,7 @@ export function AiPromptHandbookPage({
             {/* Author */}
             <div className="text-sm font-mono text-slate-400">
               Author: <span className="text-slate-200 font-semibold">M. Dinga</span>{' '}
-              <span className="text-slate-400">(A Companion Volume to Build Trading Bots with AI & MQL5)</span>
+              <span className="text-slate-400">(A Companion Volume to The School of AI Trading Architecture)</span>
             </div>
 
             {/* Short Value Proposition */}

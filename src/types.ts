@@ -44,6 +44,10 @@ export interface ProductMetadata {
     backtestSpan?: string;
   };
   faq?: Array<{ q: string; a: string }>;
+  author?: string;
+  subtitle?: string;
+  descriptor?: string;
+  curriculumStructure?: string[];
   pages?: number;
   format?: string;
   skillLevel?: string;

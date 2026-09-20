@@ -322,6 +322,7 @@ function AppContent() {
               onBack={() => handleNavigate('ebooks')}
               onBuyNow={handleBuyNow}
               onTriggerBuildMyEa={handleTriggerBuildMyEa}
+              onNavigateToMasterclass={() => handleNavigate('academy-pricing')}
             />
           )
         )}

@@ -17,13 +17,14 @@ export const STOREFRONT_MEDIA = {
     isProtected: true,
   },
 
-  // 2. PAID EBOOK 1 (Build Trading Bots with AI & MQL5)
+  // 2. PAID EBOOK 1 (The School of AI Trading Architecture)
   paidEbook1: {
     id: 'prod_ebook_mql5_guide',
-    title: 'Build Trading Bots with AI & MQL5 (Vol 1)',
+    title: 'The School of AI Trading Architecture',
+    subtitle: 'A Complete, Zero-Code Course for Building Professional MetaTrader 5 Robots with AI',
     author: 'M. Dinga',
-    // Exact Supabase Image src
-    coverUrl: `${SUPABASE_STOREFRONT_BUCKET}/Gemini_Generated_Image_ltfrdfltfrdfltfr.jfif`,
+    // Exact official cover presentation
+    coverUrl: '/assets/books/school-of-ai-trading-architecture-cover.svg',
     // Exact Supabase Download href
     downloadUrl: `${SUPABASE_STOREFRONT_BUCKET}/Vol1-AI%20assisted%20mql5%20Development.pdf`,
   },

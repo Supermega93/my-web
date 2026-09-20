@@ -99,9 +99,33 @@ export function HomeFreeAcademySection({ onNavigate }: HomeFreeAcademySectionPro
   const completedFreeCount = practicalProgress.completedCount;
   const totalFreeLessonsCount = practicalProgress.totalRequired;
 
+  // Helper to determine the target lesson for a given level
+  const getTargetLessonForLevel = (levelNum: number): string => {
+    const levelPrereqs = FREE_TIER_PREREQUISITES.filter((p) => p.levelNumber === levelNum);
+    const incomplete = levelPrereqs.find((p) => !completedLessonIds.includes(p.id));
+    if (incomplete) return incomplete.id;
+    if (levelPrereqs.length > 0) return levelPrereqs[0].id;
+    if (levelNum === 1) return 'lesson-1-0';
+    if (levelNum === 2) return 'lesson-2-1';
+    if (levelNum === 3) return 'lesson-3-1';
+    return 'lesson-1-0';
+  };
+
+  // Navigate: New user -> Academy page; Logged-in user -> Direct to lesson
+  const handleLevelAction = (levelNum: number) => {
+    if (!user) {
+      onNavigate('academy');
+    } else {
+      const targetLessonId = getTargetLessonForLevel(levelNum);
+      onNavigate('lesson-detail', targetLessonId);
+    }
+  };
+
   // Jump to first uncompleted lesson or orientation
   const handleStartNextLesson = () => {
-    if (practicalProgress.nextIncompleteLesson) {
+    if (!user) {
+      onNavigate('academy');
+    } else if (practicalProgress.nextIncompleteLesson) {
       onNavigate('lesson-detail', practicalProgress.nextIncompleteLesson.id);
     } else {
       onNavigate('lesson-detail', 'lesson-1-0');
@@ -186,7 +210,13 @@ export function HomeFreeAcademySection({ onNavigate }: HomeFreeAcademySectionPro
           return (
             <button
               key={level.id}
-              onClick={() => setSelectedLevelNumber(level.levelNumber)}
+              onClick={() => {
+                if (isSelected) {
+                  handleLevelAction(level.levelNumber);
+                } else {
+                  setSelectedLevelNumber(level.levelNumber);
+                }
+              }}
               className={`p-5 rounded-2xl border text-left transition-all duration-300 relative overflow-hidden cursor-pointer group ${
                 isSelected 
                   ? 'bg-white border-emerald-500 shadow-md ring-2 ring-emerald-500/10' 
@@ -235,8 +265,32 @@ export function HomeFreeAcademySection({ onNavigate }: HomeFreeAcademySectionPro
                 <span className="text-slate-500 font-mono">
                   {completedCount}/{levelPrereqs.length} Lessons Finished
                 </span>
-                <span className={`font-semibold flex items-center gap-1 ${isSelected ? 'text-emerald-700' : 'text-slate-500 group-hover:text-slate-900'}`}>
-                  View Lessons <ChevronRight className="w-3.5 h-3.5" />
+                <span 
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleLevelAction(level.levelNumber);
+                  }}
+                  className={`font-semibold flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs transition-all duration-200 shadow-xs cursor-pointer ${
+                    !user
+                      ? 'bg-gradient-to-r from-emerald-800 to-teal-700 hover:from-emerald-700 hover:to-teal-600 text-white shadow-sm hover:shadow hover:scale-105 active:scale-95'
+                      : isSelected
+                        ? 'bg-emerald-800 hover:bg-emerald-700 text-white shadow-sm hover:shadow hover:scale-105 active:scale-95'
+                        : 'bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-200/90 group-hover:bg-emerald-800 group-hover:text-white group-hover:border-transparent'
+                  }`}
+                  title={!user ? 'Go straight to Academy' : 'Go straight to Lesson'}
+                >
+                  <span>
+                    {!user
+                      ? 'Go to Academy'
+                      : completedCount > 0
+                        ? (isLevelComplete ? 'Review Lesson' : 'Continue Lesson')
+                        : 'Start Lesson'}
+                  </span>
+                  {!user ? (
+                    <ArrowRight className="w-3.5 h-3.5" />
+                  ) : (
+                    <Play className="w-3 h-3 fill-current" />
+                  )}
                 </span>
               </div>
             </button>
@@ -284,15 +338,11 @@ export function HomeFreeAcademySection({ onNavigate }: HomeFreeAcademySectionPro
               <ChevronRight className="w-3.5 h-3.5" />
             </button>
             <button
-              onClick={() => {
-                if (activeLessons.length > 0) {
-                  onNavigate('lesson-detail', activeLessons[0].id);
-                }
-              }}
-              className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-emerald-800 to-teal-700 hover:from-emerald-700 hover:to-teal-600 text-white font-bold text-xs shadow-sm flex items-center gap-2 transition-all cursor-pointer"
+              onClick={() => handleLevelAction(activeLevelMeta.levelNumber)}
+              className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-emerald-800 to-teal-700 hover:from-emerald-700 hover:to-teal-600 text-white font-bold text-xs shadow-sm flex items-center gap-2 transition-all cursor-pointer hover:shadow-md hover:scale-105 active:scale-95"
             >
               <Play className="w-3.5 h-3.5 fill-white" />
-              <span>Start Level {activeLevelMeta.levelNumber}</span>
+              <span>{!user ? 'Go to Academy' : `Start Level ${activeLevelMeta.levelNumber}`}</span>
             </button>
           </div>
         </div>

@@ -63,36 +63,52 @@ export const INITIAL_PRODUCTS: Product[] = [
   },
   {
     id: 'prod_ebook_mql5_guide',
-    name: 'Build Trading Bots with AI & MQL5 (Vol 1)',
+    name: 'The School of AI Trading Architecture',
     type: 'ebook',
     description:
-      'Learn to create professional Expert Advisors and custom indicators with AI and MQL5 — no coding experience required. This comprehensive master handbook bridges the gap between discretionary trading concepts and production-grade automated execution.',
+      'A complete, self-contained curriculum for building professional MetaTrader 5 robots with AI — without ever needing to learn traditional coding. Structured from Preschool to Graduation across Levels 1–8 with copy-and-paste prompts, hands-on labs, risk shields, and real-world capstone projects.',
     short_description:
-      'Learn to Create Professional Expert Advisors & Custom Indicators — No Coding Experience Required. By M. Dinga.',
-    price: 49.0,
+      'A Complete, Zero-Code Course for Building Professional MetaTrader 5 Robots with AI. Levels 1–8 · Prompt Library · Capstones · Labs. By M. Dinga.',
+    price: 89.0,
     currency: 'USD',
-    platform: 'PDF & EPUB (Immediate Download)',
+    platform: 'Digital PDF Course Book (71 Pages · Immediate Download)',
     image_url: STOREFRONT_MEDIA.paidEbook1.coverUrl,
     download_url: STOREFRONT_MEDIA.paidEbook1.downloadUrl,
     active: 1,
     created_at: new Date().toISOString(),
     updated_at: new Date().toISOString(),
     parsedMetadata: {
-      pages: 342,
-      format: 'PDF, EPUB & Interactive Code Repository',
-      skillLevel: 'Beginner to Advanced',
-      tableOfContents: [
-        'Chapter 1: Foundations of Algorithmic Trading Architecture',
-        'Chapter 2: MQL5 Language Core & Object-Oriented Design',
-        'Chapter 3: Custom Indicators & Buffer Mathematical Models',
-        'Chapter 4: Trade Execution, Slippage Mitigation & Order Managers',
-        'Chapter 5: Walk-Forward Optimization & Avoiding Overfitting',
-        'Chapter 6: Deploying to Cloud VPS & Monitoring Systems'
+      pages: 71,
+      author: 'M. Dinga (Strategy Architect · Trader · Author)',
+      subtitle: 'A Complete, Zero-Code Course for Building Professional MetaTrader 5 Robots with AI',
+      descriptor: 'Levels 1–8 · Prompt Library · Capstone Projects · Hands-On Labs',
+      format: 'Full Color Digital PDF (71 Pages) + Verified MQL5 Source Files',
+      skillLevel: 'Preschool to Graduation (Zero Prior Coding Required)',
+      curriculumStructure: [
+        'PART ONE — THE FOUNDATIONS (Levels 1–3)',
+        'Level 1 · Preschool: The Strategy Architect Mindset',
+        'Level 2 · Kindergarten: Programming Concepts in Plain English',
+        'Level 3 · Elementary: Robot Architecture & Blueprints',
+        'Lab 1 · The ADR Indicator: From Trading Idea to Working MT5 Code',
+        'Lab 2 · Build Your First Breakout EA: A Complete, Compilable Expert Advisor',
+        'Bonus Lab · The Two-AI Workflow: Previous-Day Breakout EA (ChatGPT + Claude)',
+        'PART TWO — THE MASTERCLASS (Levels 4–8)',
+        'Level 4 · Middle School: Mastering AI Prompt Engineering',
+        'Level 5 · High School: The Safety Shield & Risk Architecture',
+        'Level 6 · Undergraduate: Visual Tools & On-Screen Dashboards',
+        'Level 7 · Senior Year: Debugging & Code Audits Without Reading Code',
+        'Level 8 · Graduation Capstone: Four Real-World Production Projects',
+        'Appendix A: The Levels 1–3 Master Examination & Answer Key',
+        'Appendix B: The Quick-Reference Consolidated Prompt Library'
       ],
       highlights: [
-        'Includes 12 complete, production-ready MQL5 EA code templates',
-        'Real-world backtesting data analysis spreadsheets',
-        'Step-by-step guidance on bridging TradingView alerts to MT5'
+        'Complete 6-step transformation pipeline: Idea ➔ Specification ➔ Coding Prompt ➔ Code ➔ Test ➔ Improve',
+        'Core architectural principle: "I will never let the AI guess my rules. I replace every eyeball rule with a machine fact."',
+        'The 4 Lego Blocks Architecture: The Brain, The Shield, The Glasses, and The Hands',
+        'The 5-Ingredient Master Prompt recipe: Role, Context, Objective, Constraints, and Format',
+        'Hands-on Lab builds with verified, zero-error MQL5 source code included in full',
+        'Four Capstone Builds: Volatility Exhaustion Bot, Automated Trade Manager, Prop Firm Challenge EA, and Multi-Bot Control Dashboard',
+        '10-Question Master Examination with complete answer key & rationale, plus consolidated copy-and-paste Prompt Library'
       ]
     }
   },

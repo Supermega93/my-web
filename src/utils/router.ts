@@ -152,8 +152,12 @@ export function parseUrlToView(pathname: string): RouteResolution {
     };
   }
 
-  // 11. Build Trading Bots with AI & MQL5 (Volume 1)
+  // 11. The School of AI Trading Architecture
   if (
+    path === '/ebooks/the-school-of-ai-trading-architecture' ||
+    path === '/ebooks/school-of-ai-trading-architecture' ||
+    path === '/books/the-school-of-ai-trading-architecture' ||
+    path === '/books/school-of-ai-trading-architecture' ||
     path === '/ebooks/build-trading-bots-with-ai-mql5' ||
     path === '/ebooks/build-trading-bots' ||
     path === '/ebooks/mql5-guide' ||
@@ -297,7 +301,7 @@ export function getUrlForView(view: ActiveView, extraId?: string): string {
         return '/ebooks/ai-prompt-engineering-handbook';
       }
       if (extraId === 'prod_ebook_mql5_guide') {
-        return '/ebooks/build-trading-bots-with-ai-mql5';
+        return '/ebooks/the-school-of-ai-trading-architecture';
       }
       return extraId ? `/ebooks/${extraId}` : '/ebooks';
 
@@ -383,7 +387,7 @@ export function getTitleForView(view: ActiveView, extraId?: string): string {
       if (extraId === 'prod_ebook_ai_prompt') {
         return 'The AI Prompt Engineering Handbook (Vol 2) | MEG.AI LABS';
       }
-      return 'Build Trading Bots with AI & MQL5 (Vol 1) | MEG.AI LABS';
+      return 'The School of AI Trading Architecture | MEG.AI LABS';
 
     case 'custom-ea':
       return 'Custom EA Development & Algorithmic Engineering | MEG.AI LABS';

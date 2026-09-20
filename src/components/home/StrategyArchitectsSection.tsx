@@ -24,11 +24,11 @@ export const StrategyArchitectsSection: React.FC<StrategyArchitectsSectionProps>
   const architects = [
     {
       id: 'mega',
-      name: 'MEGA',
+      name: 'MEGA DIENG',
       title: 'Lead Strategy Architect',
       roleBadge: 'Lead Architect',
       experience: '12+ Years Systematic Trading',
-      avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=240&auto=format&fit=crop&q=80',
+      avatar: 'https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=240&auto=format&fit=crop&crop=faces&q=80',
       icon: <Cpu className="w-5 h-5 text-emerald-600" />,
       profile: 'Leads the strategy intake and architectural review process. Focuses on ensuring trading ideas are translated into robust, executable rules without altering the trader\'s core edge.',
       approach: 'The trader is the strategist. We ensure the logic is bulletproof.',
@@ -46,7 +46,7 @@ export const StrategyArchitectsSection: React.FC<StrategyArchitectsSectionProps>
       title: 'Strategy Systems Architect',
       roleBadge: 'Systems Architect',
       experience: '9+ Years Quantitative Modeling',
-      avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=240&auto=format&fit=crop&q=80',
+      avatar: 'https://images.unsplash.com/photo-1519085360753-af0119f7cbe7?w=240&auto=format&fit=crop&crop=faces&q=80',
       icon: <Terminal className="w-5 h-5 text-teal-600" />,
       profile: 'Specialises in clarifying trader logic, defining structural boundaries, and ensuring strategy inputs, conditions, and execution rules are fully specified.',
       approach: 'Clear rules create consistent execution.',

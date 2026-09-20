@@ -542,10 +542,10 @@ export function HomePage({
                     <Button
                       variant="primary"
                       size="md"
-                      onClick={() => onBuyNow(featuredEa)}
+                      onClick={() => onNavigate('ea-detail', featuredEa.id)}
                       icon={<ArrowRight className="w-4 h-4" />}
                     >
-                      Buy Now
+                      Explore EA System
                     </Button>
                   </div>
                 </div>
@@ -632,56 +632,59 @@ export function HomePage({
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-stretch">
-          {/* Card 1: ACTUAL E-BOOK */}
+          {/* Card 1: ACTUAL E-BOOK - THE SCHOOL OF AI TRADING ARCHITECTURE */}
           <div className="rounded-3xl p-8 bg-white border border-slate-200/90 shadow-sm hover:shadow-md transition-all flex flex-col justify-between space-y-8">
             <div className="space-y-6">
               <div className="space-y-2">
                 <div className="text-xs font-mono font-bold text-slate-500 uppercase tracking-wider flex items-center justify-between">
-                  <span>Digital Handbook</span>
-                  <span className="text-[10px] px-2 py-0.5 rounded-full bg-slate-100 text-slate-600 border border-slate-200">Instant PDF</span>
+                  <span>Accredited Curriculum</span>
+                  <span className="text-[10px] px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-800 border border-emerald-200 font-semibold">71 Pages • Levels 1–8</span>
                 </div>
                 <h3 className="text-2xl font-black text-slate-900">
-                  {featuredEbook?.name || 'MQL5 Algorithmic Blueprint'}
+                  {featuredEbook?.name || 'The School of AI Trading Architecture'}
                 </h3>
                 <p className="text-xs text-slate-500 leading-relaxed">
-                  The complete manual on turning plain English trading rules into high-performing MQL5 code using engineered AI prompt workflows.
+                  A Complete, Zero-Code Course for Building Professional MetaTrader 5 Robots with AI. By M. Dinga. Structured across Levels 1–8 with copy-and-paste prompts, verified labs, risk shields, and 4 production capstone projects.
                 </p>
               </div>
 
               <div>
                 <div className="flex items-baseline gap-2">
                   <span className="text-4xl font-black text-slate-900 font-mono">
-                    {formatPrice(featuredEbook?.price || 49.00)}
+                    {formatPrice(featuredEbook?.price || 89.00)}
                   </span>
-                  <span className="text-sm font-mono text-slate-400 line-through">$89.00</span>
-                  <span className="text-xs font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200">SAVE 45%</span>
+                  <span className="text-xs font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200">STANDALONE EDITION</span>
                 </div>
                 <div className="text-[11px] text-slate-500 mt-1 flex items-center gap-1.5 font-mono">
                   <Download className="w-3.5 h-3.5 text-slate-400" />
-                  <span>Immediate access • DRM-free download</span>
+                  <span>Immediate access • DRM-Free PDF + MQL5 Source Files</span>
                 </div>
               </div>
 
               <div className="space-y-3 pt-4 border-t border-slate-100 text-xs text-slate-700">
                 <div className="flex items-start gap-2.5">
                   <Check className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
-                  <span>Complete 5-Ingredient AI Prompt architecture templates</span>
+                  <span>Full 8-Level curriculum: Preschool to Capstone Graduation</span>
                 </div>
                 <div className="flex items-start gap-2.5">
                   <Check className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
-                  <span>MQL5 syntax cheatsheets & indicator boilerplates</span>
+                  <span>100% Zero-Code: Build MT5 robots purely with AI (ChatGPT & Claude)</span>
                 </div>
                 <div className="flex items-start gap-2.5">
                   <Check className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
-                  <span>Prop firm mathematical drawdown formulas</span>
+                  <span>The 4 Lego Blocks: The Brain, The Shield, The Glasses & The Hands</span>
                 </div>
                 <div className="flex items-start gap-2.5">
                   <Check className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
-                  <span>No programming background needed — plain English logic</span>
+                  <span>Hands-on verified labs: ADR Indicator & Breakout EA with source code</span>
                 </div>
                 <div className="flex items-start gap-2.5">
                   <Check className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
-                  <span>Lifetime revision updates included</span>
+                  <span>4 Capstone Projects: Volatility Bot, Trade Manager & Prop Firm EA</span>
+                </div>
+                <div className="flex items-start gap-2.5">
+                  <Check className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
+                  <span>Includes Appendix A (Master Exam) & Appendix B (Prompt Library)</span>
                 </div>
               </div>
             </div>
@@ -691,19 +694,14 @@ export function HomePage({
                 variant="outline"
                 fullWidth
                 size="lg"
-                onClick={() => {
-                  if (featuredEbook) {
-                    onBuyNow(featuredEbook);
-                  } else {
-                    onNavigate('ebooks');
-                  }
-                }}
+                onClick={() => onNavigate('ebook-detail', featuredEbook?.id || 'prod_ebook_mql5_guide')}
+                icon={<ArrowRight className="w-4 h-4" />}
               >
-                Get The E-Book
+                View Book Details
               </Button>
               <button 
                 onClick={() => onNavigate('ebooks')}
-                className="w-full text-center text-xs text-slate-500 hover:text-emerald-800 transition-colors font-medium py-1"
+                className="w-full text-center text-xs text-slate-500 hover:text-emerald-800 transition-colors font-medium py-1 cursor-pointer"
               >
                 View all handbook editions →
               </button>
@@ -778,20 +776,16 @@ export function HomePage({
                 whileHover={{ scale: 1.02 }}
                 whileTap={{ scale: 0.98 }}
                 onClick={() => {
-                  if (featuredEa) {
-                    onBuyNow(featuredEa);
-                  } else {
-                    onNavigate('eas');
-                  }
+                  onNavigate('ea-detail', featuredEa?.id || 'prod_ea_adaptive_liquidity');
                 }}
                 className="w-full py-3.5 rounded-xl bg-white hover:bg-emerald-50 text-emerald-950 font-black text-sm shadow-md transition-all flex items-center justify-center gap-2 cursor-pointer"
               >
-                <span>Get Trading Robot</span>
+                <span>View Trading Robot</span>
                 <ArrowRight className="w-4 h-4" />
               </motion.button>
               <button 
                 onClick={() => onNavigate('eas')}
-                className="w-full text-center text-xs text-emerald-200 hover:text-white transition-colors font-medium py-1"
+                className="w-full text-center text-xs text-emerald-200 hover:text-white transition-colors font-medium py-1 cursor-pointer"
               >
                 Inspect full backtest metrics & telemetry →
               </button>

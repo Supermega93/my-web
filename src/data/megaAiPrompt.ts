@@ -122,14 +122,14 @@ Tell me what you want the app or website to do, what users should be able to acc
     query.includes('recommend a book')
   ) {
     return {
-      content: `If you're new to building trading bots with AI and MQL5, **Vol. 1: Build Trading Bots with AI & MQL5** is the natural starting point. It covers architecture, indicators, and risk management without requiring prior coding experience.
-
-**Vol. 2: The AI Prompt Engineering Handbook for Trading Automation** focuses specifically on systematic AI prompt engineering to generate, debug, and optimize institutional-grade trading systems.`,
-      actions: [
-        { label: 'View All Books', actionType: 'navigate', target: 'ebooks' },
-        { label: 'Vol 1: Build Trading Bots', actionType: 'navigate', target: 'ebooks' },
-        { label: 'Vol 2: AI Prompt Handbook', actionType: 'navigate', target: 'ai-prompt-handbook' },
-      ]
+      content: `If you're new to building trading bots with AI and MQL5, **The School of AI Trading Architecture** by M. Dinga is the ultimate starting point. It covers a complete 71-page zero-code curriculum across Levels 1 through 8, including hands-on labs, capstone projects, and copy-and-paste prompt templates ($89 USD).
+ 
+ **Vol. 2: The AI Prompt Engineering Handbook for Trading Automation** focuses specifically on systematic AI prompt engineering to generate, debug, and optimize institutional-grade trading systems.`,
+       actions: [
+         { label: 'View All Books', actionType: 'navigate', target: 'ebooks' },
+         { label: 'The School of AI Trading Architecture', actionType: 'navigate', target: 'ebook-detail' },
+         { label: 'Vol 2: AI Prompt Handbook', actionType: 'navigate', target: 'ai-prompt-handbook' },
+       ]
     };
   }
 

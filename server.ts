@@ -49,20 +49,57 @@ initDatabase();
 function syncBookCoverImages() {
   try {
     const booksDir = path.join(process.cwd(), 'public', 'assets', 'books');
+    
+    // Ensure School of AI Trading Architecture is updated in SQLite
+    const schoolMeta = JSON.stringify({
+      pages: 71,
+      author: 'M. Dinga (Strategy Architect · Trader · Author)',
+      subtitle: 'A Complete, Zero-Code Course for Building Professional MetaTrader 5 Robots with AI',
+      descriptor: 'Levels 1–8 · Prompt Library · Capstone Projects · Hands-On Labs',
+      format: 'Full Color Digital PDF (71 Pages) + Verified MQL5 Source Files',
+      skillLevel: 'Preschool to Graduation (Zero Prior Coding Required)',
+      language: 'English',
+      tableOfContents: [
+        'PART ONE — THE FOUNDATIONS (Levels 1–3)',
+        'Level 1 · Preschool: The Strategy Architect Mindset',
+        'Level 2 · Kindergarten: Programming Concepts in Plain English',
+        'Level 3 · Elementary: Robot Architecture & Blueprints',
+        'Lab 1 · The ADR Indicator: From Trading Idea to Working MT5 Code',
+        'Lab 2 · Build Your First Breakout EA: A Complete, Compilable Expert Advisor',
+        'Bonus Lab · The Two-AI Workflow: Previous-Day Breakout EA (ChatGPT + Claude)',
+        'PART TWO — THE MASTERCLASS (Levels 4–8)',
+        'Level 4 · Middle School: Mastering AI Prompt Engineering',
+        'Level 5 · High School: The Safety Shield & Risk Architecture',
+        'Level 6 · Undergraduate: Visual Tools & On-Screen Dashboards',
+        'Level 7 · Senior Year: Debugging & Code Audits Without Reading Code',
+        'Level 8 · Graduation Capstone: Four Real-World Production Projects',
+        'Appendix A: The Levels 1–3 Master Examination & Answer Key',
+        'Appendix B: The Quick-Reference Consolidated Prompt Library'
+      ],
+      highlights: [
+        'Complete 6-step transformation pipeline: Idea ➔ Specification ➔ Coding Prompt ➔ Code ➔ Test ➔ Improve',
+        'Core architectural principle: "I will never let the AI guess my rules. I replace every eyeball rule with a machine fact."',
+        'The 4 Lego Blocks Architecture: The Brain, The Shield, The Glasses, and The Hands',
+        'The 5-Ingredient Master Prompt recipe: Role, Context, Objective, Constraints, and Format',
+        'Hands-on Lab builds with verified, zero-error MQL5 source code included in full',
+        'Four Capstone Builds: Volatility Exhaustion Bot, Automated Trade Manager, Prop Firm Challenge EA, and Multi-Bot Control Dashboard',
+        '10-Question Master Examination with complete answer key & rationale, plus consolidated copy-and-paste Prompt Library'
+      ]
+    });
+
+    dbQueries.updateProduct('prod_ebook_mql5_guide', {
+      name: 'The School of AI Trading Architecture',
+      price: 89.0,
+      description: 'A complete, self-contained curriculum for building professional MetaTrader 5 robots with AI — without ever needing to learn traditional coding. Structured from Preschool to Graduation across Levels 1–8 with copy-and-paste prompts, hands-on labs, risk shields, and real-world capstone projects.',
+      short_description: 'A Complete, Zero-Code Course for Building Professional MetaTrader 5 Robots with AI. Levels 1–8 · Prompt Library · Capstones · Labs. By M. Dinga.',
+      platform: 'Digital PDF Course Book (71 Pages · Immediate Download)',
+      image_url: '/assets/books/school-of-ai-trading-architecture-cover.svg',
+      metadata: schoolMeta
+    });
+
     if (fs.existsSync(booksDir)) {
       const files = fs.readdirSync(booksDir);
       
-      // Check for Vol 1 (Build Trading Bots with AI & MQL5)
-      const vol1File = files.find(f => 
-        !f.endsWith('.svg') && 
-        (f.includes('ltfrdf') || f.includes('vol1') || f.includes('build-trading-bots'))
-      );
-      if (vol1File) {
-        dbQueries.updateProduct('prod_ebook_mql5_guide', {
-          image_url: `/assets/books/${vol1File}`
-        });
-      }
-
       // Check for Vol 2 (The AI Prompt Engineering Handbook)
       const vol2File = files.find(f => 
         !f.endsWith('.svg') && 

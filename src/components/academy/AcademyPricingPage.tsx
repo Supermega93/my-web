@@ -49,6 +49,7 @@ export function AcademyPricingPage({ onNavigate, onOpenAuth }: AcademyPricingPag
       displayPrice: formatPrice(159),
       tagline: 'Complete mastery of Levels 4 through 8, advanced AI prompt engineering & certification.',
       features: [
+        'The School of AI Trading Architecture (Complete 71-Page Course Book included · $89 value)',
         'Full access to all remaining levels (Levels 4 through 8)',
         'Junior High, High School, Undergraduate, Masters & PhD tiers',
         'Advanced prompt engineering templates for ChatGPT & Claude',
@@ -184,6 +185,29 @@ export function AcademyPricingPage({ onNavigate, onOpenAuth }: AcademyPricingPag
             >
               {currentStudentTier === 'paid' ? 'Paid Masterclass Active' : currentStudentTier === 'complimentary' ? 'Complimentary Access' : 'Free Tier (Levels 1–3)'}
             </span>
+          </div>
+
+          {/* Included Course Book Callout Banner */}
+          <div className="mt-6 p-4 sm:p-5 rounded-2xl bg-gradient-to-r from-emerald-50 via-teal-50 to-emerald-50/60 border border-emerald-200/80 shadow-xs flex flex-col sm:flex-row items-center justify-between gap-4 text-center sm:text-left">
+            <div className="flex items-center gap-3.5">
+              <div className="w-10 h-10 rounded-xl bg-emerald-800 text-white flex items-center justify-center shrink-0 shadow-xs">
+                <GraduationCap className="w-5 h-5 text-amber-300" />
+              </div>
+              <div>
+                <div className="text-xs font-mono font-bold text-emerald-900 uppercase tracking-wider">
+                  Included With All Masterclass Enrollments
+                </div>
+                <div className="text-sm font-bold text-slate-900">
+                  The School of AI Trading Architecture (Complete 71-Page Course Book · $89 Standalone Value)
+                </div>
+              </div>
+            </div>
+            <button
+              onClick={() => onNavigate('ebook-detail', 'prod_ebook_mql5_guide')}
+              className="text-xs font-mono font-bold text-emerald-800 hover:text-emerald-950 underline underline-offset-4 cursor-pointer shrink-0"
+            >
+              Preview Course Book →
+            </button>
           </div>
         </div>
 
