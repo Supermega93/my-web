@@ -523,6 +523,11 @@ Once you have verified your foundational knowledge through the exam, proceed to 
     summary: 'The Free Tier Capstone Workshop: Transform a manual breakout strategy into a fully functional, compilable MetaTrader 5 Expert Advisor (.mq5) using AI assistance, the 4 Lego Blocks, and the Strategy Tester.',
     duration_minutes: 25,
     is_free: true,
+    video_url: 'https://www.youtube.com/watch?v=WmiEpfDXjOo',
+    video_id: 'WmiEpfDXjOo',
+    video_title: '🎥 Practical Workshop: From Trading Idea to MT5 EA With AI',
+    video_subtitle: 'Watch the complete practical walkthrough before working through the lesson below.',
+    video_badge: 'Practical Workshop Video',
     content: `
 # Practical Exercise: Build Your First Breakout EA 🛠️
 
@@ -533,6 +538,8 @@ Up to this point, you've learned how a Strategy Architect thinks, how programmin
 Now it's time to put the tools in your hands. In this capstone exercise, you will transform a manual breakout setup into a working, compilable MetaTrader 5 Expert Advisor (.mq5) using AI assistance.
 
 Remember our core rule: **You do not need to be a software developer to build institutional trading bots. You need to be a Strategy Architect who speaks plain English with mathematical precision.**
+
+> 🎬 **Practical Video Walkthrough**: Follow along with the complete practical walkthrough video above as we take you through the entire end-to-end process: **Trading Idea → Specification → Review → Coding Prompt → MQL5 → MetaEditor → Compile → Backtest**. The complete written manual, prompt recipes, and compilable source code continue below!
 
 ---
 
@@ -923,6 +930,11 @@ Take your momentum, celebrate this build, and when you're ready, let's take your
     summary: 'The Final Free Tier Workshop: Turn a raw trading idea into a working MT5 Average Daily Range (ADR) indicator using AI assistance, step-by-step specifications, Claude coding prompts, MetaEditor debugging, and chart validation.',
     duration_minutes: 30,
     is_free: true,
+    video_url: 'https://www.youtube.com/watch?v=MzNUHEDPWPs',
+    video_id: 'MzNUHEDPWPs',
+    video_title: 'Build Your First MT5 Indicator (ADR)',
+    video_subtitle: 'Full video lesson version: follow the complete 16-step AI automation workflow, ChatGPT prompt specifications, Claude MQL5 coding, MetaEditor compilation, and MT5 visual chart testing.',
+    video_badge: 'Video Lesson Version',
     content: `
 # Practical Workshop: Build Your First MT5 Indicator 📊
 

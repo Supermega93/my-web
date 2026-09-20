@@ -563,14 +563,27 @@ export function LessonViewerPage({ lessonId, onNavigate, onOpenCheckout }: Lesso
         {isPractical && !isPracticalUnlocked ? (
           /* Locked State for Capstone Workshop: Preview Visible + Progress Lock Card */
           <div className="mt-4 p-6 sm:p-10 rounded-2xl bg-slate-900/60 border border-slate-800 shadow-xl space-y-10">
+            {/* Video Lesson Version at the very beginning of Lesson 3.5 */}
+            {isBreakoutWorkshop && (
+              <LessonVideoPlayer
+                videoUrl={lesson.video_url || "https://www.youtube.com/watch?v=WmiEpfDXjOo"}
+                videoId={lesson.video_id || "WmiEpfDXjOo"}
+                title={lesson.video_title || "🎥 Practical Workshop: From Trading Idea to MT5 EA With AI"}
+                subtitle={lesson.video_subtitle || "Watch the complete practical walkthrough before working through the lesson below."}
+                badgeText={lesson.video_badge || "Practical Workshop Video"}
+                footerHint="Watch the full practical walkthrough video above or review the strategy blueprint preview below."
+                footerSubtext="Strategy Preview & Guide Below ↓"
+              />
+            )}
+
             {/* Video Lesson Version at the very beginning of Lesson 3.6 */}
             {isIndicatorWorkshop && (
               <LessonVideoPlayer
-                videoUrl="https://www.youtube.com/watch?v=MzNUHEDPWPs"
-                videoId="MzNUHEDPWPs"
-                title="Build Your First MT5 Indicator (ADR)"
-                subtitle="Full video lesson version: follow the complete 16-step AI automation workflow, ChatGPT prompt specifications, Claude MQL5 coding, MetaEditor compilation, and MT5 visual chart testing."
-                badgeText="Video Lesson Version"
+                videoUrl={lesson.video_url || "https://www.youtube.com/watch?v=MzNUHEDPWPs"}
+                videoId={lesson.video_id || "MzNUHEDPWPs"}
+                title={lesson.video_title || "Build Your First MT5 Indicator (ADR)"}
+                subtitle={lesson.video_subtitle || "Full video lesson version: follow the complete 16-step AI automation workflow, ChatGPT prompt specifications, Claude MQL5 coding, MetaEditor compilation, and MT5 visual chart testing."}
+                badgeText={lesson.video_badge || "Video Lesson Version"}
               />
             )}
 
@@ -596,21 +609,31 @@ export function LessonViewerPage({ lessonId, onNavigate, onOpenCheckout }: Lesso
           </div>
         ) : isUnlocked ? (
           <div className="mt-4 p-6 sm:p-10 rounded-2xl bg-slate-900/60 border border-slate-800 shadow-xl space-y-10">
+            {/* 3. Embedded YouTube Video at the very beginning of Lesson 3.5 */}
+            {isBreakoutWorkshop && (
+              <LessonVideoPlayer
+                videoUrl={lesson.video_url || "https://www.youtube.com/watch?v=WmiEpfDXjOo"}
+                videoId={lesson.video_id || "WmiEpfDXjOo"}
+                title={lesson.video_title || "🎥 Practical Workshop: From Trading Idea to MT5 EA With AI"}
+                subtitle={lesson.video_subtitle || "Watch the complete practical walkthrough before working through the lesson below."}
+                badgeText={lesson.video_badge || "Practical Workshop Video"}
+                footerHint="Watch the complete practical walkthrough before working through the written lesson, prompt recipes, and verified source code below."
+                footerSubtext="Written Manual & Resources Below ↓"
+              />
+            )}
+
             {/* Video Lesson Version at the very beginning of Lesson 3.6 */}
             {isIndicatorWorkshop && (
               <LessonVideoPlayer
-                videoUrl="https://www.youtube.com/watch?v=MzNUHEDPWPs"
-                videoId="MzNUHEDPWPs"
-                title="Build Your First MT5 Indicator (ADR)"
-                subtitle="Full video lesson version: follow the complete 16-step AI automation workflow, ChatGPT prompt specifications, Claude MQL5 coding, MetaEditor compilation, and MT5 visual chart testing."
-                badgeText="Video Lesson Version"
+                videoUrl={lesson.video_url || "https://www.youtube.com/watch?v=MzNUHEDPWPs"}
+                videoId={lesson.video_id || "MzNUHEDPWPs"}
+                title={lesson.video_title || "Build Your First MT5 Indicator (ADR)"}
+                subtitle={lesson.video_subtitle || "Full video lesson version: follow the complete 16-step AI automation workflow, ChatGPT prompt specifications, Claude MQL5 coding, MetaEditor compilation, and MT5 visual chart testing."}
+                badgeText={lesson.video_badge || "Video Lesson Version"}
               />
             )}
 
             {/* Free Downloadable Exercise Document associated directly with the exercise */}
-            {isBreakoutWorkshop && (
-              <LessonExerciseDocCard type="ea" className="mb-6" />
-            )}
             {isIndicatorWorkshop && (
               <LessonExerciseDocCard type="indicator" className="my-6" />
             )}
@@ -626,8 +649,15 @@ export function LessonViewerPage({ lessonId, onNavigate, onOpenCheckout }: Lesso
               </div>
             )}
 
-            {/* Formatted Content with Clean BabyPips Typography */}
+            {/* 4. Formatted Content with Clean BabyPips Typography */}
             <BabyPipsContentRenderer content={lesson.content} />
+
+            {/* 5. Existing downloadable resources / materials for Lesson 3.5 */}
+            {isBreakoutWorkshop && (
+              <div className="pt-4 border-t border-slate-800/80">
+                <LessonExerciseDocCard type="ea" className="my-2" />
+              </div>
+            )}
 
             {/* Dedicated Master Examination Assessment (Extracted & Kept Separate from Normal Quizzes) */}
             {masterExam && (
@@ -730,21 +760,12 @@ export function LessonViewerPage({ lessonId, onNavigate, onOpenCheckout }: Lesso
 
             {/* Unlock CTAs */}
             <div className="flex flex-wrap items-center justify-center gap-3 pt-4">
-              {!user ? (
-                <button
-                  onClick={() => setAuthModalOpen(true)}
-                  className="px-6 py-3.5 rounded-xl bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-bold text-sm transition-all shadow-[0_0_20px_rgba(6,182,212,0.4)] cursor-pointer"
-                >
-                  Sign In to Access Paid Lessons
-                </button>
-              ) : (
-                <button
-                  onClick={() => onNavigate('academy-pricing')}
-                  className="px-6 py-3.5 rounded-xl bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-bold text-sm transition-all shadow-[0_0_20px_rgba(6,182,212,0.4)] cursor-pointer"
-                >
-                  Get Masterclass Access (View Pricing)
-                </button>
-              )}
+              <button
+                onClick={() => onNavigate('academy-pricing')}
+                className="px-6 py-3.5 rounded-xl bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-bold text-sm transition-all shadow-[0_0_20px_rgba(6,182,212,0.4)] cursor-pointer"
+              >
+                Get Masterclass Access (View Pricing)
+              </button>
 
               <button
                 onClick={() => onNavigate('academy-pricing')}

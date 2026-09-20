@@ -229,6 +229,11 @@ export interface Lesson {
   is_free: boolean;
   duration_minutes?: number;
   summary?: string;
+  video_url?: string;
+  video_id?: string;
+  video_title?: string;
+  video_subtitle?: string;
+  video_badge?: string;
   accessGranted?: boolean;
   requiresAuth?: boolean;
   requiresPurchase?: boolean;

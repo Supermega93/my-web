@@ -258,7 +258,8 @@ export function AcademyHomePage({ onNavigate, onOpenEbookDownload }: AcademyHome
       {/* Sequential Courses List (Course 1 of 8 through Course 8 of 8, matching BabyPips n.png) */}
       <section className="relative max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 space-y-16">
         {coursesWithLessons.map((course, idx) => {
-          const isUnlocked = course.isFree || course.levelNumber <= 3;
+          const isAuthorized = course.isFree || course.levelNumber <= 3 || studentTier === 'paid' || studentTier === 'complimentary' || isAdmin;
+          const isUnlocked = isAuthorized;
 
           return (
             <div 
@@ -310,10 +311,16 @@ export function AcademyHomePage({ onNavigate, onOpenEbookDownload }: AcademyHome
                 {/* Right: Primary Green Action Button (matching n.png) */}
                 <div className="shrink-0 self-center md:self-start">
                   <button
-                    onClick={() => onNavigate('level-hub', course.id)}
+                    onClick={() => {
+                      if (isAuthorized) {
+                        onNavigate('level-hub', course.id);
+                      } else {
+                        onNavigate('academy-pricing');
+                      }
+                    }}
                     className="px-6 py-3 rounded-full bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-sm tracking-wide transition-all shadow-sm hover:shadow-md hover:scale-[1.01] flex items-center gap-2 cursor-pointer"
                   >
-                    <span>Start Course</span>
+                    <span>{isAuthorized ? 'Start Course' : 'Unlock Course'}</span>
                     <ArrowRight className="w-4 h-4 stroke-[3]" />
                   </button>
                 </div>
@@ -392,7 +399,7 @@ export function AcademyHomePage({ onNavigate, onOpenEbookDownload }: AcademyHome
                             if (isUnlocked) {
                               onNavigate('lesson-detail', lesson.id);
                             } else {
-                              onNavigate('level-hub', course.id);
+                              onNavigate('academy-pricing');
                             }
                           }}
                           className="relative flex items-center justify-between p-3.5 sm:p-4 rounded-2xl bg-slate-50/70 hover:bg-white border border-slate-200/80 hover:border-emerald-300 hover:shadow-xs transition-all cursor-pointer group"

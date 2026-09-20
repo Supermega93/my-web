@@ -127,6 +127,9 @@ export function LevelHubPage({ levelId, onNavigate }: LevelHubPageProps) {
     setAuthModalOpen(true);
   };
 
+  // Free levels (1-3) are accessible to all; paid levels (4-8) require administrator, paid, or complimentary status
+  const isAuthorizedForLevel = levelMeta.isFree || studentTier === 'paid' || studentTier === 'complimentary' || isAdmin;
+
   // Filter lessons based on active student tier
   // Free tier students see lesson-3-bonus (Fundamentals Bonus & Master Exam)
   // Paid tier students see lesson-8-bonus (Advanced Bonus Chapter)
@@ -282,9 +285,19 @@ export function LevelHubPage({ levelId, onNavigate }: LevelHubPageProps) {
                       <ChevronRight className="w-3.5 h-3.5 text-slate-950 stroke-[3]" />
                     </span>
                   </button>
-                ) : (
+                ) : isAuthorizedForLevel ? (
                   <button
                     onClick={() => onNavigate('lesson-detail', nextLessonToTake?.id || 'lesson-4-1')}
+                    className="px-6 py-3.5 rounded-full bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-black text-sm tracking-wide transition-all shadow-[0_0_25px_rgba(16,185,129,0.35)] hover:shadow-[0_0_35px_rgba(16,185,129,0.55)] hover:scale-[1.02] flex items-center gap-2 group"
+                  >
+                    <span>{completedLessons > 0 ? 'Continue Course' : 'Start Course'}</span>
+                    <span className="w-5 h-5 rounded-full bg-slate-950/20 flex items-center justify-center group-hover:translate-x-0.5 transition-transform">
+                      <ChevronRight className="w-3.5 h-3.5 text-slate-950 stroke-[3]" />
+                    </span>
+                  </button>
+                ) : (
+                  <button
+                    onClick={() => onNavigate('academy-pricing')}
                     className="px-6 py-3.5 rounded-full bg-gradient-to-r from-purple-700 via-indigo-600 to-cyan-600 hover:from-purple-600 hover:to-cyan-500 text-white font-black text-sm tracking-wide transition-all shadow-[0_0_25px_rgba(99,102,241,0.35)] hover:shadow-[0_0_35px_rgba(6,182,212,0.5)] hover:scale-[1.02] flex items-center gap-2.5 group"
                   >
                     <div className="w-5 h-5 rounded-full bg-white/20 flex items-center justify-center">
@@ -466,6 +479,7 @@ export function LevelHubPage({ levelId, onNavigate }: LevelHubPageProps) {
                   const isPractical = lesson.id === PRACTICAL_EXERCISE_LESSON_ID || lesson.id === INDICATOR_WORKSHOP_LESSON_ID;
                   const practicalProgress = getPracticalExerciseProgress(completedLessonIds);
                   const isPracticalUnlocked = isPracticalExerciseUnlocked(completedLessonIds, studentTier, isAdmin);
+                  const isUnlocked = isLessonUnlockedForTier(lesson, studentTier, isAdmin, completedLessonIds);
 
                   return (
                     <div
@@ -504,7 +518,13 @@ export function LevelHubPage({ levelId, onNavigate }: LevelHubPageProps) {
                         ) : (
                           /* Paid Masterclass: Subtle Lock Icon inside node */
                           <div
-                            onClick={() => onNavigate('lesson-detail', lesson.id)}
+                            onClick={() => {
+                              if (isUnlocked) {
+                                onNavigate('lesson-detail', lesson.id);
+                              } else {
+                                onNavigate('academy-pricing');
+                              }
+                            }}
                             title="Premium Masterclass Lesson"
                             className="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-slate-900 border-2 border-slate-700 group-hover:border-cyan-500/70 text-slate-400 group-hover:text-cyan-400 flex items-center justify-center cursor-pointer shadow-sm transition-all hover:scale-110"
                           >
@@ -515,7 +535,13 @@ export function LevelHubPage({ levelId, onNavigate }: LevelHubPageProps) {
 
                       {/* Lesson Content Card */}
                       <div
-                        onClick={() => onNavigate('lesson-detail', lesson.id)}
+                        onClick={() => {
+                          if (isUnlocked) {
+                            onNavigate('lesson-detail', lesson.id);
+                          } else {
+                            onNavigate('academy-pricing');
+                          }
+                        }}
                         className="ml-4 sm:ml-6 p-5 sm:p-6 rounded-2xl bg-slate-900/60 hover:bg-slate-900 border border-slate-800/80 hover:border-emerald-500/40 cursor-pointer transition-all shadow-sm group-hover:shadow-[0_4px_20px_rgba(0,0,0,0.4)]"
                       >
                         {/* Grade / Module Sub-label */}
@@ -615,6 +641,11 @@ export function LevelHubPage({ levelId, onNavigate }: LevelHubPageProps) {
                           {isPractical && !isPracticalUnlocked ? (
                             <span className="text-amber-400 font-semibold group-hover:underline flex items-center gap-1">
                               <span>Preview Workshop ({practicalProgress.progressPercent}% to Unlock)</span>
+                              <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-1 transition-transform" />
+                            </span>
+                          ) : !isUnlocked ? (
+                            <span className="text-indigo-400 font-semibold group-hover:underline flex items-center gap-1">
+                              <span>Unlock Lesson</span>
                               <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-1 transition-transform" />
                             </span>
                           ) : (

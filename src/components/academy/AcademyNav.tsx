@@ -33,7 +33,16 @@ export function AcademyNav({ onNavigate, activeTab }: AcademyNavProps) {
           </button>
 
           <div 
-            onClick={() => onNavigate('academy')}
+            onClick={() => onNavigate('home')}
+            role="button"
+            tabIndex={0}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' || e.key === ' ') {
+                e.preventDefault();
+                onNavigate('home');
+              }
+            }}
+            title="Return to Home"
             className="flex items-center gap-2.5 cursor-pointer group select-none"
           >
             <div className="w-9 h-9 rounded-2xl bg-gradient-to-b from-slate-900 via-[#0A101D] to-slate-950 border border-slate-700/70 flex items-center justify-center shadow-md shadow-slate-950/10 group-hover:border-emerald-500/50 group-hover:scale-105 transition-all">

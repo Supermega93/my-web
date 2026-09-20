@@ -7,6 +7,8 @@ interface LessonVideoPlayerProps {
   title?: string;
   subtitle?: string;
   badgeText?: string;
+  footerHint?: string;
+  footerSubtext?: string;
 }
 
 export function LessonVideoPlayer({
@@ -15,6 +17,8 @@ export function LessonVideoPlayer({
   title = 'Build Your First MT5 Indicator: Average Daily Range (ADR)',
   subtitle = 'Full visual walkthrough: from initial trading idea to ChatGPT specifications, Claude coding prompt, MetaEditor compilation, and MT5 chart validation.',
   badgeText = 'Video Lesson Version',
+  footerHint,
+  footerSubtext,
 }: LessonVideoPlayerProps) {
   // Extract video ID if full URL provided
   let extractedId = videoId;
@@ -90,10 +94,10 @@ export function LessonVideoPlayer({
       <div className="mt-3.5 pt-3 border-t border-slate-800/60 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 text-xs text-slate-400">
         <span className="flex items-center gap-1.5 text-slate-300">
           <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 shrink-0" />
-          <span>Follow along with the video or use the interactive 8-step workbench and verified source code below.</span>
+          <span>{footerHint || 'Follow along with the video or use the interactive 8-step workbench and verified source code below.'}</span>
         </span>
         <span className="text-[11px] font-mono text-slate-400 uppercase tracking-wider shrink-0">
-          Written Manual & Answer Key Below ↓
+          {footerSubtext || 'Written Manual & Answer Key Below ↓'}
         </span>
       </div>
     </div>
