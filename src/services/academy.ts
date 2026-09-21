@@ -163,7 +163,7 @@ export async function fetchAllLessons(): Promise<Lesson[]> {
   try {
     const res = await fetch('/api/academy/curriculum');
     if (res.ok) {
-      const data = await res.json();
+      const data = await res.json().catch(() => ({}));
       if (data.lessons && Array.isArray(data.lessons) && data.lessons.length > 0) {
         return data.lessons.map((l: any) => ({
           ...l,
@@ -203,7 +203,7 @@ export async function fetchLessonById(lessonId: string, token?: string | null): 
     }
     const res = await fetch(`/api/academy/lessons/${encodeURIComponent(lessonId)}`, { headers });
     if (res.ok) {
-      const data = await res.json();
+      const data = await res.json().catch(() => ({}));
       if (data && data.lesson) {
         return {
           ...data.lesson,
@@ -375,7 +375,7 @@ export async function submitCustomDevLead(lead: CustomDevLead): Promise<{ succes
     }).catch(() => null);
 
     if (res && res.ok) {
-      const json = await res.json();
+      const json = await res.json().catch(() => ({}));
       return { success: true, leadId: json.leadId || `lead_${Date.now()}` };
     }
 
@@ -449,7 +449,7 @@ export async function fetchUserProgressFromSupabase(userId: string): Promise<str
     if (token) headers['Authorization'] = `Bearer ${token}`;
     const res = await fetch('/api/academy/progress', { headers });
     if (res.ok) {
-      const data = await res.json();
+      const data = await res.json().catch(() => ({}));
       if (Array.isArray(data.completedLessonIds)) {
         data.completedLessonIds.forEach((id: string) => completedIdsSet.add(id));
       }

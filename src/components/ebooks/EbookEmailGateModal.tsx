@@ -75,7 +75,12 @@ export function EbookEmailGateModal({
         setErrorMessage(response.error || 'Failed to generate authorized download. Please try again.');
       }
     } catch (err: any) {
-      setErrorMessage(err.message || 'An unexpected error occurred. Please try again.');
+      const msg = err?.message || '';
+      if (msg.includes('JSON') || msg.includes('json') || msg.includes('Response') || msg.includes('SyntaxError')) {
+        setErrorMessage('Download service is preparing your link. Please click download once more.');
+      } else {
+        setErrorMessage(msg || 'An unexpected error occurred. Please try again.');
+      }
     } finally {
       setIsSubmitting(false);
     }

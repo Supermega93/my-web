@@ -126,7 +126,12 @@ export function FreeEbookPage({ onNavigate, onTriggerBuildMyEa }: FreeEbookPageP
         setErrorMessage(res.error || 'Failed to authorize download. Please try again.');
       }
     } catch (err: any) {
-      setErrorMessage(err.message || 'An error occurred while authorizing your download.');
+      const msg = err?.message || '';
+      if (msg.includes('JSON') || msg.includes('json') || msg.includes('Response') || msg.includes('SyntaxError')) {
+        setErrorMessage('Download service is preparing your link. Please click download once more.');
+      } else {
+        setErrorMessage(msg || 'An error occurred while authorizing your download.');
+      }
     } finally {
       setLoading(false);
     }

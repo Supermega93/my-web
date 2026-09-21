@@ -51,7 +51,7 @@ export const FreeCourseEmailModal: React.FC<FreeCourseEmailModalProps> = ({
       });
 
       if (res.ok) {
-        const data = await res.json();
+        const data = await res.json().catch(() => ({}));
         if (data?.progress?.completedLessonIds?.length > 0) {
           // Merge remote with local
           const localIds = JSON.parse(localStorage.getItem('completed_lesson_ids') || '[]');

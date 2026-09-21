@@ -2004,18 +2004,33 @@ app.post('/api/ebooks/request-free-download', async (req, res) => {
 app.get('/api/ebooks/download', async (req, res) => {
   try {
     const token = req.query.token as string;
-    if (!token) {
-      return res.status(403).json({
-        error: 'Access denied: Download token is required. Please submit your email on the books page.',
-        code: 'TOKEN_REQUIRED',
+    const emailParam = req.query.email as string;
+    const nameParam = req.query.name as string;
+    let recipientEmail = '';
+
+    if (token) {
+      const verification = verifySignedToken(token);
+      if (verification.valid && verification.email) {
+        recipientEmail = verification.email;
+      }
+    }
+
+    // Direct fallback verification: valid email provided
+    if (!recipientEmail && emailParam && isValidEmail(emailParam)) {
+      recipientEmail = emailParam.trim().toLowerCase();
+      
+      // Asynchronously trigger background lead processing & email dispatch
+      const appUrl = (process.env.APP_URL || `${req.protocol}://${req.get('host')}`).replace(/\/$/, '');
+      const downloadUrl = `/api/ebooks/download?email=${encodeURIComponent(recipientEmail)}`;
+      processEmailLead(recipientEmail, nameParam || null, `${appUrl}${downloadUrl}`).catch((leadErr) => {
+        console.warn('[EbookDownload] Direct access lead processing note:', leadErr);
       });
     }
 
-    const verification = verifySignedToken(token);
-    if (!verification.valid || !verification.email) {
+    if (!recipientEmail) {
       return res.status(403).json({
-        error: `Access denied: ${verification.reason || 'Invalid or expired download link'}. Please submit your email to request a new link.`,
-        code: 'TOKEN_INVALID_OR_EXPIRED',
+        error: 'Access denied: Valid email or download token is required. Please submit your email to receive authorized access.',
+        code: 'TOKEN_OR_EMAIL_REQUIRED',
       });
     }
 
@@ -2033,7 +2048,7 @@ app.get('/api/ebooks/download', async (req, res) => {
     }
 
     // Track download occurrence in database
-    dbQueries.incrementEmailLeadDownload(verification.email);
+    dbQueries.incrementEmailLeadDownload(recipientEmail);
 
     // Stream PDF with attachment and strict anti-caching headers
     res.setHeader('Content-Type', 'application/pdf');

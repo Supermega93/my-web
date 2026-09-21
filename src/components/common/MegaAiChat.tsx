@@ -105,7 +105,7 @@ How can I help you today?`,
         }),
       });
 
-      const data = await response.json();
+      const data = await response.json().catch(() => ({}));
 
       if (data && data.success && data.reply) {
         // Derive appropriate action chips based on content

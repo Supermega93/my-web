@@ -112,7 +112,7 @@ export const CurrencyProvider: React.FC<{ children: ReactNode }> = ({ children }
       try {
         const res = await fetch('https://open.er-api.com/v6/latest/USD');
         if (!res.ok) return;
-        const data = await res.json();
+        const data = await res.json().catch(() => ({}));
         if (data && data.rates && isMounted) {
           setCurrencies((prev) => {
             const updated = { ...prev };
