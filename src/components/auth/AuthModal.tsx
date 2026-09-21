@@ -207,6 +207,14 @@ export function AuthModal({
               >
                 Already clicked the link? <span className="text-emerald-400 underline font-semibold">Sign In</span>
               </button>
+
+              <button
+                type="button"
+                onClick={onClose}
+                className="w-full py-2.5 px-4 rounded-2xl bg-slate-800/60 hover:bg-slate-800 text-slate-300 hover:text-white border border-slate-700/60 hover:border-slate-600 text-xs font-semibold transition-all cursor-pointer text-center"
+              >
+                Cancel
+              </button>
             </div>
           </div>
         ) : (
@@ -304,7 +312,7 @@ export function AuthModal({
                 </div>
               )}
 
-              <div className="pt-2">
+              <div className="pt-2 space-y-2">
                 <Button
                   variant="primary"
                   size="md"
@@ -316,6 +324,14 @@ export function AuthModal({
                 >
                   {loading ? 'Processing...' : mode === 'login' ? 'Sign In' : 'Create Account'}
                 </Button>
+
+                <button
+                  type="button"
+                  onClick={onClose}
+                  className="w-full py-2.5 px-4 rounded-2xl bg-slate-800/60 hover:bg-slate-800 text-slate-300 hover:text-white border border-slate-700/60 hover:border-slate-600 text-xs font-semibold transition-all cursor-pointer text-center"
+                >
+                  Cancel
+                </button>
               </div>
             </form>
           </>

@@ -24,11 +24,21 @@ export async function requestFreeEbookDownload(email: string, name?: string): Pr
       }),
     });
 
-    const data = await res.json();
-    if (!res.ok || !data.success) {
+    // Safely parse response body avoiding JSON syntax crashes on empty or unexpected payloads
+    const text = await res.text();
+    let data: any = null;
+    try {
+      data = text ? JSON.parse(text) : null;
+    } catch {
+      data = null;
+    }
+
+    if (!res.ok || !data || !data.success) {
       return {
         success: false,
-        error: data.error || 'Failed to request download authorization.',
+        error: data?.error || (res.status === 404 
+          ? 'Download service temporarily unavailable. Please try again shortly.' 
+          : 'Failed to request download authorization. Please try again.'),
       };
     }
 

@@ -79,12 +79,17 @@ export const FreeCourseEmailModal: React.FC<FreeCourseEmailModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 bg-slate-950/70 backdrop-blur-sm">
+    <div 
+      className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 overflow-y-auto bg-slate-950/70 backdrop-blur-sm"
+      onClick={handleSkip}
+    >
+      <div className="fixed inset-0 -z-10" onClick={handleSkip} aria-hidden="true" />
       <motion.div
         initial={{ opacity: 0, scale: 0.95, y: 10 }}
         animate={{ opacity: 1, scale: 1, y: 0 }}
         exit={{ opacity: 0, scale: 0.95, y: 10 }}
-        className="relative w-full max-w-lg bg-white rounded-3xl border border-slate-200 shadow-2xl overflow-hidden p-6 sm:p-8"
+        className="relative w-full max-w-lg my-auto bg-white rounded-3xl border border-slate-200 shadow-2xl overflow-hidden p-6 sm:p-8"
+        onClick={(e) => e.stopPropagation()}
       >
         {/* Subtle Close Button */}
         <button

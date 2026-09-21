@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../context/AuthContext.tsx';
 import { 
   X, 
@@ -32,6 +32,24 @@ export function AcademyAuthModal({ isOpen, onClose, onSuccess }: AcademyAuthModa
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
   const [needsVerification, setNeedsVerification] = useState(false);
   const [unverifiedEmail, setUnverifiedEmail] = useState('');
+
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && isOpen) {
+        onClose();
+      }
+    };
+    if (isOpen) {
+      document.body.style.overflow = 'hidden';
+      window.addEventListener('keydown', handleKeyDown);
+    } else {
+      document.body.style.overflow = 'unset';
+    }
+    return () => {
+      document.body.style.overflow = 'unset';
+      window.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [isOpen, onClose]);
 
   if (!isOpen) return null;
 
@@ -127,15 +145,26 @@ export function AcademyAuthModal({ isOpen, onClose, onSuccess }: AcademyAuthModa
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 bg-slate-950/70 backdrop-blur-md animate-in fade-in duration-200">
+    <div 
+      className="fixed inset-0 z-[100] flex items-center justify-center p-4 sm:p-6 overflow-y-auto bg-slate-950/80 backdrop-blur-md animate-in fade-in duration-200"
+      onClick={onClose}
+    >
+      {/* Click-outside backdrop layer */}
       <div 
-        className="w-full max-w-md bg-slate-900/95 backdrop-blur-2xl border border-slate-800/80 rounded-3xl p-6 sm:p-8 shadow-2xl relative text-left"
+        className="fixed inset-0 -z-10" 
+        onClick={onClose} 
+        aria-hidden="true" 
+      />
+
+      <div 
+        className="relative w-full max-w-md my-auto bg-slate-900/95 backdrop-blur-2xl border border-slate-800/80 rounded-3xl p-6 sm:p-8 shadow-2xl text-left z-10 max-h-[92vh] overflow-y-auto"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Close Button */}
         <button
+          type="button"
           onClick={onClose}
-          className="absolute top-5 right-5 p-1.5 rounded-full bg-slate-800/60 hover:bg-slate-750 text-slate-400 hover:text-white transition-colors cursor-pointer"
+          className="absolute top-5 right-5 p-2 rounded-full bg-slate-800/80 hover:bg-slate-700 text-slate-400 hover:text-white transition-colors cursor-pointer z-20"
           aria-label="Close"
         >
           <X className="w-4 h-4" />
@@ -198,6 +227,14 @@ export function AcademyAuthModal({ isOpen, onClose, onSuccess }: AcademyAuthModa
                 className="w-full py-2 text-xs text-slate-400 hover:text-white transition-colors cursor-pointer"
               >
                 Already verified? <span className="text-emerald-400 font-semibold underline">Sign In</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={onClose}
+                className="w-full py-2.5 px-4 rounded-2xl bg-slate-800/60 hover:bg-slate-800 text-slate-300 hover:text-white border border-slate-700/60 hover:border-slate-600 text-xs font-semibold transition-all cursor-pointer text-center"
+              >
+                Cancel
               </button>
             </div>
 
@@ -382,16 +419,26 @@ export function AcademyAuthModal({ isOpen, onClose, onSuccess }: AcademyAuthModa
                 </div>
               )}
 
-              <Button
-                type="submit"
-                disabled={loading}
-                variant="primary"
-                fullWidth
-                icon={mode === 'login' ? <LogIn className="w-4 h-4" /> : <UserPlus className="w-4 h-4" />}
-                className="w-full mt-2 bg-emerald-700 hover:bg-emerald-600 text-white font-medium cursor-pointer"
-              >
-                {loading ? 'Processing...' : mode === 'login' ? 'Sign In' : 'Create Account'}
-              </Button>
+              <div className="pt-2 space-y-2">
+                <Button
+                  type="submit"
+                  disabled={loading}
+                  variant="primary"
+                  fullWidth
+                  icon={mode === 'login' ? <LogIn className="w-4 h-4" /> : <UserPlus className="w-4 h-4" />}
+                  className="w-full bg-emerald-700 hover:bg-emerald-600 text-white font-medium cursor-pointer"
+                >
+                  {loading ? 'Processing...' : mode === 'login' ? 'Sign In' : 'Create Account'}
+                </Button>
+
+                <button
+                  type="button"
+                  onClick={onClose}
+                  className="w-full py-2.5 px-4 rounded-2xl bg-slate-800/60 hover:bg-slate-800 text-slate-300 hover:text-white border border-slate-700/60 hover:border-slate-600 text-xs font-semibold transition-all cursor-pointer text-center"
+                >
+                  Cancel
+                </button>
+              </div>
             </form>
           </>
         )}

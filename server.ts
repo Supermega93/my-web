@@ -1957,7 +1957,7 @@ app.post('/api/strategy/interpret-ai', async (req, res) => {
  */
 app.post('/api/ebooks/request-free-download', async (req, res) => {
   try {
-    const { email, name } = req.body;
+    const { email, name } = req.body || {};
     if (!email || !isValidEmail(email)) {
       return res.status(400).json({
         success: false,
@@ -1966,17 +1966,23 @@ app.post('/api/ebooks/request-free-download', async (req, res) => {
       });
     }
 
-    // Capture and persist email lead to SQLite and Supabase
-    await processEmailLead(email, name);
-
     // Generate cryptographic HMAC-SHA256 signed token (valid for 15 minutes = 900 seconds)
     const validitySeconds = 900;
     const { token, expiresAt } = generateSignedToken(email, 'free_lead_magnet_traders_guide', validitySeconds);
     const downloadUrl = `/api/ebooks/download?token=${token}`;
 
+    // Construct full absolute download URL for email delivery
+    const appUrl = (process.env.APP_URL || `${req.protocol}://${req.get('host')}`).replace(/\/$/, '');
+    const fullDownloadUrl = `${appUrl}${downloadUrl}`;
+
+    // Deliver eBook to user email and capture lead asynchronously (non-blocking so client gets instant response)
+    processEmailLead(email, name, fullDownloadUrl).catch((err) => {
+      console.error('[EbookProtection] Background lead processing warning:', err);
+    });
+
     return res.json({
       success: true,
-      message: 'Email verified. Your temporary authorized download link is ready.',
+      message: 'Email verified. Your temporary authorized download link is ready and a copy has been sent to your email.',
       downloadUrl,
       expiresAt,
       validitySeconds,

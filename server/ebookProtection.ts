@@ -159,10 +159,11 @@ export function verifySignedToken(token: string): { valid: boolean; email?: stri
 }
 
 /**
- * Saves the email lead to SQLite and Supabase, and notifies Admin.
+ * Saves the email lead to SQLite and Supabase, delivers the eBook to the user's email, and notifies Admin.
  */
-export async function processEmailLead(email: string, name?: string | null): Promise<void> {
+export async function processEmailLead(email: string, name?: string | null, downloadUrl?: string): Promise<void> {
   const cleanEmail = email.trim().toLowerCase();
+  const displayName = name?.trim() || 'Trader';
   const leadId = `lead_ebook_${Date.now()}_${crypto.randomBytes(3).toString('hex')}`;
 
   // 1. Record in local SQLite persistent database
@@ -178,10 +179,10 @@ export async function processEmailLead(email: string, name?: string | null): Pro
     console.error('[EbookProtection] Error recording email lead in SQLite:', dbErr);
   }
 
-  // 2. Attempt to record lead in Supabase custom_dev_leads or email_leads if table exists
+  // 2. Attempt to record lead in Supabase custom_dev_leads or email_leads if table exists (non-blocking with timeout)
   try {
     const supabaseClient = supabaseAdmin || supabaseAnon;
-    await supabaseClient.from('email_leads').insert([
+    const insertPromise = supabaseClient.from('email_leads').insert([
       {
         id: leadId,
         email: cleanEmail,
@@ -191,6 +192,11 @@ export async function processEmailLead(email: string, name?: string | null): Pro
         created_at: new Date().toISOString(),
       },
     ]);
+    // 3 second safety timeout for Supabase lead recording
+    await Promise.race([
+      insertPromise,
+      new Promise((_, reject) => setTimeout(() => reject(new Error('Supabase lead insert timeout')), 3000)),
+    ]);
   } catch {
     // If email_leads table does not exist in Supabase schema yet, try custom_dev_leads
     try {
@@ -199,7 +205,7 @@ export async function processEmailLead(email: string, name?: string | null): Pro
         {
           id: leadId,
           email: cleanEmail,
-          name: name || 'eBook Reader',
+          name: displayName,
           strategy_idea: 'Free eBook Download: The Trader\'s Guide to Understanding Strategy Automation',
           status: 'ebook_downloaded',
           created_at: new Date().toISOString(),
@@ -210,7 +216,78 @@ export async function processEmailLead(email: string, name?: string | null): Pro
     }
   }
 
-  // 3. Send notification to admin email
+  // 3. Dispatch eBook delivery email directly to the USER
+  try {
+    const fallbackUrl = 'https://ai.studio';
+    const activeDownloadLink = downloadUrl || fallbackUrl;
+
+    await dispatchEmail({
+      to: cleanEmail,
+      subject: `Your Free Copy: The Trader's Guide to Understanding Strategy Automation (PDF)`,
+      html: `
+        <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; max-width: 600px; margin: 0 auto; background: #0b0f17; color: #e2e8f0; border-radius: 16px; overflow: hidden; border: 1px solid #1e293b;">
+          <div style="background: linear-gradient(135deg, #064e3b 0%, #047857 50%, #0f766e 100%); padding: 30px; text-align: left;">
+            <span style="display: inline-block; font-family: monospace; font-size: 11px; text-transform: uppercase; letter-spacing: 2px; background: rgba(0,0,0,0.35); color: #6ee7b7; padding: 4px 12px; border-radius: 9999px; margin-bottom: 12px; font-weight: bold;">
+              Official Blueprint Delivery
+            </span>
+            <h1 style="margin: 0; font-size: 22px; font-weight: 800; color: #ffffff; line-height: 1.3;">
+              The Trader's Guide to Understanding Strategy Automation
+            </h1>
+            <p style="margin: 8px 0 0 0; font-size: 13px; color: #a7f3d0; font-family: monospace;">
+              By M. Dinga &bull; MEG.AI Quantitative Research
+            </p>
+          </div>
+
+          <div style="padding: 26px 30px;">
+            <p style="font-size: 15px; color: #cbd5e1; margin-top: 0; line-height: 1.6;">
+              Hello <strong>${escapeHtml(displayName)}</strong>,
+            </p>
+            <p style="font-size: 14px; color: #94a3b8; line-height: 1.6;">
+              Thank you for requesting your complimentary copy of <strong>The Trader's Guide to Understanding Strategy Automation</strong>. Your authorized electronic edition is ready for instant download.
+            </p>
+
+            <!-- CALL TO ACTION BUTTON -->
+            <div style="text-align: center; margin: 30px 0;">
+              <a href="${activeDownloadLink}" style="display: inline-block; background: linear-gradient(135deg, #10b981 0%, #059669 100%); color: #ffffff; font-weight: bold; font-size: 15px; text-decoration: none; padding: 14px 32px; border-radius: 12px; box-shadow: 0 4px 14px rgba(16, 185, 129, 0.4);">
+                ⬇️ Download eBook (PDF) Now
+              </a>
+              <p style="font-size: 11px; color: #64748b; margin-top: 10px; font-family: monospace;">
+                Link valid for immediate download &bull; Save to your computer or phone
+              </p>
+            </div>
+
+            <!-- CORE BLUEPRINT SUMMARY -->
+            <div style="background: #111827; border: 1px solid #1f2937; border-radius: 12px; padding: 20px; margin-bottom: 24px;">
+              <h2 style="font-size: 12px; text-transform: uppercase; font-family: monospace; color: #10b981; margin: 0 0 12px 0; letter-spacing: 1px; font-weight: bold;">
+                WHAT YOU WILL LEARN INSIDE:
+              </h2>
+              <ul style="font-size: 13px; color: #cbd5e1; line-height: 1.7; padding-left: 20px; margin: 0;">
+                <li><strong>The 5 Core Algorithmic Tenets:</strong> Turning vague discretionary "market feel" into mathematically testable rules.</li>
+                <li><strong>Avoiding Over-Optimization:</strong> Why curve-fitting to historical data destroys live trading accounts and how to run walk-forward tests.</li>
+                <li><strong>Dynamic Risk Management:</strong> Calculating true lot sizes using real-time equity and ATR rather than static arbitrary lots.</li>
+                <li><strong>High-Impact Event Shields:</strong> Programmatic filters that avoid spreads during FOMC, NFP, and CPI releases.</li>
+                <li><strong>Transition to MQL5 & Python:</strong> How to format your strategy specifications for institutional developers or coding.</li>
+              </ul>
+            </div>
+
+            <div style="background: rgba(16, 185, 129, 0.08); border: 1px solid rgba(16, 185, 129, 0.25); border-radius: 12px; padding: 16px; font-size: 13px; color: #a7f3d0; line-height: 1.5;">
+              💡 <strong>Next Step:</strong> Want to build your first Expert Advisor without coding? Check out the interactive <strong>Strategy Architect Academy</strong> in our platform for free step-by-step masterclasses.
+            </div>
+
+            <div style="border-top: 1px solid #1e293b; margin-top: 26px; padding-top: 18px; font-size: 12px; color: #64748b; text-align: center;">
+              Need support or custom EA development? Reply directly to this email or reach us at <a href="mailto:supermegafx1@gmail.com" style="color: #10b981; text-decoration: none;">supermegafx1@gmail.com</a>.
+            </div>
+          </div>
+        </div>
+      `,
+      source: 'ebook_user_delivery',
+      referenceId: leadId,
+    });
+  } catch (userEmailErr) {
+    console.warn('[EbookProtection] User delivery email warning:', userEmailErr);
+  }
+
+  // 4. Send notification to admin email
   try {
     const adminEmail = process.env.ADMIN_EMAIL || 'supermegafx1@gmail.com';
     await dispatchEmail({
@@ -222,7 +299,7 @@ export async function processEmailLead(email: string, name?: string | null): Pro
           <p>A new visitor requested the protected guide via the verified email gate.</p>
           <ul style="line-height: 1.8;">
             <li><strong>Email:</strong> ${cleanEmail}</li>
-            <li><strong>Name:</strong> ${name || 'Trader'}</li>
+            <li><strong>Name:</strong> ${displayName}</li>
             <li><strong>Asset:</strong> The Trader's Guide to Understanding Strategy Automation</li>
             <li><strong>Lead ID:</strong> ${leadId}</li>
             <li><strong>Time:</strong> ${new Date().toUTCString()}</li>
@@ -235,6 +312,16 @@ export async function processEmailLead(email: string, name?: string | null): Pro
   } catch (emailErr) {
     console.warn('[EbookProtection] Admin notification warning:', emailErr);
   }
+}
+
+function escapeHtml(text?: string): string {
+  if (!text) return '';
+  return text
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#039;');
 }
 
 /**

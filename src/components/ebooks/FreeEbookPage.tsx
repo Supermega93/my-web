@@ -25,7 +25,8 @@ import {
   AlertCircle,
   ExternalLink,
   Clock,
-  Loader2
+  Loader2,
+  Mail
 } from 'lucide-react';
 
 interface FreeEbookPageProps {
@@ -326,16 +327,26 @@ export function FreeEbookPage({ onNavigate, onTriggerBuildMyEa }: FreeEbookPageP
                       <CheckCircle2 className="w-6 h-6" />
                     </div>
                     <div>
-                      <h3 className="text-base font-bold text-slate-900">Your Free Guide Is Ready</h3>
+                      <h3 className="text-base font-bold text-slate-900">Your Free Guide Is Ready & Sent!</h3>
                       <p className="text-xs text-slate-600">
                         Authorized download unlocked for <span className="font-semibold text-slate-800">{email}</span>.
                       </p>
                     </div>
                   </div>
 
+                  <div className="p-3 bg-emerald-50/70 border border-emerald-200/80 rounded-2xl text-xs text-emerald-900 space-y-1.5">
+                    <div className="flex items-center gap-2 font-medium">
+                      <Mail className="w-4 h-4 text-emerald-700 shrink-0" />
+                      <span>Copy dispatched to <strong>{email}</strong></span>
+                    </div>
+                    <p className="text-[11px] text-emerald-800/80 pl-6 leading-relaxed">
+                      Check your inbox (and spam folder) for the permanent guide link and study notes.
+                    </p>
+                  </div>
+
                   <div className="flex items-center gap-1.5 text-xs text-slate-500 font-mono">
                     <Clock className="w-3.5 h-3.5 text-emerald-600" />
-                    <span>Temporary authorized link valid for 15 minutes</span>
+                    <span>Direct temporary link valid for 15 minutes</span>
                   </div>
 
                   <div className="flex flex-wrap gap-3 pt-2">
@@ -343,7 +354,7 @@ export function FreeEbookPage({ onNavigate, onTriggerBuildMyEa }: FreeEbookPageP
                       <a
                         href={signedDownloadUrl}
                         download="The-Traders-Guide-to-Understanding-Strategy-Automation.pdf"
-                        className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-gradient-to-r from-emerald-800 to-teal-700 hover:from-emerald-700 hover:to-teal-600 text-white font-bold text-xs shadow-sm transition-all cursor-pointer"
+                        className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-gradient-to-r from-emerald-800 to-teal-700 hover:from-emerald-700 hover:to-teal-600 text-white font-bold text-xs shadow-sm transition-all cursor-pointer"
                       >
                         <Download className="w-3.5 h-3.5" />
                         <span>Download PDF Again</span>
