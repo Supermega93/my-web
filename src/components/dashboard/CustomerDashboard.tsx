@@ -5,6 +5,7 @@ import { api } from '../../services/api.ts';
 import { useAuth } from '../../context/AuthContext.tsx';
 import { Button } from '../common/Button.tsx';
 import { StatusBadge } from '../common/StatusBadge.tsx';
+import { TradingPortfolioView } from './TradingPortfolioView.tsx';
 import { 
   User, 
   ShoppingBag, 
@@ -23,20 +24,24 @@ import {
   RefreshCw,
   Lock,
   Clock,
-  AlertCircle
+  AlertCircle,
+  Activity,
+  TrendingUp
 } from 'lucide-react';
 
 interface CustomerDashboardProps {
   onNavigate: (view: ActiveView, productId?: string) => void;
   onTriggerBuildMyEa: () => void;
+  initialTab?: 'eas' | 'portfolio' | 'ebooks' | 'orders' | 'projects' | 'settings';
 }
 
 export function CustomerDashboard({
   onNavigate,
   onTriggerBuildMyEa,
+  initialTab,
 }: CustomerDashboardProps) {
   const { user } = useAuth();
-  const [activeTab, setActiveTab] = useState<'eas' | 'ebooks' | 'orders' | 'projects' | 'settings'>('eas');
+  const [activeTab, setActiveTab] = useState<'eas' | 'portfolio' | 'ebooks' | 'orders' | 'projects' | 'settings'>(initialTab || 'eas');
   const [data, setData] = useState<CustomerDashboardData>({
     orders: [],
     eas: [],
@@ -126,6 +131,15 @@ export function CustomerDashboard({
             >
               <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
             </button>
+            <button
+              id="header-portfolio-btn"
+              onClick={() => setActiveTab('portfolio')}
+              className="px-3.5 py-2.5 rounded-lg bg-emerald-500/10 border border-emerald-500/30 hover:bg-emerald-500/20 text-emerald-400 text-xs font-semibold flex items-center gap-2 transition-colors"
+            >
+              <Activity className="w-4 h-4 text-emerald-400" />
+              <span>Trading Portfolio</span>
+              <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+            </button>
             <Button
               variant="primary"
               size="md"
@@ -149,6 +163,20 @@ export function CustomerDashboard({
           >
             <Cpu className="w-4 h-4" />
             <span>My EAs ({data.eas.length})</span>
+          </button>
+
+          <button
+            id="tab-trading-portfolio"
+            onClick={() => setActiveTab('portfolio')}
+            className={`flex items-center gap-2 px-4 py-2.5 text-xs font-semibold rounded-t-lg transition-colors border-b-2 whitespace-nowrap ${
+              activeTab === 'portfolio'
+                ? 'border-emerald-400 text-emerald-400 bg-slate-900/50'
+                : 'border-transparent text-slate-400 hover:text-slate-200'
+            }`}
+          >
+            <Activity className="w-4 h-4" />
+            <span>Trading Portfolio</span>
+            <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse ml-0.5" />
           </button>
 
           <button
@@ -210,9 +238,17 @@ export function CustomerDashboard({
                 <p className="text-xs text-slate-400 max-w-md mx-auto">
                   Explore our ready-to-use institutional automated trading robots, or have a custom EA engineered for your personal strategy.
                 </p>
-                <div className="pt-2 flex justify-center gap-3">
+                <div className="pt-2 flex flex-wrap justify-center gap-3">
                   <Button variant="primary" size="sm" onClick={() => onNavigate('eas')}>
                     Explore Trading EAs
+                  </Button>
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    onClick={() => setActiveTab('portfolio')}
+                    icon={<Activity className="w-4 h-4 text-emerald-400" />}
+                  >
+                    Open Trading Portfolio
                   </Button>
                 </div>
               </div>
@@ -330,6 +366,15 @@ export function CustomerDashboard({
               </div>
             )}
           </div>
+        )}
+
+        {/* Tab: TRADING PORTFOLIO */}
+        {activeTab === 'portfolio' && (
+          <TradingPortfolioView
+            userEas={data.eas}
+            onNavigateToEas={() => onNavigate('eas')}
+            onTriggerBuildMyEa={onTriggerBuildMyEa}
+          />
         )}
 
         {/* Tab 2: MY EBOOKS */}

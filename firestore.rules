@@ -87,6 +87,38 @@ service cloud.firestore {
              (!('updatedAt' in data) || (data.updatedAt is string && data.updatedAt.size() <= 50));
     }
 
+    function isValidTradingAccount(data) {
+      return data.keys().hasAll(['id', 'userId', 'accountId', 'accountType', 'platform', 'broker', 'eaName']) &&
+             data.keys().hasOnly(['id', 'userId', 'accountId', 'accountType', 'platform', 'broker', 'eaName', 'server', 'currency', 'initialBalance', 'currentBalance', 'equity', 'profit', 'profitPercentage', 'dailyProfit', 'dailyProfitPercentage', 'winRate', 'profitFactor', 'maxDrawdown', 'totalTrades', 'winningTrades', 'losingTrades', 'openPositions', 'status', 'lastSyncAt', 'createdAt', 'updatedAt']) &&
+             data.id is string && data.id.size() <= 128 &&
+             data.userId is string && data.userId == request.auth.uid &&
+             data.accountId is string && data.accountId.size() <= 100 &&
+             data.accountType in ['live', 'demo'] &&
+             data.platform in ['MT5', 'MT4', 'cTrader', 'TradingView', 'Other'] &&
+             data.broker is string && data.broker.size() <= 100 &&
+             data.eaName is string && data.eaName.size() <= 150 &&
+             (!('server' in data) || (data.server is string && data.server.size() <= 100)) &&
+             (!('currency' in data) || (data.currency is string && data.currency.size() <= 10)) &&
+             (!('initialBalance' in data) || data.initialBalance is number) &&
+             (!('currentBalance' in data) || data.currentBalance is number) &&
+             (!('equity' in data) || data.equity is number) &&
+             (!('profit' in data) || data.profit is number) &&
+             (!('profitPercentage' in data) || data.profitPercentage is number) &&
+             (!('dailyProfit' in data) || data.dailyProfit is number) &&
+             (!('dailyProfitPercentage' in data) || data.dailyProfitPercentage is number) &&
+             (!('winRate' in data) || data.winRate is number) &&
+             (!('profitFactor' in data) || data.profitFactor is number) &&
+             (!('maxDrawdown' in data) || data.maxDrawdown is number) &&
+             (!('totalTrades' in data) || data.totalTrades is number) &&
+             (!('winningTrades' in data) || data.winningTrades is number) &&
+             (!('losingTrades' in data) || data.losingTrades is number) &&
+             (!('openPositions' in data) || data.openPositions is number) &&
+             (!('status' in data) || (data.status in ['active', 'paused', 'disconnected'])) &&
+             (!('lastSyncAt' in data) || (data.lastSyncAt is string && data.lastSyncAt.size() <= 50)) &&
+             (!('createdAt' in data) || (data.createdAt is string && data.createdAt.size() <= 50)) &&
+             (!('updatedAt' in data) || (data.updatedAt is string && data.updatedAt.size() <= 50));
+    }
+
     // Default Deny All Catch-all
     match /{document=**} {
       allow read, write: if false;
@@ -104,6 +136,13 @@ service cloud.firestore {
       match /progress/{lessonId} {
         allow get, list: if isOwner(userId) || isAdmin();
         allow create, update: if isOwner(userId) && isValidId(lessonId) && isValidUserProgress(incoming());
+        allow delete: if isOwner(userId) || isAdmin();
+      }
+
+      // Trading Accounts Subcollection for Portfolio Tracking
+      match /trading_accounts/{accountId} {
+        allow get, list: if isOwner(userId) || isAdmin();
+        allow create, update: if isOwner(userId) && isValidId(accountId) && isValidTradingAccount(incoming());
         allow delete: if isOwner(userId) || isAdmin();
       }
     }

@@ -178,6 +178,40 @@ export interface CustomerDashboardData {
   projects: EAProject[];
 }
 
+export type TradingAccountType = 'live' | 'demo';
+export type TradingPlatform = 'MT5' | 'MT4' | 'cTrader' | 'TradingView' | 'Other';
+export type TradingAccountStatus = 'active' | 'paused' | 'disconnected';
+
+export interface TradingAccount {
+  id: string;
+  userId: string;
+  accountId: string;
+  accountType: TradingAccountType;
+  platform: TradingPlatform;
+  broker: string;
+  eaName: string;
+  server?: string;
+  currency?: string;
+  initialBalance: number;
+  currentBalance: number;
+  equity: number;
+  profit: number;
+  profitPercentage: number;
+  dailyProfit: number;
+  dailyProfitPercentage: number;
+  winRate: number;
+  profitFactor: number;
+  maxDrawdown: number;
+  totalTrades: number;
+  winningTrades: number;
+  losingTrades: number;
+  openPositions: number;
+  status: TradingAccountStatus;
+  lastSyncAt: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
 export type ActiveView = 
   | 'home'
   | 'eas'

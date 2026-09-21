@@ -210,6 +210,135 @@
         }
       },
       "required": ["email", "role"]
+    },
+    "TradingAccount": {
+      "title": "TradingAccount",
+      "description": "User trading account for live and demo EA performance tracking.",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier of the trading account document.",
+          "maxLength": 128
+        },
+        "userId": {
+          "type": "string",
+          "description": "UID of the owning trader.",
+          "maxLength": 128
+        },
+        "accountId": {
+          "type": "string",
+          "description": "Live or demo account ID or account number.",
+          "maxLength": 100
+        },
+        "accountType": {
+          "type": "string",
+          "description": "Account environment type.",
+          "enum": ["live", "demo"]
+        },
+        "platform": {
+          "type": "string",
+          "description": "Trading platform e.g. MT5, MT4, cTrader, TradingView.",
+          "enum": ["MT5", "MT4", "cTrader", "TradingView", "Other"]
+        },
+        "broker": {
+          "type": "string",
+          "description": "Brokerage or prop firm name.",
+          "maxLength": 100
+        },
+        "eaName": {
+          "type": "string",
+          "description": "Name of the EA robot running on this account.",
+          "maxLength": 150
+        },
+        "server": {
+          "type": "string",
+          "description": "Broker server name or cluster.",
+          "maxLength": 100
+        },
+        "currency": {
+          "type": "string",
+          "description": "Account currency code e.g. USD.",
+          "maxLength": 10
+        },
+        "initialBalance": {
+          "type": "number",
+          "description": "Initial account deposit or starting capital."
+        },
+        "currentBalance": {
+          "type": "number",
+          "description": "Current closed account balance."
+        },
+        "equity": {
+          "type": "number",
+          "description": "Current live account equity including floating profit."
+        },
+        "profit": {
+          "type": "number",
+          "description": "Net closed and floating profit in currency units."
+        },
+        "profitPercentage": {
+          "type": "number",
+          "description": "Total return percentage."
+        },
+        "dailyProfit": {
+          "type": "number",
+          "description": "Today's P&L in currency units."
+        },
+        "dailyProfitPercentage": {
+          "type": "number",
+          "description": "Today's P&L percentage."
+        },
+        "winRate": {
+          "type": "number",
+          "description": "EA win rate percentage."
+        },
+        "profitFactor": {
+          "type": "number",
+          "description": "Gross profits divided by gross losses."
+        },
+        "maxDrawdown": {
+          "type": "number",
+          "description": "Maximum relative drawdown percentage."
+        },
+        "totalTrades": {
+          "type": "number",
+          "description": "Total executed trades count."
+        },
+        "winningTrades": {
+          "type": "number",
+          "description": "Winning trades count."
+        },
+        "losingTrades": {
+          "type": "number",
+          "description": "Losing trades count."
+        },
+        "openPositions": {
+          "type": "number",
+          "description": "Currently active open market positions."
+        },
+        "status": {
+          "type": "string",
+          "description": "Real-time EA execution status.",
+          "enum": ["active", "paused", "disconnected"]
+        },
+        "lastSyncAt": {
+          "type": "string",
+          "description": "ISO timestamp of the most recent EA metrics sync.",
+          "maxLength": 50
+        },
+        "createdAt": {
+          "type": "string",
+          "description": "ISO timestamp of account registration.",
+          "maxLength": 50
+        },
+        "updatedAt": {
+          "type": "string",
+          "description": "ISO timestamp of last update.",
+          "maxLength": 50
+        }
+      },
+      "required": ["id", "userId", "accountId", "accountType", "platform", "broker", "eaName"]
     }
   },
   "firestore": {
@@ -220,6 +349,10 @@
     "/users/{userId}/progress/{lessonId}": {
       "schema": "UserProgress",
       "description": "Completed lesson records for this user."
+    },
+    "/users/{userId}/trading_accounts/{accountId}": {
+      "schema": "TradingAccount",
+      "description": "User live and demo trading accounts and real-time EA metrics."
     },
     "/orders/{orderId}": {
       "schema": "Order",
