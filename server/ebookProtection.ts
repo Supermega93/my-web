@@ -4,7 +4,7 @@ import crypto from 'crypto';
 import https from 'https';
 import { createClient } from '@supabase/supabase-js';
 import { dbQueries } from './db.js';
-import { dispatchEmail } from './emailService.js';
+import { dispatchEmail, EmailDispatchResult } from './emailService.js';
 
 const SUPABASE_URL = process.env.VITE_SUPABASE_URL || process.env.SUPABASE_URL || 'https://xbrhalmcvpxutxojemoj.supabase.co';
 const SUPABASE_ANON_KEY = process.env.VITE_SUPABASE_ANON_KEY || process.env.SUPABASE_ANON_KEY || '';
@@ -158,10 +158,21 @@ export function verifySignedToken(token: string): { valid: boolean; email?: stri
   };
 }
 
+export interface ProcessLeadResult {
+  success: boolean;
+  leadId: string;
+  emailDispatched: boolean;
+  emailStatus: 'sent' | 'failed' | 'failed_no_provider';
+  emailProvider?: string;
+  emailId?: string;
+  emailError?: string;
+  downloadUrl: string;
+}
+
 /**
  * Saves the email lead to SQLite and Supabase, delivers the eBook to the user's email, and notifies Admin.
  */
-export async function processEmailLead(email: string, name?: string | null, downloadUrl?: string): Promise<void> {
+export async function processEmailLead(email: string, name?: string | null, downloadUrl?: string): Promise<ProcessLeadResult> {
   const cleanEmail = email.trim().toLowerCase();
   const displayName = name?.trim() || 'Trader';
   const leadId = `lead_ebook_${Date.now()}_${crypto.randomBytes(3).toString('hex')}`;
@@ -175,6 +186,7 @@ export async function processEmailLead(email: string, name?: string | null, down
       source: 'free_ebook_email_gate',
       bookId: 'free_lead_magnet_traders_guide',
     });
+    console.log(`[EbookProtection] Recorded lead in SQLite: ${cleanEmail} (ID: ${leadId})`);
   } catch (dbErr) {
     console.error('[EbookProtection] Error recording email lead in SQLite:', dbErr);
   }
@@ -216,12 +228,44 @@ export async function processEmailLead(email: string, name?: string | null, down
     }
   }
 
-  // 3. Dispatch eBook delivery email directly to the USER
+  // 3. Locate the original PDF file and read it for attachment
+  const pdfPath = getProtectedPdfPath();
+  let pdfBuffer: Buffer | null = null;
   try {
-    const fallbackUrl = 'https://ai.studio';
-    const activeDownloadLink = downloadUrl || fallbackUrl;
+    if (fs.existsSync(pdfPath)) {
+      pdfBuffer = fs.readFileSync(pdfPath);
+      console.log(`[EbookProtection] Loaded original PDF for email attachment (${pdfBuffer.length} bytes)`);
+    } else {
+      console.warn(`[EbookProtection] Protected PDF not found at path: ${pdfPath}`);
+    }
+  } catch (pdfErr) {
+    console.error('[EbookProtection] Error reading PDF file for email attachment:', pdfErr);
+  }
 
-    await dispatchEmail({
+  // 4. Construct production-clean download links (Requirement 15: no localhost, 127.0.0.1, or AI Studio preview URLs)
+  const productionDomain = (process.env.PRODUCTION_DOMAIN || process.env.APP_DOMAIN || 'https://supermegafx.com').replace(/\/$/, '');
+  let activeDownloadLink = downloadUrl;
+
+  if (!activeDownloadLink || activeDownloadLink.includes('localhost') || activeDownloadLink.includes('127.0.0.1') || activeDownloadLink.includes('ai.studio') || activeDownloadLink.includes('run.app')) {
+    activeDownloadLink = `${productionDomain}/api/ebooks/download?email=${encodeURIComponent(cleanEmail)}`;
+  } else if (activeDownloadLink.startsWith('/')) {
+    activeDownloadLink = `${productionDomain}${activeDownloadLink}`;
+  }
+
+  const directSupabaseStorageUrl = UPSTREAM_PUBLIC_URL;
+
+  // 5. Dispatch eBook delivery email directly to the USER and AWAIT provider confirmation
+  let userEmailResult: EmailDispatchResult = {
+    success: false,
+    status: 'failed_no_provider',
+    provider: 'none',
+    id: undefined,
+    error: 'Email service did not execute dispatch',
+  };
+
+  try {
+    console.log(`[EbookProtection] Dispatching eBook delivery email to user: ${cleanEmail}`);
+    userEmailResult = await dispatchEmail({
       to: cleanEmail,
       subject: `Your Free Copy: The Trader's Guide to Understanding Strategy Automation (PDF)`,
       html: `
@@ -234,7 +278,7 @@ export async function processEmailLead(email: string, name?: string | null, down
               The Trader's Guide to Understanding Strategy Automation
             </h1>
             <p style="margin: 8px 0 0 0; font-size: 13px; color: #a7f3d0; font-family: monospace;">
-              By M. Dinga &bull; MEG.AI Quantitative Research
+              By M. Dinga &bull; MEGA AI Quantitative Research
             </p>
           </div>
 
@@ -243,7 +287,8 @@ export async function processEmailLead(email: string, name?: string | null, down
               Hello <strong>${escapeHtml(displayName)}</strong>,
             </p>
             <p style="font-size: 14px; color: #94a3b8; line-height: 1.6;">
-              Thank you for requesting your complimentary copy of <strong>The Trader's Guide to Understanding Strategy Automation</strong>. Your authorized electronic edition is ready for instant download.
+              Thank you for requesting your complimentary copy of <strong>The Trader's Guide to Understanding Strategy Automation</strong>.
+              ${pdfBuffer ? 'The complete PDF document is attached directly to this email for your convenience.' : 'Your authorized electronic edition is ready for instant download.'}
             </p>
 
             <!-- CALL TO ACTION BUTTON -->
@@ -252,7 +297,7 @@ export async function processEmailLead(email: string, name?: string | null, down
                 ⬇️ Download eBook (PDF) Now
               </a>
               <p style="font-size: 11px; color: #64748b; margin-top: 10px; font-family: monospace;">
-                Link valid for immediate download &bull; Save to your computer or phone
+                Link valid for direct download &bull; Also available via <a href="${directSupabaseStorageUrl}" style="color: #10b981; text-decoration: underline;">Direct Cloud Storage CDN</a>
               </p>
             </div>
 
@@ -282,12 +327,26 @@ export async function processEmailLead(email: string, name?: string | null, down
       `,
       source: 'ebook_user_delivery',
       referenceId: leadId,
+      attachments: pdfBuffer ? [
+        {
+          filename: 'The-Traders-Guide-to-Understanding-Strategy-Automation.pdf',
+          content: pdfBuffer.toString('base64'),
+          contentType: 'application/pdf',
+        },
+      ] : undefined,
     });
-  } catch (userEmailErr) {
-    console.warn('[EbookProtection] User delivery email warning:', userEmailErr);
+  } catch (userEmailErr: any) {
+    console.error('[EbookProtection] Error dispatching user eBook email:', userEmailErr);
+    userEmailResult = {
+      success: false,
+      status: 'failed',
+      provider: 'none',
+      id: undefined,
+      error: userEmailErr.message || 'Failed to dispatch email to recipient.',
+    };
   }
 
-  // 4. Send notification to admin email
+  // 6. Send lead notification to admin email
   try {
     const adminEmail = process.env.ADMIN_EMAIL || 'supermegafx1@gmail.com';
     await dispatchEmail({
@@ -302,6 +361,7 @@ export async function processEmailLead(email: string, name?: string | null, down
             <li><strong>Name:</strong> ${displayName}</li>
             <li><strong>Asset:</strong> The Trader's Guide to Understanding Strategy Automation</li>
             <li><strong>Lead ID:</strong> ${leadId}</li>
+            <li><strong>Email Status:</strong> ${userEmailResult.status} (${userEmailResult.provider || 'none'})</li>
             <li><strong>Time:</strong> ${new Date().toUTCString()}</li>
           </ul>
         </div>
@@ -312,6 +372,17 @@ export async function processEmailLead(email: string, name?: string | null, down
   } catch (emailErr) {
     console.warn('[EbookProtection] Admin notification warning:', emailErr);
   }
+
+  return {
+    success: true,
+    leadId,
+    emailDispatched: userEmailResult.success,
+    emailStatus: userEmailResult.status,
+    emailProvider: userEmailResult.provider,
+    emailId: userEmailResult.id,
+    emailError: userEmailResult.error,
+    downloadUrl: activeDownloadLink,
+  };
 }
 
 function escapeHtml(text?: string): string {

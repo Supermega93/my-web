@@ -146,20 +146,21 @@ export function AcademyAuthModal({ isOpen, onClose, onSuccess }: AcademyAuthModa
 
   return (
     <div 
-      className="fixed inset-0 z-[100] flex items-center justify-center p-4 sm:p-6 overflow-y-auto bg-slate-950/80 backdrop-blur-md animate-in fade-in duration-200"
+      className="fixed inset-0 z-[100] overflow-y-auto bg-slate-950/80 backdrop-blur-md animate-in fade-in duration-200"
       onClick={onClose}
     >
-      {/* Click-outside backdrop layer */}
-      <div 
-        className="fixed inset-0 -z-10" 
-        onClick={onClose} 
-        aria-hidden="true" 
-      />
+      <div className="min-h-full flex items-center justify-center p-4 sm:p-6 text-center">
+        {/* Click-outside backdrop layer */}
+        <div 
+          className="fixed inset-0 -z-10" 
+          onClick={onClose} 
+          aria-hidden="true" 
+        />
 
-      <div 
-        className="relative w-full max-w-md my-auto bg-slate-900/95 backdrop-blur-2xl border border-slate-800/80 rounded-3xl p-6 sm:p-8 shadow-2xl text-left z-10 max-h-[92vh] overflow-y-auto"
-        onClick={(e) => e.stopPropagation()}
-      >
+        <div 
+          className="relative w-full max-w-md my-auto bg-slate-900/95 backdrop-blur-2xl border border-slate-800/80 rounded-3xl p-6 sm:p-8 shadow-2xl text-left z-10 max-h-[92vh] overflow-y-auto"
+          onClick={(e) => e.stopPropagation()}
+        >
         {/* Close Button */}
         <button
           type="button"
@@ -442,6 +443,7 @@ export function AcademyAuthModal({ isOpen, onClose, onSuccess }: AcademyAuthModa
             </form>
           </>
         )}
+      </div>
       </div>
     </div>
   );

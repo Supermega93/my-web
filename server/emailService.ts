@@ -1,3 +1,4 @@
+import nodemailer from 'nodemailer';
 import { dbQueries } from './db.ts';
 
 export interface StrategyEmailPayload {
@@ -35,7 +36,9 @@ export interface StrategyEmailPayload {
 export interface EmailDispatchResult {
   success: boolean;
   status: 'sent' | 'failed' | 'failed_no_provider';
+  provider?: string;
   error?: string;
+  rawError?: any;
   id?: string;
   sentAt?: string;
 }
@@ -262,6 +265,11 @@ export async function dispatchEmail(options: {
   html: string;
   source: string;
   referenceId: string;
+  attachments?: Array<{
+    filename: string;
+    content: string; // base64 encoded
+    contentType?: string;
+  }>;
 }): Promise<EmailDispatchResult> {
   const emailId = `mail_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
   const now = new Date().toISOString();
@@ -274,40 +282,62 @@ export async function dispatchEmail(options: {
       ? process.env.FROM_EMAIL 
       : 'MEGA AI Labs <onboarding@resend.dev>');
 
-  let deliveryStatus: 'sent' | 'failed' | 'failed_no_provider' = 'sent';
-  let deliveryProvider = 'internal_log';
+  let deliveryStatus: 'sent' | 'failed' | 'failed_no_provider' = 'failed_no_provider';
+  let deliveryProvider = 'none';
+  let errorMessage: string | undefined;
+  let rawErrorDetails: any;
+  let externalMessageId: string | undefined;
 
   // 1. Attempt sending via Resend API if API key exists
   if (resendApiKey) {
     try {
+      console.log(`[Email Service] Attempting dispatch via Resend API to: ${options.to} (Subject: ${options.subject})`);
+      const resendPayload: any = {
+        from: fromAddress,
+        to: [options.to],
+        subject: options.subject,
+        html: options.html,
+      };
+
+      if (options.attachments && options.attachments.length > 0) {
+        resendPayload.attachments = options.attachments.map(a => ({
+          filename: a.filename,
+          content: a.content,
+        }));
+      }
+
       const resendResponse = await fetch('https://api.resend.com/emails', {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${resendApiKey}`,
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({
-          from: fromAddress,
-          to: [options.to],
-          subject: options.subject,
-          html: options.html,
-        }),
+        body: JSON.stringify(resendPayload),
       });
 
       const resData = await resendResponse.json().catch(() => ({}));
 
-      if (resendResponse.ok) {
+      if (resendResponse.ok && resData?.id) {
         deliveryStatus = 'sent';
         deliveryProvider = 'resend';
-        console.log(`[Email Dispatched via Resend] To: ${options.to} (${options.subject}) - ID: ${resData.id}`);
+        externalMessageId = resData.id;
+        console.log(`[Email Service] SUCCESS via Resend: ID ${resData.id} to ${options.to}`);
       } else {
-        console.warn(`[Email Resend Warning] Status: ${resendResponse.status}`, resData);
+        deliveryStatus = 'failed';
+        deliveryProvider = 'resend';
+        rawErrorDetails = resData;
+        errorMessage = resData?.message || `Resend returned error HTTP ${resendResponse.status}`;
+        console.error(`[Email Service] Resend dispatch failure (${resendResponse.status}):`, resData);
 
-        // If Resend free test mode prevents sending to non-admin email (validation_error 403)
-        // ensure Admin receives a full forward copy so no lead or customer request is missed!
-        if (resendResponse.status === 403 && options.to !== adminEmail) {
+        // If Resend failed with 403 sandbox restriction:
+        if (resendResponse.status === 403 && resData?.name === 'validation_error') {
+          errorMessage = `Resend test account restricted to admin email (${adminEmail}). To deliver to ${options.to}, verify domain supermegafx.com in Resend at https://resend.com/domains.`;
+        }
+
+        // Forward lead alert to admin so lead or customer request is never missed
+        if (options.to !== adminEmail) {
           try {
-            console.log(`[Email Service] Forwarding notification to admin (${adminEmail}) due to Resend sandbox restriction...`);
+            console.log(`[Email Service] Forwarding notification copy to admin (${adminEmail})...`);
             await fetch('https://api.resend.com/emails', {
               method: 'POST',
               headers: {
@@ -323,24 +353,74 @@ export async function dispatchEmail(options: {
                     <strong style="color: #92400e;">⚠️ Resend Sandbox Notice for Admin:</strong>
                     <p style="margin: 6px 0 0 0; font-size: 13px; color: #78350f;">
                       This email was requested by visitor <strong>${options.to}</strong>. Resend test mode is currently active. 
-                      To deliver directly to visitors' personal inboxes from your custom brand domain, add and verify your domain in Resend.
+                      To deliver directly to visitors' personal inboxes from your custom brand domain, add and verify supermegafx.com in Resend.
                     </p>
                   </div>
                   ${options.html}
                 `,
+                attachments: options.attachments?.map(a => ({
+                  filename: a.filename,
+                  content: a.content,
+                })),
               }),
             });
           } catch (fwdErr) {
-            console.warn('[Admin forward failed]', fwdErr);
+            console.warn('[Admin forward notification failed]', fwdErr);
           }
         }
       }
     } catch (apiErr: any) {
-      console.error('[Email Dispatch Network Error]', apiErr.message || apiErr);
+      deliveryStatus = 'failed';
+      deliveryProvider = 'resend';
+      errorMessage = apiErr?.message || 'Network error reaching Resend API';
+      console.error('[Email Dispatch Network Error]', apiErr);
     }
   }
 
-  // 2. Persistent audit logging to SQLite database
+  // 2. Fallback to SMTP if Resend failed or not configured, and SMTP credentials exist
+  if (deliveryStatus !== 'sent' && process.env.SMTP_HOST && process.env.SMTP_USER) {
+    try {
+      console.log(`[Email Service] Attempting fallback dispatch via SMTP (${process.env.SMTP_HOST}) to: ${options.to}`);
+      const transporter = nodemailer.createTransport({
+        host: process.env.SMTP_HOST,
+        port: Number(process.env.SMTP_PORT || 587),
+        secure: process.env.SMTP_SECURE === 'true',
+        auth: {
+          user: process.env.SMTP_USER,
+          pass: process.env.SMTP_PASS || '',
+        },
+      });
+
+      const mailOptions: any = {
+        from: process.env.SMTP_FROM || fromAddress,
+        to: options.to,
+        subject: options.subject,
+        html: options.html,
+      };
+
+      if (options.attachments && options.attachments.length > 0) {
+        mailOptions.attachments = options.attachments.map(a => ({
+          filename: a.filename,
+          content: Buffer.from(a.content, 'base64'),
+          contentType: a.contentType,
+        }));
+      }
+
+      const smtpInfo = await transporter.sendMail(mailOptions);
+      deliveryStatus = 'sent';
+      deliveryProvider = 'smtp';
+      externalMessageId = smtpInfo.messageId;
+      errorMessage = undefined;
+      console.log(`[Email Service] SUCCESS via SMTP: Message ID ${smtpInfo.messageId} to ${options.to}`);
+    } catch (smtpErr: any) {
+      console.error('[Email Service] SMTP dispatch error:', smtpErr);
+      if (!errorMessage) {
+        errorMessage = smtpErr?.message || 'Failed to dispatch via SMTP';
+      }
+    }
+  }
+
+  // 3. Persistent audit logging to SQLite database
   try {
     dbQueries.logEmail({
       id: emailId,
@@ -348,16 +428,19 @@ export async function dispatchEmail(options: {
       subject: options.subject,
       body: options.html,
       source: options.source,
-      status: deliveryStatus === 'sent' ? `sent_${deliveryProvider}` : 'recorded_internal',
+      status: deliveryStatus === 'sent' ? `sent_${deliveryProvider}` : `failed_${deliveryProvider}`,
     });
   } catch (logErr) {
     console.warn('[Email Audit Log Warning]', logErr);
   }
 
   return {
-    success: true,
+    success: deliveryStatus === 'sent',
     status: deliveryStatus,
-    id: emailId,
+    provider: deliveryProvider,
+    id: externalMessageId || emailId,
+    error: deliveryStatus !== 'sent' ? errorMessage : undefined,
+    rawError: rawErrorDetails,
     sentAt: now,
   };
 }

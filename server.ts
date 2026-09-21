@@ -1971,27 +1971,55 @@ app.post('/api/ebooks/request-free-download', async (req, res) => {
     const { token, expiresAt } = generateSignedToken(email, 'free_lead_magnet_traders_guide', validitySeconds);
     const downloadUrl = `/api/ebooks/download?token=${token}`;
 
-    // Construct full absolute download URL for email delivery
-    const appUrl = (process.env.APP_URL || `${req.protocol}://${req.get('host')}`).replace(/\/$/, '');
-    const fullDownloadUrl = `${appUrl}${downloadUrl}`;
+    // Construct full absolute download URL for email delivery (using production domain if configured)
+    const productionDomain = (process.env.PRODUCTION_DOMAIN || process.env.APP_DOMAIN || process.env.APP_URL || `${req.protocol}://${req.get('host')}`).replace(/\/$/, '');
+    const fullDownloadUrl = `${productionDomain}${downloadUrl}`;
 
-    // Deliver eBook to user email and capture lead asynchronously (non-blocking so client gets instant response)
-    processEmailLead(email, name, fullDownloadUrl).catch((err) => {
-      console.error('[EbookProtection] Background lead processing warning:', err);
+    console.log(`[Ebook Request] Received download request for ${email} (${name || 'Anonymous'})`);
+
+    // Await lead recording and email dispatch before reporting success
+    const leadResult = await processEmailLead(email, name, fullDownloadUrl);
+
+    console.log(`[Ebook Request] Result for ${email}:`, {
+      leadId: leadResult.leadId,
+      emailDispatched: leadResult.emailDispatched,
+      emailStatus: leadResult.emailStatus,
+      emailProvider: leadResult.emailProvider,
+      emailId: leadResult.emailId,
+      emailError: leadResult.emailError,
     });
 
-    return res.json({
+    if (!leadResult.emailDispatched) {
+      // The email provider rejected or was unable to deliver the email
+      return res.status(422).json({
+        success: false,
+        error: leadResult.emailError || 'Email provider could not complete delivery. Please verify the recipient address or provider credentials.',
+        code: 'EMAIL_DELIVERY_FAILED',
+        leadId: leadResult.leadId,
+        provider: leadResult.emailProvider,
+        downloadUrl,
+      });
+    }
+
+    return res.status(200).json({
       success: true,
-      message: 'Email verified. Your temporary authorized download link is ready and a copy has been sent to your email.',
+      message: `Your copy of 'The Trader\'s Guide to Understanding Strategy Automation' has been dispatched to ${email}.`,
       downloadUrl,
       expiresAt,
       validitySeconds,
+      leadId: leadResult.leadId,
+      emailDelivery: {
+        status: leadResult.emailStatus,
+        provider: leadResult.emailProvider,
+        id: leadResult.emailId,
+      },
     });
   } catch (err: any) {
     console.error('Error in /api/ebooks/request-free-download:', err);
     return res.status(500).json({
       success: false,
-      error: 'Failed to process download request. Please try again.',
+      error: err.message || 'Failed to process download request. Please try again.',
+      code: 'SERVER_ERROR',
     });
   }
 });

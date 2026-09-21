@@ -72,15 +72,10 @@ export function EbookEmailGateModal({
         tempLink.click();
         document.body.removeChild(tempLink);
       } else {
-        setErrorMessage(response.error || 'Failed to generate authorized download. Please try again.');
+        setErrorMessage(response.error || 'Failed to dispatch eBook email. Please check your email address and try again.');
       }
     } catch (err: any) {
-      const msg = err?.message || '';
-      if (msg.includes('JSON') || msg.includes('json') || msg.includes('Response') || msg.includes('SyntaxError')) {
-        setErrorMessage('Download service is preparing your link. Please click download once more.');
-      } else {
-        setErrorMessage(msg || 'An unexpected error occurred. Please try again.');
-      }
+      setErrorMessage(err?.message || 'An unexpected error occurred while communicating with the server. Please try again.');
     } finally {
       setIsSubmitting(false);
     }
