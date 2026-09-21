@@ -5,6 +5,8 @@ import { supabase } from '../lib/supabase.ts';
 import { api, getStoredToken, setStoredToken } from '../services/api.ts';
 import { fetchUserProgressFromSupabase } from '../services/academy.ts';
 import { setActiveStudentTier, getActiveStudentTier } from '../services/academyAccess.ts';
+import { auth, googleAuthProvider, signInWithPopup, fbSignOut, onAuthStateChanged } from '../lib/firebase.ts';
+import { syncUserProfileToFirestore, fetchUserProgressFromFirestore } from '../services/firestoreService.ts';
 
 // Administrator emails recognised by the platform
 export const ADMIN_EMAILS = [
@@ -88,11 +90,76 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  // Global listener: onAuthStateChange to detect if user is actively logged in
+  // Global listener: detect active login via Firebase Auth or Supabase
   useEffect(() => {
     let mounted = true;
 
-    async function loadInitialSession() {
+    // Listen to Firebase Auth state changes
+    const unsubscribeFb = onAuthStateChanged(auth, async (fbUser) => {
+      if (!mounted) return;
+
+      if (fbUser) {
+        setLoading(true);
+        try {
+          const email = fbUser.email || '';
+          const isAdminDetected = checkIsAdminEmail(email);
+          const determinedRole: UserRole = isAdminDetected ? 'admin' : 'customer';
+
+          // Sync user profile to Firestore
+          const firestoreProfile = await syncUserProfileToFirestore(fbUser.uid, {
+            id: fbUser.uid,
+            name: fbUser.displayName || email.split('@')[0] || 'Trader',
+            email,
+            role: determinedRole,
+            access_status: isAdminDetected ? 'paid' : 'free',
+            can_access_masterclass: isAdminDetected,
+            photoURL: fbUser.photoURL || '',
+          });
+
+          const token = await fbUser.getIdToken();
+          setStoredToken(token);
+
+          const activeUser: User = {
+            id: fbUser.uid,
+            name: firestoreProfile.name || fbUser.displayName || email.split('@')[0] || 'Trader',
+            email,
+            phone: fbUser.phoneNumber || null,
+            role: firestoreProfile.role || determinedRole,
+            access_status: firestoreProfile.access_status || (isAdminDetected ? 'paid' : 'free'),
+            can_access_masterclass: firestoreProfile.can_access_masterclass ?? isAdminDetected,
+            created_at: fbUser.metadata.creationTime || new Date().toISOString(),
+            updated_at: new Date().toISOString(),
+          };
+
+          if (mounted) {
+            setUser(activeUser);
+            localStorage.setItem('user_access_status', activeUser.access_status || 'free');
+            setActiveStudentTier(activeUser.access_status === 'paid' ? 'paid' : (activeUser.access_status === 'complimentary' ? 'complimentary' : 'free'));
+
+            // Hydrate progress from Firestore
+            fetchUserProgressFromFirestore(fbUser.uid).then((progressIds) => {
+              if (progressIds && progressIds.length > 0) {
+                const local = JSON.parse(localStorage.getItem('completed_lesson_ids') || '[]');
+                const combined = Array.from(new Set([...local, ...progressIds]));
+                localStorage.setItem('completed_lesson_ids', JSON.stringify(combined));
+                window.dispatchEvent(new CustomEvent('academy-progress-change', { detail: { completedIds: combined } }));
+              }
+            }).catch((pErr) => {
+              console.warn('[Firebase Progress] Initial hydration notice:', pErr);
+            });
+          }
+        } catch (err) {
+          console.warn('[Firebase Auth] Profile sync notice:', err);
+        } finally {
+          if (mounted) setLoading(false);
+        }
+      } else {
+        // If not logged in via Firebase, check Supabase session as fallback
+        loadSupabaseSession();
+      }
+    });
+
+    async function loadSupabaseSession() {
       try {
         setLoading(true);
         const { data, error: sessionError } = await supabase.auth.getSession();
@@ -100,7 +167,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           console.warn('Supabase getSession notification:', sessionError.message);
         }
 
-        if (mounted) {
+        if (mounted && !auth.currentUser) {
           const currentSession = data?.session;
 
           if (currentSession?.user) {
@@ -131,7 +198,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             };
             setUser(activeUser);
 
-            // Store Supabase token for backend API requests
+            // Store token for backend API requests
             if (currentSession.access_token) {
               setStoredToken(currentSession.access_token);
             }
@@ -174,14 +241,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
     }
 
-    loadInitialSession();
-
     // Global listener for Supabase authentication state changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, newSession) => {
-      if (!mounted) return;
+      if (!mounted || auth.currentUser) return;
 
       if (newSession?.user) {
-        // Enforce verification: users cannot access the platform without verified address
         if (!isUserVerified(newSession.user)) {
           console.log('[Auth] Unconfirmed email state on auth change - blocking access until verified');
           await supabase.auth.signOut().catch(() => null);
@@ -208,12 +272,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         };
         setUser(activeUser);
 
-        // Store Supabase token for backend API requests
         if (newSession.access_token) {
           setStoredToken(newSession.access_token);
         }
 
-        // Verify access status with database / Supabase
         api.getUserAccessStatus().then((statusRes) => {
           if (statusRes) {
             localStorage.setItem('user_access_status', statusRes.access_status);
@@ -228,7 +290,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           // Non-blocking fallback
         });
 
-        // Hydrate progress directly from Supabase user_progress
         fetchUserProgressFromSupabase(activeUser.id).then((progressIds) => {
           if (progressIds && progressIds.length > 0) {
             const local = JSON.parse(localStorage.getItem('completed_lesson_ids') || '[]');
@@ -238,13 +299,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           }
         });
       } else {
-        setUser(null);
-        setSession(null);
+        if (!auth.currentUser) {
+          setUser(null);
+          setSession(null);
+        }
       }
     });
 
     return () => {
       mounted = false;
+      unsubscribeFb();
       subscription.unsubscribe();
     };
   }, []);
@@ -342,38 +406,77 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
-  // Supabase Google OAuth: Google accounts are pre-verified
+  // Firebase Auth Google Sign-In with Gmail accounts and Firestore persistence
   const loginWithGoogle = async (): Promise<{ success: boolean; error?: string }> => {
     try {
       setError(null);
       setLoading(true);
-      const redirectUrl = getAppRedirectUrl();
-      const { data: _data, error: oauthError } = await supabase.auth.signInWithOAuth({
-        provider: 'google',
-        options: {
-          redirectTo: redirectUrl,
-          queryParams: {
-            access_type: 'offline',
-            prompt: 'consent',
-          },
-        },
+
+      const result = await signInWithPopup(auth, googleAuthProvider);
+      const fbUser = result.user;
+
+      if (!fbUser) {
+        return { success: false, error: 'Google Sign-In was cancelled or failed.' };
+      }
+
+      const email = fbUser.email || '';
+      const isAdminDetected = checkIsAdminEmail(email);
+      const determinedRole: UserRole = isAdminDetected ? 'admin' : 'customer';
+
+      // Persist & sync user profile in Firestore
+      const firestoreProfile = await syncUserProfileToFirestore(fbUser.uid, {
+        id: fbUser.uid,
+        name: fbUser.displayName || email.split('@')[0] || 'Trader',
+        email,
+        role: determinedRole,
+        access_status: isAdminDetected ? 'paid' : 'free',
+        can_access_masterclass: isAdminDetected,
+        photoURL: fbUser.photoURL || '',
       });
 
-      if (oauthError) {
-        let msg = oauthError.message || 'Google OAuth authentication failed';
-        if (msg.toLowerCase().includes('provider is not enabled') || (oauthError as any)?.error_code === 'validation_failed') {
-          msg = 'Google provider is not enabled in your Supabase project. In your Supabase Dashboard, go to Authentication > Providers > Google to toggle it ON and enter your Google Client ID, or sign in using Email & Password.';
+      const token = await fbUser.getIdToken();
+      setStoredToken(token);
+
+      const activeUser: User = {
+        id: fbUser.uid,
+        name: firestoreProfile.name || fbUser.displayName || email.split('@')[0] || 'Trader',
+        email,
+        phone: fbUser.phoneNumber || null,
+        role: firestoreProfile.role || determinedRole,
+        access_status: firestoreProfile.access_status || (isAdminDetected ? 'paid' : 'free'),
+        can_access_masterclass: firestoreProfile.can_access_masterclass ?? isAdminDetected,
+        created_at: fbUser.metadata.creationTime || new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      };
+
+      setUser(activeUser);
+      localStorage.setItem('user_access_status', activeUser.access_status || 'free');
+      setActiveStudentTier(activeUser.access_status === 'paid' ? 'paid' : (activeUser.access_status === 'complimentary' ? 'complimentary' : 'free'));
+
+      // Hydrate lesson progress from Firestore
+      try {
+        const progressIds = await fetchUserProgressFromFirestore(fbUser.uid);
+        if (progressIds && progressIds.length > 0) {
+          const local = JSON.parse(localStorage.getItem('completed_lesson_ids') || '[]');
+          const combined = Array.from(new Set([...local, ...progressIds]));
+          localStorage.setItem('completed_lesson_ids', JSON.stringify(combined));
+          window.dispatchEvent(new CustomEvent('academy-progress-change', { detail: { completedIds: combined } }));
         }
-        throw new Error(msg);
+      } catch (fsProgErr) {
+        console.warn('[Firebase Auth] Progress load warning:', fsProgErr);
       }
 
       return { success: true };
     } catch (err: any) {
-      let msg = err.message || 'Google OAuth authentication failed';
-      if (msg.toLowerCase().includes('provider is not enabled')) {
-        msg = 'Google provider is not enabled in your Supabase project. In your Supabase Dashboard, go to Authentication > Providers > Google to toggle it ON and enter your Google Client ID, or sign in using Email & Password.';
+      console.warn('[Firebase Google Auth Error]', err);
+      let msg = err.message || 'Google authentication failed';
+      if (err.code === 'auth/popup-closed-by-user') {
+        msg = 'Google Sign-In cancelled. The login popup was closed.';
+      } else if (err.code === 'auth/cancelled-popup-request') {
+        msg = 'Google Sign-In was interrupted. Please try again.';
+      } else if (err.code === 'auth/popup-blocked') {
+        msg = 'Popup was blocked by your browser. Please allow popups for this site and try again.';
       }
-      console.warn('[Supabase OAuth Error]', err);
       setError(msg);
       return { success: false, error: msg };
     } finally {
@@ -510,10 +613,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
-  // Wire global "Log Out" function to supabase.auth.signOut() and reset progress
+  // Wire global "Log Out" function to Firebase & Supabase and reset progress
   const logout = async () => {
     try {
       setLoading(true);
+      await fbSignOut(auth).catch(() => null);
       await supabase.auth.signOut().catch(() => null);
       await api.logout().catch(() => null);
       setUser(null);

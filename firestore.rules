@@ -1,0 +1,139 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Helper functions
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    function isAdmin() {
+      return isSignedIn() && (
+        (request.auth.token.email == 'supermegafx1@gmail.com' && request.auth.token.email_verified == true) ||
+        exists(/databases/$(database)/documents/admins/$(request.auth.uid))
+      );
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() > 0 && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    function isValidUserProfile(data) {
+      return data.keys().hasAll(['id', 'email', 'role']) &&
+             data.keys().hasOnly(['id', 'name', 'email', 'role', 'access_status', 'can_access_masterclass', 'photoURL', 'phone', 'createdAt', 'updatedAt']) &&
+             data.id is string && data.id.size() <= 128 &&
+             data.id == request.auth.uid &&
+             data.email is string && data.email.size() <= 120 &&
+             data.role in ['customer', 'admin', 'developer'] &&
+             (!('name' in data) || (data.name is string && data.name.size() <= 100)) &&
+             (!('access_status' in data) || (data.access_status in ['free', 'paid', 'complimentary'])) &&
+             (!('can_access_masterclass' in data) || data.can_access_masterclass is bool) &&
+             (!('photoURL' in data) || (data.photoURL is string && data.photoURL.size() <= 500)) &&
+             (!('phone' in data) || data.phone == null || (data.phone is string && data.phone.size() <= 50)) &&
+             (!('createdAt' in data) || (data.createdAt is string && data.createdAt.size() <= 50)) &&
+             (!('updatedAt' in data) || (data.updatedAt is string && data.updatedAt.size() <= 50));
+    }
+
+    function isValidUserProgress(data) {
+      return data.keys().hasAll(['userId', 'lessonId', 'completed']) &&
+             data.keys().hasOnly(['userId', 'lessonId', 'completed', 'score', 'completedAt']) &&
+             data.userId is string && data.userId == request.auth.uid &&
+             data.lessonId is string && data.lessonId.size() <= 100 &&
+             data.completed is bool &&
+             (!('score' in data) || data.score is number) &&
+             (!('completedAt' in data) || (data.completedAt is string && data.completedAt.size() <= 50));
+    }
+
+    function isValidOrder(data) {
+      return data.keys().hasAll(['id', 'userId', 'productId', 'amount', 'paymentStatus']) &&
+             data.keys().hasOnly(['id', 'userId', 'productId', 'productName', 'amount', 'currency', 'paymentStatus', 'transactionId', 'createdAt', 'updatedAt']) &&
+             data.id is string && data.id.size() <= 128 &&
+             data.userId is string && data.userId == request.auth.uid &&
+             data.productId is string && data.productId.size() <= 100 &&
+             data.amount is number &&
+             data.paymentStatus in ['paid', 'pending', 'refunded', 'failed'] &&
+             (!('productName' in data) || (data.productName is string && data.productName.size() <= 150)) &&
+             (!('currency' in data) || (data.currency is string && data.currency.size() <= 10)) &&
+             (!('transactionId' in data) || (data.transactionId is string && data.transactionId.size() <= 128)) &&
+             (!('createdAt' in data) || (data.createdAt is string && data.createdAt.size() <= 50)) &&
+             (!('updatedAt' in data) || (data.updatedAt is string && data.updatedAt.size() <= 50));
+    }
+
+    function isValidEAProject(data) {
+      return data.keys().hasAll(['id', 'userId', 'projectName', 'platform', 'status']) &&
+             data.keys().hasOnly(['id', 'userId', 'projectName', 'platform', 'status', 'strategyDescription', 'complexity', 'quoteAmount', 'createdAt', 'updatedAt']) &&
+             data.id is string && data.id.size() <= 128 &&
+             data.userId is string && data.userId == request.auth.uid &&
+             data.projectName is string && data.projectName.size() <= 150 &&
+             data.platform is string && data.platform.size() <= 50 &&
+             data.status in ['draft', 'review', 'quote_ready', 'in_development', 'testing', 'completed', 'delivered', 'cancelled'] &&
+             (!('strategyDescription' in data) || (data.strategyDescription is string && data.strategyDescription.size() <= 5000)) &&
+             (!('complexity' in data) || (data.complexity is string && data.complexity.size() <= 50)) &&
+             (!('quoteAmount' in data) || data.quoteAmount is number) &&
+             (!('createdAt' in data) || (data.createdAt is string && data.createdAt.size() <= 50)) &&
+             (!('updatedAt' in data) || (data.updatedAt is string && data.updatedAt.size() <= 50));
+    }
+
+    // Default Deny All Catch-all
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // User Profiles Collection
+    match /users/{userId} {
+      allow get: if isOwner(userId) || isAdmin();
+      allow list: if isAdmin();
+      allow create: if isOwner(userId) && isValidId(userId) && isValidUserProfile(incoming());
+      allow update: if (isOwner(userId) || isAdmin()) && isValidId(userId) && isValidUserProfile(incoming());
+      allow delete: if isAdmin();
+
+      // User Progress Subcollection
+      match /progress/{lessonId} {
+        allow get, list: if isOwner(userId) || isAdmin();
+        allow create, update: if isOwner(userId) && isValidId(lessonId) && isValidUserProgress(incoming());
+        allow delete: if isOwner(userId) || isAdmin();
+      }
+    }
+
+    // Orders Collection
+    match /orders/{orderId} {
+      allow get: if isSignedIn() && (existing().userId == request.auth.uid || isAdmin());
+      allow list: if isSignedIn() && (existing().userId == request.auth.uid || isAdmin());
+      allow create: if isSignedIn() && incoming().userId == request.auth.uid && isValidId(orderId) && isValidOrder(incoming());
+      allow update, delete: if isAdmin();
+    }
+
+    // Projects Collection (Custom EA Requests)
+    match /projects/{projectId} {
+      allow get: if isSignedIn() && (existing().userId == request.auth.uid || isAdmin());
+      allow list: if isSignedIn() && (existing().userId == request.auth.uid || isAdmin());
+      allow create: if isSignedIn() && incoming().userId == request.auth.uid && isValidId(projectId) && isValidEAProject(incoming());
+      allow update: if isSignedIn() && (existing().userId == request.auth.uid || isAdmin()) && isValidId(projectId) && isValidEAProject(incoming());
+      allow delete: if isAdmin();
+    }
+
+    // Admins Collection
+    match /admins/{adminId} {
+      allow read: if isSignedIn();
+      allow write: if isAdmin();
+    }
+
+    // Test Connection Path
+    match /test/connection {
+      allow read: if true;
+    }
+  }
+}

@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { ActiveView } from '../../types.ts';
+import { ActiveView, Lesson, Product } from '../../types.ts';
 import { useAuth } from '../../context/AuthContext.tsx';
 import { Button } from './Button.tsx';
 import { 
@@ -10,10 +10,13 @@ import {
   LogOut, 
   Shield, 
   ArrowRight,
-  Sparkles
+  Sparkles,
+  Search,
+  Command
 } from 'lucide-react';
 import { MegAiLogoIcon } from './MegAiLogo.tsx';
 import { CurrencySelector } from './CurrencySelector.tsx';
+import { GlobalSearchModal } from './GlobalSearchModal.tsx';
 
 interface NavbarProps {
   currentView?: ActiveView;
@@ -21,6 +24,8 @@ interface NavbarProps {
   onNavigate: (view: ActiveView, productId?: string) => void;
   onOpenAuth: (mode?: 'login' | 'register') => void;
   onTriggerBuildMyEa: () => void;
+  products?: Product[];
+  lessons?: Lesson[];
 }
 
 export function Navbar({
@@ -29,11 +34,14 @@ export function Navbar({
   onNavigate,
   onOpenAuth,
   onTriggerBuildMyEa,
+  products,
+  lessons,
 }: NavbarProps) {
   const current = currentView || activeView || 'home';
   const { user, logout, isAdmin } = useAuth();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
+  const [isSearchOpen, setIsSearchOpen] = useState(false);
 
   useEffect(() => {
     const handleScroll = () => {
@@ -41,6 +49,18 @@ export function Navbar({
     };
     window.addEventListener('scroll', handleScroll, { passive: true });
     return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
+
+  // Global keyboard shortcut: Cmd+K or Ctrl+K opens search
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') {
+        e.preventDefault();
+        setIsSearchOpen((prev) => !prev);
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
   }, []);
 
   const navItems: Array<{ label: string; view: ActiveView; badge?: string; productId?: string }> = [
@@ -131,8 +151,23 @@ export function Navbar({
             })}
           </nav>
 
-          {/* Right Actions (CTA + Account + Currency Selector) */}
-          <div className="hidden lg:flex items-center gap-2.5">
+          {/* Right Actions (CTA + Account + Currency Selector + Global Search) */}
+          <div className="hidden lg:flex items-center gap-2">
+            {/* Quick Global Search Trigger Button */}
+            <button
+              onClick={() => setIsSearchOpen(true)}
+              className="group flex items-center gap-2 px-3 py-1.5 rounded-full bg-slate-100/80 hover:bg-slate-100 border border-slate-200/80 hover:border-slate-300 text-slate-500 hover:text-slate-800 transition-all cursor-pointer text-xs select-none shadow-2xs active:scale-[0.98]"
+              title="Search EAs, lessons, docs, and prompts (Ctrl/Cmd + K)"
+            >
+              <Search className="w-3.5 h-3.5 text-slate-400 group-hover:text-emerald-600 transition-colors" />
+              <span className="hidden xl:inline text-xs font-medium text-slate-600 group-hover:text-slate-900">
+                Search...
+              </span>
+              <span className="flex items-center gap-0.5 text-[10px] font-mono font-medium px-1.5 py-0.2 rounded bg-white border border-slate-200 text-slate-400 group-hover:text-slate-600 shadow-2xs">
+                <Command className="w-2.5 h-2.5 inline" />K
+              </span>
+            </button>
+
             <CurrencySelector />
 
             {/* Login or Account Portal */}
@@ -187,6 +222,16 @@ export function Navbar({
 
           {/* Mobile Right Controls */}
           <div className="flex items-center gap-1.5 sm:gap-2 lg:hidden">
+            {/* Mobile Search Button */}
+            <button
+              onClick={() => setIsSearchOpen(true)}
+              className="p-2 rounded-full bg-slate-100/80 border border-slate-200/80 text-slate-700 hover:text-slate-950 transition-colors cursor-pointer"
+              title="Search"
+              aria-label="Search"
+            >
+              <Search className="w-3.5 h-3.5" />
+            </button>
+
             <CurrencySelector variant="compact" />
 
             <button
@@ -217,6 +262,23 @@ export function Navbar({
               transition={{ duration: 0.18 }}
               className="pointer-events-auto mt-2 max-w-6xl mx-auto rounded-3xl bg-white/95 backdrop-blur-2xl border border-slate-200/90 shadow-xl p-4 space-y-3 text-slate-800"
             >
+              {/* Mobile Search Bar inside dropdown */}
+              <div
+                onClick={() => {
+                  setMobileMenuOpen(false);
+                  setIsSearchOpen(true);
+                }}
+                className="flex items-center justify-between px-3.5 py-2 rounded-2xl bg-slate-100/80 hover:bg-slate-100 border border-slate-200/80 text-slate-500 cursor-pointer text-xs"
+              >
+                <div className="flex items-center gap-2">
+                  <Search className="w-3.5 h-3.5 text-slate-400" />
+                  <span>Search EAs, lessons, docs...</span>
+                </div>
+                <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-white text-slate-400 border border-slate-200">
+                  Ctrl+K
+                </span>
+              </div>
+
               <div className="flex flex-col space-y-1">
                 {navItems.map((item) => {
                   const active = isItemActive(item);
@@ -291,6 +353,15 @@ export function Navbar({
           )}
         </AnimatePresence>
       </div>
+
+      {/* Global Search Modal */}
+      <GlobalSearchModal
+        isOpen={isSearchOpen}
+        onClose={() => setIsSearchOpen(false)}
+        onNavigate={onNavigate}
+        products={products}
+        lessons={lessons}
+      />
     </header>
   );
 }

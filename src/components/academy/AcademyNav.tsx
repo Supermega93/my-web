@@ -1,12 +1,13 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { ActiveView } from '../../types.ts';
 import { useAuth } from '../../context/AuthContext.tsx';
-import { BookOpen, Terminal, Sparkles, LogIn, LogOut, CheckCircle2, User as UserIcon, Download, Home, ArrowLeft } from 'lucide-react';
+import { BookOpen, Terminal, Sparkles, LogIn, LogOut, CheckCircle2, User as UserIcon, Download, Home, ArrowLeft, Search, Command } from 'lucide-react';
 import { Button } from '../common/Button.tsx';
 import { AcademyAuthModal } from './AcademyAuthModal.tsx';
 import { MegAiLogoIcon } from '../common/MegAiLogo.tsx';
 import { CurrencySelector } from '../common/CurrencySelector.tsx';
 import { useCurrency } from '../../context/CurrencyContext.tsx';
+import { GlobalSearchModal } from '../common/GlobalSearchModal.tsx';
 
 interface AcademyNavProps {
   onNavigate: (view: ActiveView, extraId?: string) => void;
@@ -17,6 +18,19 @@ export function AcademyNav({ onNavigate, activeTab }: AcademyNavProps) {
   const { user, logout, isLoggedIn } = useAuth();
   const { formatPrice } = useCurrency();
   const [authModalOpen, setAuthModalOpen] = useState(false);
+  const [searchOpen, setSearchOpen] = useState(false);
+
+  // Global keyboard shortcut: Cmd+K or Ctrl+K opens search
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') {
+        e.preventDefault();
+        setSearchOpen((prev) => !prev);
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, []);
 
   return (
     <header className="sticky top-0 z-50 w-full bg-white/90 backdrop-blur-xl border-b border-slate-200/80 shadow-[0_2px_12px_rgba(0,0,0,0.03)] text-slate-800">
@@ -124,6 +138,19 @@ export function AcademyNav({ onNavigate, activeTab }: AcademyNavProps) {
 
         {/* Right Auth / Action */}
         <div className="flex items-center gap-2 sm:gap-2.5">
+          {/* Academy Global Search Trigger */}
+          <button
+            onClick={() => setSearchOpen(true)}
+            className="group flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-slate-100 hover:bg-slate-200/80 border border-slate-200 text-slate-600 hover:text-slate-900 text-xs font-medium transition-all cursor-pointer shadow-2xs active:scale-[0.98]"
+            title="Search curriculum, EAs & docs (Ctrl+K)"
+          >
+            <Search className="w-3.5 h-3.5 text-slate-400 group-hover:text-emerald-600 transition-colors" />
+            <span className="hidden md:inline">Search</span>
+            <span className="hidden md:inline text-[9px] font-mono font-medium px-1 py-0.2 rounded bg-white text-slate-400 border border-slate-200">
+              ⌘K
+            </span>
+          </button>
+
           <CurrencySelector variant="compact" />
 
           {isLoggedIn && user ? (
@@ -173,6 +200,12 @@ export function AcademyNav({ onNavigate, activeTab }: AcademyNavProps) {
       <AcademyAuthModal
         isOpen={authModalOpen}
         onClose={() => setAuthModalOpen(false)}
+      />
+
+      <GlobalSearchModal
+        isOpen={searchOpen}
+        onClose={() => setSearchOpen(false)}
+        onNavigate={onNavigate}
       />
     </header>
   );

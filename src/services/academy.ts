@@ -2,6 +2,7 @@ import { supabase } from '../lib/supabase.ts';
 import { Lesson, CustomDevLead, LevelMeta } from '../types.ts';
 import { FALLBACK_LESSONS } from '../data/lessonsData.ts';
 import { getStoredToken } from './api.ts';
+import { fetchUserProgressFromFirestore, saveLessonProgressToFirestore } from './firestoreService.ts';
 
 // Comprehensive, institutional BabyPips-style curriculum
 // Used dynamically and as authoritative fallback if Supabase table is empty or loading
@@ -457,7 +458,17 @@ export async function fetchUserProgressFromSupabase(userId: string): Promise<str
     console.warn('[Academy Progress] Server fetch notice:', apiErr);
   }
 
-  // 2. Fetch from Supabase user_progress table
+  // 2. Fetch from Firestore
+  try {
+    const firestoreIds = await fetchUserProgressFromFirestore(userId);
+    if (firestoreIds && firestoreIds.length > 0) {
+      firestoreIds.forEach((id: string) => completedIdsSet.add(id));
+    }
+  } catch (fsErr) {
+    console.warn('[Academy Progress] Firestore fetch notice:', fsErr);
+  }
+
+  // 3. Fetch from Supabase user_progress table
   try {
     const { data, error } = await supabase
       .from('user_progress')
@@ -520,7 +531,14 @@ export async function saveUserLessonProgressToSupabase(
     console.warn('[Academy Progress] Server save notice:', apiErr);
   }
 
-  // 2. Persist to Supabase user_progress table
+  // 2. Persist to Firestore
+  try {
+    await saveLessonProgressToFirestore(userId, lessonId, isCompleted);
+  } catch (fsErr) {
+    console.warn('[Academy Progress] Firestore save notice:', fsErr);
+  }
+
+  // 3. Persist to Supabase user_progress table
   try {
     const matched = FALLBACK_LESSONS.find((l) => l.id === lessonId || l.uuid === lessonId);
     const lessonUuid = matched ? getLessonUuid(matched) : (/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(lessonId) ? lessonId : null);

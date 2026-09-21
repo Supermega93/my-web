@@ -227,6 +227,7 @@ function AppContent() {
           onNavigate={handleNavigate}
           onOpenAuth={openAuth}
           onTriggerBuildMyEa={handleTriggerBuildMyEa}
+          products={products}
         />
       )}
 

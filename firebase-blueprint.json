@@ -1,0 +1,237 @@
+{
+  "entities": {
+    "UserProfile": {
+      "title": "UserProfile",
+      "description": "User profile document storing basic user details and academy access permissions.",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier of the user matching Firebase Auth UID.",
+          "maxLength": 128
+        },
+        "name": {
+          "type": "string",
+          "description": "Display name of the user.",
+          "maxLength": 100
+        },
+        "email": {
+          "type": "string",
+          "description": "Email address of the authenticated user.",
+          "maxLength": 120
+        },
+        "role": {
+          "type": "string",
+          "description": "User platform role.",
+          "enum": ["customer", "admin", "developer"]
+        },
+        "access_status": {
+          "type": "string",
+          "description": "Access tier for the academy masterclass.",
+          "enum": ["free", "paid", "complimentary"]
+        },
+        "can_access_masterclass": {
+          "type": "boolean",
+          "description": "Whether user has unlocked Levels 4 through 8."
+        },
+        "photoURL": {
+          "type": "string",
+          "description": "URL to the user's avatar image.",
+          "maxLength": 500
+        },
+        "createdAt": {
+          "type": "string",
+          "description": "ISO timestamp of account creation.",
+          "maxLength": 50
+        },
+        "updatedAt": {
+          "type": "string",
+          "description": "ISO timestamp of last update.",
+          "maxLength": 50
+        }
+      },
+      "required": ["id", "email", "role"]
+    },
+    "UserProgress": {
+      "title": "UserProgress",
+      "description": "Record of a completed academy lesson or quiz by a user.",
+      "type": "object",
+      "properties": {
+        "userId": {
+          "type": "string",
+          "description": "User UID who completed the lesson.",
+          "maxLength": 128
+        },
+        "lessonId": {
+          "type": "string",
+          "description": "ID of the completed lesson.",
+          "maxLength": 100
+        },
+        "completed": {
+          "type": "boolean",
+          "description": "Whether the lesson is marked complete."
+        },
+        "score": {
+          "type": "number",
+          "description": "Score achieved in associated quiz if applicable."
+        },
+        "completedAt": {
+          "type": "string",
+          "description": "ISO timestamp when the lesson was completed.",
+          "maxLength": 50
+        }
+      },
+      "required": ["userId", "lessonId", "completed"]
+    },
+    "Order": {
+      "title": "Order",
+      "description": "Storefront purchase transaction record for EAs or courses.",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique transaction or order identifier.",
+          "maxLength": 128
+        },
+        "userId": {
+          "type": "string",
+          "description": "UID of the buyer.",
+          "maxLength": 128
+        },
+        "productId": {
+          "type": "string",
+          "description": "ID of the purchased product or license.",
+          "maxLength": 100
+        },
+        "productName": {
+          "type": "string",
+          "description": "Name of the product.",
+          "maxLength": 150
+        },
+        "amount": {
+          "type": "number",
+          "description": "Purchase total in currency units."
+        },
+        "currency": {
+          "type": "string",
+          "description": "Currency code such as USD or EUR.",
+          "maxLength": 10
+        },
+        "paymentStatus": {
+          "type": "string",
+          "description": "Payment resolution state.",
+          "enum": ["paid", "pending", "refunded", "failed"]
+        },
+        "transactionId": {
+          "type": "string",
+          "description": "External transaction ID or reference.",
+          "maxLength": 128
+        },
+        "createdAt": {
+          "type": "string",
+          "description": "ISO timestamp of order creation.",
+          "maxLength": 50
+        },
+        "updatedAt": {
+          "type": "string",
+          "description": "ISO timestamp of last update.",
+          "maxLength": 50
+        }
+      },
+      "required": ["id", "userId", "productId", "amount", "paymentStatus"]
+    },
+    "EAProject": {
+      "title": "EAProject",
+      "description": "Custom trading robot request submitted by a user.",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique project identifier.",
+          "maxLength": 128
+        },
+        "userId": {
+          "type": "string",
+          "description": "UID of the requesting trader.",
+          "maxLength": 128
+        },
+        "projectName": {
+          "type": "string",
+          "description": "Title of the custom project.",
+          "maxLength": 150
+        },
+        "platform": {
+          "type": "string",
+          "description": "Target trading platform e.g. MT5 or TradingView.",
+          "maxLength": 50
+        },
+        "status": {
+          "type": "string",
+          "description": "Lifecycle status of the build request.",
+          "enum": ["draft", "review", "quote_ready", "in_development", "testing", "completed", "delivered", "cancelled"]
+        },
+        "strategyDescription": {
+          "type": "string",
+          "description": "Details of the strategy logic.",
+          "maxLength": 5000
+        },
+        "createdAt": {
+          "type": "string",
+          "description": "ISO timestamp when submitted.",
+          "maxLength": 50
+        },
+        "updatedAt": {
+          "type": "string",
+          "description": "ISO timestamp of last update.",
+          "maxLength": 50
+        }
+      },
+      "required": ["id", "userId", "projectName", "platform", "status"]
+    },
+    "Admin": {
+      "title": "Admin",
+      "description": "Document marking trusted administrator UID.",
+      "type": "object",
+      "properties": {
+        "email": {
+          "type": "string",
+          "description": "Admin email address.",
+          "maxLength": 120
+        },
+        "role": {
+          "type": "string",
+          "description": "Admin role name.",
+          "maxLength": 50
+        },
+        "addedAt": {
+          "type": "string",
+          "description": "Timestamp when admin access was granted.",
+          "maxLength": 50
+        }
+      },
+      "required": ["email", "role"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": "UserProfile",
+      "description": "User profile document owned by the authenticated user."
+    },
+    "/users/{userId}/progress/{lessonId}": {
+      "schema": "UserProgress",
+      "description": "Completed lesson records for this user."
+    },
+    "/orders/{orderId}": {
+      "schema": "Order",
+      "description": "Product and license orders placed by users."
+    },
+    "/projects/{projectId}": {
+      "schema": "EAProject",
+      "description": "Custom EA strategy requests submitted by users."
+    },
+    "/admins/{adminId}": {
+      "schema": "Admin",
+      "description": "Trusted administrators list."
+    }
+  }
+}
