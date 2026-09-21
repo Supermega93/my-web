@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
+import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'motion/react';
 import { 
   Search, 
@@ -132,8 +133,11 @@ export function GlobalSearchModal({
     { label: 'AI Strategy Prompt Architect', category: 'tool' as SearchCategory },
   ];
 
-  return (
-    <div className="fixed inset-0 z-[100] flex items-start justify-center p-3 sm:p-6 sm:pt-16 md:pt-20">
+  return createPortal(
+    <div 
+      className="fixed inset-0 z-[99999] flex items-start justify-center p-3 sm:p-6 sm:pt-16 md:pt-20"
+      style={{ zIndex: 99999 }}
+    >
       {/* Backdrop */}
       <motion.div
         initial={{ opacity: 0 }}
@@ -439,6 +443,7 @@ export function GlobalSearchModal({
           </div>
         </div>
       </motion.div>
-    </div>
+    </div>,
+    document.body
   );
 }

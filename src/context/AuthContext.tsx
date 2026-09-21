@@ -5,7 +5,7 @@ import { supabase } from '../lib/supabase.ts';
 import { api, getStoredToken, setStoredToken } from '../services/api.ts';
 import { fetchUserProgressFromSupabase } from '../services/academy.ts';
 import { setActiveStudentTier, getActiveStudentTier } from '../services/academyAccess.ts';
-import { auth, googleAuthProvider, signInWithPopup, fbSignOut, onAuthStateChanged } from '../lib/firebase.ts';
+import { auth, googleAuthProvider, signInWithPopup, signInWithCredential, GoogleAuthProvider, fbSignOut, onAuthStateChanged } from '../lib/firebase.ts';
 import { syncUserProfileToFirestore, fetchUserProgressFromFirestore } from '../services/firestoreService.ts';
 
 // Administrator emails recognised by the platform
@@ -306,8 +306,40 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
     });
 
+    // Google Identity Services (GIS) auto-listener for ID tokens
+    const initGis = () => {
+      if (typeof window !== 'undefined' && (window as any).google?.accounts?.id) {
+        try {
+          (window as any).google.accounts.id.initialize({
+            client_id: '1057808579968-lktbd0f2cm0rkbka7qpn76uqsrli2svm.apps.googleusercontent.com',
+            callback: async (response: any) => {
+              if (response?.credential) {
+                try {
+                  setLoading(true);
+                  const credential = GoogleAuthProvider.credential(response.credential);
+                  await signInWithCredential(auth, credential);
+                } catch (gErr: any) {
+                  console.warn('[GIS Sign-In Exception]', gErr);
+                  setError(gErr.message || 'Google verification failed');
+                } finally {
+                  setLoading(false);
+                }
+              }
+            },
+            auto_select: false,
+            cancel_on_tap_outside: true,
+          });
+        } catch (e) {
+          console.warn('[GIS Init]', e);
+        }
+      }
+    };
+    initGis();
+    const gisTimer = setTimeout(initGis, 1200);
+
     return () => {
       mounted = false;
+      clearTimeout(gisTimer);
       unsubscribeFb();
       subscription.unsubscribe();
     };
@@ -412,8 +444,34 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setError(null);
       setLoading(true);
 
-      const result = await signInWithPopup(auth, googleAuthProvider);
-      const fbUser = result.user;
+      let fbUser: any = null;
+
+      try {
+        const result = await signInWithPopup(auth, googleAuthProvider);
+        fbUser = result.user;
+      } catch (popupErr: any) {
+        console.warn('[Firebase Google Auth Popup]', popupErr);
+        const code = popupErr?.code || '';
+        if (code === 'auth/popup-closed-by-user') {
+          return { success: false, error: 'Google Sign-In was cancelled. The login popup was closed.' };
+        }
+        if (code === 'auth/cancelled-popup-request') {
+          return { success: false, error: 'Sign-in was interrupted. Please try clicking Continue with Google again.' };
+        }
+        if (code === 'auth/popup-blocked') {
+          return { 
+            success: false, 
+            error: 'Popup was blocked by your browser. Please allow popups for this site, or open the app in a new browser tab.' 
+          };
+        }
+        if (code === 'auth/unauthorized-domain') {
+          return {
+            success: false,
+            error: `This preview domain (${window.location.hostname}) is not yet registered in Firebase Auth. Please use Email & Password sign in below, or add this domain in Firebase Console.`
+          };
+        }
+        throw popupErr;
+      }
 
       if (!fbUser) {
         return { success: false, error: 'Google Sign-In was cancelled or failed.' };
@@ -423,28 +481,39 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       const isAdminDetected = checkIsAdminEmail(email);
       const determinedRole: UserRole = isAdminDetected ? 'admin' : 'customer';
 
-      // Persist & sync user profile in Firestore
-      const firestoreProfile = await syncUserProfileToFirestore(fbUser.uid, {
-        id: fbUser.uid,
+      // Persist & sync user profile in Firestore safely
+      let firestoreProfile: any = {
         name: fbUser.displayName || email.split('@')[0] || 'Trader',
-        email,
         role: determinedRole,
         access_status: isAdminDetected ? 'paid' : 'free',
         can_access_masterclass: isAdminDetected,
-        photoURL: fbUser.photoURL || '',
-      });
+      };
+
+      try {
+        firestoreProfile = await syncUserProfileToFirestore(fbUser.uid, {
+          id: fbUser.uid,
+          name: fbUser.displayName || email.split('@')[0] || 'Trader',
+          email,
+          role: determinedRole,
+          access_status: isAdminDetected ? 'paid' : 'free',
+          can_access_masterclass: isAdminDetected,
+          photoURL: fbUser.photoURL || '',
+        });
+      } catch (syncErr) {
+        console.warn('[Firebase Auth] Non-fatal profile sync notice:', syncErr);
+      }
 
       const token = await fbUser.getIdToken();
       setStoredToken(token);
 
       const activeUser: User = {
         id: fbUser.uid,
-        name: firestoreProfile.name || fbUser.displayName || email.split('@')[0] || 'Trader',
+        name: firestoreProfile?.name || fbUser.displayName || email.split('@')[0] || 'Trader',
         email,
         phone: fbUser.phoneNumber || null,
-        role: firestoreProfile.role || determinedRole,
-        access_status: firestoreProfile.access_status || (isAdminDetected ? 'paid' : 'free'),
-        can_access_masterclass: firestoreProfile.can_access_masterclass ?? isAdminDetected,
+        role: firestoreProfile?.role || determinedRole,
+        access_status: firestoreProfile?.access_status || (isAdminDetected ? 'paid' : 'free'),
+        can_access_masterclass: firestoreProfile?.can_access_masterclass ?? isAdminDetected,
         created_at: fbUser.metadata.creationTime || new Date().toISOString(),
         updated_at: new Date().toISOString(),
       };
@@ -476,6 +545,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         msg = 'Google Sign-In was interrupted. Please try again.';
       } else if (err.code === 'auth/popup-blocked') {
         msg = 'Popup was blocked by your browser. Please allow popups for this site and try again.';
+      } else if (err.code === 'auth/unauthorized-domain') {
+        msg = `Domain ${window.location.hostname} is not yet authorized in Firebase Console. Please sign in with email and password below.`;
       }
       setError(msg);
       return { success: false, error: msg };

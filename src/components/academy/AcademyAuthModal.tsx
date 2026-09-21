@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { useAuth } from '../../context/AuthContext.tsx';
 import { 
   X, 
@@ -144,23 +145,24 @@ export function AcademyAuthModal({ isOpen, onClose, onSuccess }: AcademyAuthModa
     }
   };
 
-  return (
+  return createPortal(
     <div 
-      className="fixed inset-0 z-[100] overflow-y-auto bg-slate-950/80 backdrop-blur-md animate-in fade-in duration-200"
+      id="academy-auth-modal"
+      className="fixed inset-0 z-[99999] overflow-y-auto bg-slate-950/85 backdrop-blur-md animate-in fade-in duration-200 flex items-center justify-center p-4 sm:p-6 text-center"
+      style={{ zIndex: 99999 }}
       onClick={onClose}
     >
-      <div className="min-h-full flex items-center justify-center p-4 sm:p-6 text-center">
-        {/* Click-outside backdrop layer */}
-        <div 
-          className="fixed inset-0 -z-10" 
-          onClick={onClose} 
-          aria-hidden="true" 
-        />
+      {/* Click-outside backdrop layer */}
+      <div 
+        className="fixed inset-0 -z-10" 
+        onClick={onClose} 
+        aria-hidden="true" 
+      />
 
-        <div 
-          className="relative w-full max-w-md my-auto bg-slate-900/95 backdrop-blur-2xl border border-slate-800/80 rounded-3xl p-6 sm:p-8 shadow-2xl text-left z-10 max-h-[92vh] overflow-y-auto"
-          onClick={(e) => e.stopPropagation()}
-        >
+      <div 
+        className="relative w-full max-w-md my-auto bg-slate-900/98 backdrop-blur-2xl border border-slate-800/90 rounded-3xl p-6 sm:p-8 shadow-2xl text-left z-10 max-h-[92vh] overflow-y-auto"
+        onClick={(e) => e.stopPropagation()}
+      >
         {/* Close Button */}
         <button
           type="button"
@@ -444,7 +446,7 @@ export function AcademyAuthModal({ isOpen, onClose, onSuccess }: AcademyAuthModa
           </>
         )}
       </div>
-      </div>
-    </div>
+    </div>,
+    document.body
   );
 }

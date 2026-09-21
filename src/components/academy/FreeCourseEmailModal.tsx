@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'motion/react';
 import { Mail, CheckCircle2, ArrowRight, ShieldCheck, Bookmark, User, KeyRound, Sparkles, X } from 'lucide-react';
 
@@ -78,9 +79,10 @@ export const FreeCourseEmailModal: React.FC<FreeCourseEmailModalProps> = ({
     onClose();
   };
 
-  return (
+  return createPortal(
     <div 
-      className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 overflow-y-auto bg-slate-950/70 backdrop-blur-sm"
+      className="fixed inset-0 z-[99999] flex items-center justify-center p-4 sm:p-6 overflow-y-auto bg-slate-950/75 backdrop-blur-sm"
+      style={{ zIndex: 99999 }}
       onClick={handleSkip}
     >
       <div className="fixed inset-0 -z-10" onClick={handleSkip} aria-hidden="true" />
@@ -203,6 +205,7 @@ export const FreeCourseEmailModal: React.FC<FreeCourseEmailModalProps> = ({
           )}
         </div>
       </motion.div>
-    </div>
+    </div>,
+    document.body
   );
 };

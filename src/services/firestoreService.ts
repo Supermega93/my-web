@@ -52,6 +52,12 @@ export async function syncUserProfileToFirestore(
   userId: string,
   profileData: Partial<FirestoreUserProfile> & { email: string }
 ): Promise<FirestoreUserProfile> {
+  // Guard photoURL length to ensure rules compliance
+  let cleanPhotoURL = profileData.photoURL || '';
+  if (cleanPhotoURL.length > 1000) {
+    cleanPhotoURL = cleanPhotoURL.substring(0, 1000);
+  }
+
   const fallbackProfile: FirestoreUserProfile = {
     id: userId,
     name: profileData.name || profileData.email.split('@')[0] || 'Trader',
@@ -59,7 +65,7 @@ export async function syncUserProfileToFirestore(
     role: profileData.role || 'customer',
     access_status: profileData.access_status || 'free',
     can_access_masterclass: profileData.can_access_masterclass || false,
-    photoURL: profileData.photoURL || '',
+    photoURL: cleanPhotoURL,
     phone: profileData.phone || null,
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString(),
@@ -82,6 +88,7 @@ export async function syncUserProfileToFirestore(
       finalProfile = {
         ...existingData,
         ...profileData,
+        photoURL: cleanPhotoURL,
         id: userId,
         updatedAt: now,
       };
@@ -90,7 +97,7 @@ export async function syncUserProfileToFirestore(
         role: finalProfile.role,
         access_status: finalProfile.access_status,
         can_access_masterclass: finalProfile.can_access_masterclass,
-        photoURL: finalProfile.photoURL || '',
+        photoURL: cleanPhotoURL,
         updatedAt: now,
       });
     } else {
@@ -104,7 +111,8 @@ export async function syncUserProfileToFirestore(
 
     return finalProfile;
   } catch (error) {
-    handleFirestoreError(error, OperationType.WRITE, path);
+    console.warn('[Firestore] Profile sync warning (recovering with local profile):', error);
+    return fallbackProfile;
   }
 }
 

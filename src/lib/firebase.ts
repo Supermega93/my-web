@@ -1,5 +1,5 @@
 import { initializeApp, getApps, getApp } from 'firebase/app';
-import { getAuth, GoogleAuthProvider, signInWithPopup, signOut as fbSignOut, onAuthStateChanged, User as FirebaseUser } from 'firebase/auth';
+import { getAuth, GoogleAuthProvider, signInWithPopup, signInWithCredential, signOut as fbSignOut, onAuthStateChanged, User as FirebaseUser } from 'firebase/auth';
 import { getFirestore, doc, getDocFromServer } from 'firebase/firestore';
 import firebaseConfig from '../../firebase-applet-config.json';
 
@@ -15,8 +15,10 @@ export const googleAuthProvider = new GoogleAuthProvider();
 googleAuthProvider.setCustomParameters({
   prompt: 'select_account'
 });
+googleAuthProvider.addScope('email');
+googleAuthProvider.addScope('profile');
 
-export { signInWithPopup, fbSignOut, onAuthStateChanged };
+export { signInWithPopup, signInWithCredential, GoogleAuthProvider, fbSignOut, onAuthStateChanged };
 export type { FirebaseUser };
 export enum OperationType {
   CREATE = 'create',
