@@ -12,10 +12,12 @@ export interface EbookRequestResponse {
   error?: string;
   code?: string;
   leadId?: string;
+  emailDispatched?: boolean;
   emailDelivery?: {
     status: string;
     provider?: string;
     id?: string;
+    error?: string;
   };
 }
 
@@ -42,37 +44,28 @@ export async function requestFreeEbookDownload(email: string, name?: string): Pr
 
     clearTimeout(timeoutId);
 
-    // Parse JSON response safely
-    let data: any = null;
-    const text = await res.text();
-    if (text && text.trim().length > 0) {
-      try {
-        data = JSON.parse(text);
-      } catch (parseErr) {
-        console.error('[EbookService] JSON parsing error from response body:', text, parseErr);
-        return {
-          success: false,
-          error: 'Received an invalid or malformed response from the email server.',
-          code: 'INVALID_JSON_RESPONSE',
-        };
-      }
-    } else {
+    // Safely process JSON response using response.json()
+    let data: any;
+    try {
+      data = await res.json();
+    } catch (parseError: any) {
+      console.error('[EbookService] Failed to parse JSON response from server:', parseError);
       return {
         success: false,
-        error: `Server returned an empty response (HTTP ${res.status}).`,
-        code: 'EMPTY_RESPONSE',
+        error: `Email delivery server returned an unexpected response (HTTP ${res.status}).`,
+        code: 'INVALID_JSON_RESPONSE',
       };
     }
 
-    if (res.ok && data && data.success) {
+    if (res.ok && data?.success) {
       return {
         success: true,
-        message: data.message,
+        message: data.message || 'Ebook email sent successfully',
         downloadUrl: data.downloadUrl,
         expiresAt: data.expiresAt,
         validitySeconds: data.validitySeconds || 900,
         leadId: data.leadId,
-        emailDelivery: data.emailDelivery,
+        emailDispatched: true,
       };
     }
 
@@ -81,6 +74,7 @@ export async function requestFreeEbookDownload(email: string, name?: string): Pr
       error: data?.error || `Email delivery could not be completed (HTTP ${res.status}).`,
       code: data?.code || 'DELIVERY_FAILED',
       leadId: data?.leadId,
+      emailDispatched: false,
     };
   } catch (err: any) {
     clearTimeout(timeoutId);

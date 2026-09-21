@@ -27,6 +27,11 @@ import {
   processEmailLead,
   getProtectedPdfPath,
 } from './server/ebookProtection.ts';
+import {
+  sendFreeEbookWithResend,
+  checkResendConfig,
+  ORIGINAL_EBOOK_STORAGE_URL,
+} from './server/resendEbookDelivery.ts';
 
 const SUPABASE_URL = process.env.VITE_SUPABASE_URL || 'https://xbrhalmcvpxutxojemoj.supabase.co';
 const SUPABASE_ANON_KEY = process.env.VITE_SUPABASE_ANON_KEY || 'sb_publishable_7UqK_UbkxtEDg_i_drYesw_9pdbJS0c';
@@ -1953,73 +1958,94 @@ app.post('/api/strategy/interpret-ai', async (req, res) => {
 /**
  * POST /api/ebooks/request-free-download
  * Validates the email, records the email lead in database and Supabase,
- * and generates a time-limited signed download token (valid 15 minutes).
+ * and delivers the free eBook via Resend.
  */
 app.post('/api/ebooks/request-free-download', async (req, res) => {
+  // Always enforce valid application/json response header
+  res.setHeader('Content-Type', 'application/json; charset=utf-8');
+
   try {
     const { email, name } = req.body || {};
-    if (!email || !isValidEmail(email)) {
+    const cleanEmail = (email || '').trim().toLowerCase();
+    const displayName = (name || '').trim() || 'Trader';
+
+    // 1. Backend validates email
+    if (!cleanEmail || !isValidEmail(cleanEmail)) {
       return res.status(400).json({
         success: false,
         error: 'A valid email address is required to receive the free eBook.',
-        code: 'INVALID_EMAIL',
       });
     }
 
-    // Generate cryptographic HMAC-SHA256 signed token (valid for 15 minutes = 900 seconds)
+    // 2. Generate cryptographic HMAC-SHA256 signed token (valid for 15 minutes = 900 seconds)
     const validitySeconds = 900;
-    const { token, expiresAt } = generateSignedToken(email, 'free_lead_magnet_traders_guide', validitySeconds);
+    const { token, expiresAt } = generateSignedToken(cleanEmail, 'free_lead_magnet_traders_guide', validitySeconds);
     const downloadUrl = `/api/ebooks/download?token=${token}`;
+    const leadId = `lead_ebook_${Date.now()}_${Math.random().toString(36).substring(2, 8)}`;
 
-    // Construct full absolute download URL for email delivery (using production domain if configured)
-    const productionDomain = (process.env.PRODUCTION_DOMAIN || process.env.APP_DOMAIN || process.env.APP_URL || `${req.protocol}://${req.get('host')}`).replace(/\/$/, '');
-    const fullDownloadUrl = `${productionDomain}${downloadUrl}`;
+    console.log(`[Ebook Request] Received download request for ${cleanEmail} (${displayName})`);
 
-    console.log(`[Ebook Request] Received download request for ${email} (${name || 'Anonymous'})`);
+    // 3. Backend records lead in existing database & Supabase structure
+    try {
+      dbQueries.recordEmailLead({
+        id: leadId,
+        email: cleanEmail,
+        name: name || null,
+        source: 'free_ebook_email_gate',
+        bookId: 'free_lead_magnet_traders_guide',
+      });
+      console.log(`[Ebook Request] Recorded lead in SQLite (ID: ${leadId})`);
+    } catch (dbErr) {
+      console.error('[Ebook Request] SQLite lead record note:', dbErr);
+    }
 
-    // Await lead recording and email dispatch before reporting success
-    const leadResult = await processEmailLead(email, name, fullDownloadUrl);
+    // Supabase dual-sync (non-blocking)
+    try {
+      const supabaseAnon = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+      void Promise.resolve(supabaseAnon.from('email_leads').insert([
+        {
+          id: leadId,
+          email: cleanEmail,
+          name: name || null,
+          source: 'free_ebook_download',
+          book_id: "The Trader's Guide to Understanding Strategy Automation",
+          created_at: new Date().toISOString(),
+        },
+      ])).catch(() => {});
+    } catch (_) {}
 
-    console.log(`[Ebook Request] Result for ${email}:`, {
-      leadId: leadResult.leadId,
-      emailDispatched: leadResult.emailDispatched,
-      emailStatus: leadResult.emailStatus,
-      emailProvider: leadResult.emailProvider,
-      emailId: leadResult.emailId,
-      emailError: leadResult.emailError,
+    // 4. Backend calls RESEND as dedicated transactional email service
+    const resendResult = await sendFreeEbookWithResend({
+      email: cleanEmail,
+      name: displayName,
+      customDownloadUrl: ORIGINAL_EBOOK_STORAGE_URL,
     });
 
-    if (!leadResult.emailDispatched) {
-      // The email provider rejected or was unable to deliver the email
-      return res.status(422).json({
+    // 5. Check if Resend accepted or rejected
+    if (!resendResult.success) {
+      console.error(`[Ebook Request] Resend delivery failed for ${cleanEmail}:`, resendResult.error);
+      return res.status(resendResult.statusCode || 422).json({
         success: false,
-        error: leadResult.emailError || 'Email provider could not complete delivery. Please verify the recipient address or provider credentials.',
-        code: 'EMAIL_DELIVERY_FAILED',
-        leadId: leadResult.leadId,
-        provider: leadResult.emailProvider,
-        downloadUrl,
+        error: resendResult.error || 'Failed to dispatch free eBook email via Resend.',
       });
     }
 
+    // 6. Resend accepted the email -> return valid JSON success
+    console.log(`[Ebook Request] Resend confirmed email acceptance for ${cleanEmail} (ID: ${resendResult.messageId})`);
     return res.status(200).json({
       success: true,
-      message: `Your copy of 'The Trader\'s Guide to Understanding Strategy Automation' has been dispatched to ${email}.`,
+      message: 'Ebook email sent successfully',
       downloadUrl,
       expiresAt,
       validitySeconds,
-      leadId: leadResult.leadId,
-      emailDelivery: {
-        status: leadResult.emailStatus,
-        provider: leadResult.emailProvider,
-        id: leadResult.emailId,
-      },
+      leadId,
+      messageId: resendResult.messageId,
     });
   } catch (err: any) {
     console.error('Error in /api/ebooks/request-free-download:', err);
     return res.status(500).json({
       success: false,
       error: err.message || 'Failed to process download request. Please try again.',
-      code: 'SERVER_ERROR',
     });
   }
 });

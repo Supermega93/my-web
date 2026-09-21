@@ -21,6 +21,11 @@ export function EbookEmailGateModal({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
   const [signedDownloadUrl, setSignedDownloadUrl] = useState<string | null>(null);
+  const [emailStatusInfo, setEmailStatusInfo] = useState<{
+    dispatched: boolean;
+    provider?: string;
+    message?: string;
+  } | null>(null);
 
   if (!isOpen) return null;
 
@@ -30,6 +35,7 @@ export function EbookEmailGateModal({
       setName('');
       setErrorMessage('');
       setSignedDownloadUrl(null);
+      setEmailStatusInfo(null);
       onClose();
     }
   };
@@ -49,6 +55,11 @@ export function EbookEmailGateModal({
       const response = await requestFreeEbookDownload(cleanEmail, name);
       if (response.success && response.downloadUrl) {
         setSignedDownloadUrl(response.downloadUrl);
+        setEmailStatusInfo({
+          dispatched: !!response.emailDispatched,
+          provider: response.emailDelivery?.provider,
+          message: response.message,
+        });
 
         // Fire celebration confetti
         try {
@@ -72,7 +83,7 @@ export function EbookEmailGateModal({
         tempLink.click();
         document.body.removeChild(tempLink);
       } else {
-        setErrorMessage(response.error || 'Failed to dispatch eBook email. Please check your email address and try again.');
+        setErrorMessage(response.error || 'Failed to process request. Please check your email address and try again.');
       }
     } catch (err: any) {
       setErrorMessage(err?.message || 'An unexpected error occurred while communicating with the server. Please try again.');
@@ -227,9 +238,27 @@ export function EbookEmailGateModal({
                     Your eBook Is Ready!
                   </h3>
                   <p className="text-sm text-slate-600 max-w-sm mx-auto">
-                    Your authorized download for <span className="font-semibold text-slate-800">{email}</span> has been unlocked.
+                    Your authorized download for <span className="font-semibold text-slate-800">{email}</span> has been unlocked and downloaded.
                   </p>
                 </div>
+
+                {emailStatusInfo && (
+                  <div className={`p-3.5 rounded-xl text-xs text-left ${emailStatusInfo.dispatched ? 'bg-emerald-50 border border-emerald-200 text-emerald-800' : 'bg-amber-50 border border-amber-200 text-amber-900'}`}>
+                    <div className="flex items-start gap-2">
+                      <Mail className="w-4 h-4 shrink-0 mt-0.5 text-emerald-700" />
+                      <div>
+                        <p className="font-semibold">
+                          {emailStatusInfo.dispatched 
+                            ? 'Email Dispatched with PDF Attachment' 
+                            : 'Direct Download Unlocked & Lead Recorded'}
+                        </p>
+                        <p className="text-[11px] mt-0.5 opacity-90 leading-relaxed">
+                          {emailStatusInfo.message || (emailStatusInfo.dispatched ? `A copy was sent to ${email}.` : 'Your file download started automatically below.')}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                )}
 
                 <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200/80 space-y-3">
                   <div className="flex items-center justify-center gap-2 text-xs font-mono text-slate-600">
