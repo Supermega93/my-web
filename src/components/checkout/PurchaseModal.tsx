@@ -23,6 +23,14 @@ interface PurchaseModalProps {
   isOpen: boolean;
   onClose: () => void;
   product: Product | null;
+  tier?: {
+    id: string;
+    name: string;
+    price: number;
+    currency?: string;
+    displayPrice?: string;
+    tagline?: string;
+  } | null;
   onPurchaseSuccess?: () => void;
   verifiedResult?: {
     order?: any;
@@ -37,6 +45,7 @@ export function PurchaseModal({
   isOpen,
   onClose,
   product,
+  tier,
   onPurchaseSuccess,
   verifiedResult,
 }: PurchaseModalProps) {
@@ -48,6 +57,7 @@ export function PurchaseModal({
   const [loading, setLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [copiedKey, setCopiedKey] = useState(false);
+  const [pendingRedirectUrl, setPendingRedirectUrl] = useState<string | null>(null);
 
   // Sync user defaults when modal opens
   useEffect(() => {
@@ -56,6 +66,7 @@ export function PurchaseModal({
       if (user?.email && !customerEmail) setCustomerEmail(user.email);
       setErrorMessage(null);
       setLoading(false);
+      setPendingRedirectUrl(null);
     }
   }, [isOpen, user]);
 
@@ -67,15 +78,16 @@ export function PurchaseModal({
 
   const isEa = activeProduct?.type === 'ea';
   const isEbook = activeProduct?.type === 'ebook' || activeProduct?.id?.startsWith('prod_ebook_');
-  const isMasterclass = activeProduct?.id?.startsWith('masterclass');
+  const isMasterclass = activeProduct?.id?.startsWith('masterclass') || activeProduct?.id === 'bundle' || activeProduct?.id === 'premium';
 
-  // Exchange rate & ZAR calculation
+  // Dynamic pricing with tier override
   const zarRate = 18.25;
-  const basePriceUsd = activeProduct?.price || 89;
-  const zarAmount = activeProduct?.currency === 'ZAR' 
-    ? activeProduct.price 
+  const basePriceUsd = tier?.price ?? activeProduct?.price ?? 89;
+  const zarAmount = (tier?.currency || activeProduct?.currency) === 'ZAR' 
+    ? basePriceUsd 
     : Math.round(basePriceUsd * zarRate * 100) / 100;
   const formattedZar = zarAmount.toLocaleString('en-ZA', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  const displayProductName = tier?.name ? `${activeProduct?.name} — ${tier.name}` : (activeProduct?.name || 'Digital Trading Asset');
 
   const handleCopyLicense = (keyText: string) => {
     navigator.clipboard.writeText(keyText);
@@ -103,11 +115,12 @@ export function PurchaseModal({
         productId: activeProduct!.id,
         customerEmail: customerEmail.trim(),
         customerName: customerName.trim() || 'Trader Customer',
-        tierName: activeProduct!.name,
+        tierName: tier?.name || activeProduct!.name,
         amountInCents
       });
 
       if (res.success && res.redirectUrl) {
+        setPendingRedirectUrl(res.redirectUrl);
         // Seamless handoff to Yoco Hosted Payment Page
         window.location.href = res.redirectUrl;
       } else {
@@ -269,14 +282,35 @@ export function PurchaseModal({
       isOpen={isOpen}
       onClose={onClose}
       maxWidth="md"
-      title={`Purchase ${activeProduct?.name || 'Product'}`}
-      subtitle={activeProduct?.short_description || activeProduct?.description || 'Complete your purchase securely via Yoco'}
+      title={`Purchase ${displayProductName}`}
+      subtitle={tier?.tagline || activeProduct?.short_description || activeProduct?.description || 'Complete your purchase securely via Yoco'}
     >
       <form onSubmit={handleContinueToYoco} className="space-y-4 p-1">
         {errorMessage && (
           <div className="p-3 rounded-xl bg-rose-950/50 border border-rose-500/40 flex items-start gap-2.5 text-xs text-rose-300">
             <AlertCircle className="w-4 h-4 shrink-0 text-rose-400 mt-0.5" />
             <span>{errorMessage}</span>
+          </div>
+        )}
+
+        {pendingRedirectUrl && (
+          <div className="p-3.5 rounded-xl bg-sky-950/60 border border-sky-500/40 space-y-2 text-xs">
+            <div className="flex items-center gap-2 text-sky-300 font-semibold">
+              <div className="w-3.5 h-3.5 border-2 border-sky-400 border-t-transparent rounded-full animate-spin shrink-0" />
+              <span>Redirecting to Yoco Hosted Checkout...</span>
+            </div>
+            <p className="text-slate-300 text-[11px]">
+              If your browser or pop-up blocker prevents automatic redirect, please click the button below:
+            </p>
+            <a
+              href={pendingRedirectUrl}
+              target="_top"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-sky-500 hover:bg-sky-400 text-slate-950 font-bold text-xs transition-colors"
+            >
+              <span>Open Yoco Payment Page</span>
+              <ExternalLink className="w-3 h-3" />
+            </a>
           </div>
         )}
 
@@ -291,12 +325,16 @@ export function PurchaseModal({
           <div className="flex items-start justify-between gap-4 pt-1">
             <div>
               <div className="text-sm font-bold text-slate-100 leading-snug">
-                {activeProduct?.name}
+                {displayProductName}
               </div>
               <div className="text-[11px] text-slate-400 mt-0.5">
-                {isEbook && 'Complete 71-Page Digital Course Book (PDF Edition)'}
-                {isEa && 'Terminal License + Continuous Logic Updates'}
-                {isMasterclass && 'Complete Academy Access + Levels 4–8 Curriculum'}
+                {tier?.tagline || (
+                  <>
+                    {isEbook && 'Complete 71-Page Digital Course Book (PDF Edition)'}
+                    {isEa && 'Terminal License + Continuous Logic Updates'}
+                    {isMasterclass && 'Complete Academy Access + Levels 4–8 Curriculum'}
+                  </>
+                )}
               </div>
             </div>
             

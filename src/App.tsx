@@ -63,6 +63,7 @@ function AppContent() {
   const [authMode, setAuthMode] = useState<'login' | 'register'>('login');
   const [isPurchaseOpen, setIsPurchaseOpen] = useState(false);
   const [purchaseProduct, setPurchaseProduct] = useState<Product | null>(null);
+  const [selectedTier, setSelectedTier] = useState<any>(null);
   const [isCustomEaModalOpen, setIsCustomEaModalOpen] = useState(false);
   const [customEaPrefill, setCustomEaPrefill] = useState<any>(null);
 
@@ -259,8 +260,9 @@ function AppContent() {
     setIsCustomEaModalOpen(true);
   };
 
-  const handleBuyNow = (product: Product) => {
+  const handleBuyNow = (product: Product, tier?: any) => {
     setPurchaseProduct(product);
+    setSelectedTier(tier || null);
     setIsPurchaseOpen(true);
   };
 
@@ -359,6 +361,8 @@ function AppContent() {
         {currentView === 'academy-pricing' && (
           <AcademyPricingPage
             onNavigate={handleNavigate}
+            onOpenAuth={openAuth}
+            onBuyNow={handleBuyNow}
           />
         )}
 
@@ -552,9 +556,11 @@ function AppContent() {
         isOpen={isPurchaseOpen}
         onClose={() => {
           setIsPurchaseOpen(false);
+          setSelectedTier(null);
           setYocoVerifiedResult(null);
         }}
         product={purchaseProduct}
+        tier={selectedTier}
         verifiedResult={yocoVerifiedResult}
         onPurchaseSuccess={handlePurchaseSuccess}
       />

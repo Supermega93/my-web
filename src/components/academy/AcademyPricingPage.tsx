@@ -32,18 +32,13 @@ import { ExternalLink } from 'lucide-react';
 interface AcademyPricingPageProps {
   onNavigate: (view: ActiveView, extraId?: string) => void;
   onOpenAuth?: (tab?: 'login' | 'register') => void;
+  onBuyNow?: (product: any, tier?: any) => void;
 }
 
-export function AcademyPricingPage({ onNavigate, onOpenAuth }: AcademyPricingPageProps) {
+export function AcademyPricingPage({ onNavigate, onOpenAuth, onBuyNow }: AcademyPricingPageProps) {
   const { currentCurrency, formatPrice, convertAmount } = useCurrency();
   const { user, isAdmin, isEmailVerified, sendMasterclassVerification } = useAuth();
   const [selectedTierId, setSelectedTierId] = useState<string>('masterclass-ea');
-  const [checkoutModalOpen, setCheckoutModalOpen] = useState(false);
-  const [paymentGateway, setPaymentGateway] = useState<'yoco' | 'card'>('yoco');
-  const [enrolledSuccess, setEnrolledSuccess] = useState(false);
-  const [loading, setLoading] = useState(false);
-  const [verificationSending, setVerificationSending] = useState(false);
-  const [verificationFeedback, setVerificationFeedback] = useState<string | null>(null);
   const [currentStudentTier, setCurrentStudentTier] = useState<StudentTier>(() => getActiveStudentTier(user, isAdmin));
 
   // The 3 Required Masterclass Pricing Packages
@@ -126,53 +121,29 @@ export function AcademyPricingPage({ onNavigate, onOpenAuth }: AcademyPricingPag
 
   const handleSelectPackage = (pkg: typeof packages[0]) => {
     setSelectedTierId(pkg.id);
-    setVerificationFeedback(null);
-    setCheckoutModalOpen(true);
-  };
-
-  const handleSendVerification = async () => {
-    setVerificationSending(true);
-    setVerificationFeedback(null);
-    try {
-      const res = await sendMasterclassVerification();
-      if (res.success) {
-        setVerificationFeedback(res.message || 'Verification link sent! Please check your inbox.');
-      } else {
-        setVerificationFeedback(res.error || 'Failed to send verification email.');
-      }
-    } catch (err: any) {
-      setVerificationFeedback(err.message || 'Failed to send verification email.');
-    } finally {
-      setVerificationSending(false);
-    }
-  };
-
-  const handleContinueToYoco = async () => {
-    try {
-      setLoading(true);
-      const zarTotal = Math.round(activeSelectedPackage.usdPrice * 18.25);
-      const amountInCents = zarTotal * 100;
-      const res = await api.createYocoCheckout({
-        productId: activeSelectedPackage.id,
-        customerEmail: user?.email || 'student@academy.com',
-        customerName: user?.name || 'Academy Student',
-        tierName: activeSelectedPackage.name,
-        amountInCents
+    if (onBuyNow) {
+      const productObj = {
+        id: pkg.id,
+        name: pkg.name,
+        type: 'service' as const,
+        price: pkg.usdPrice,
+        currency: 'USD',
+        short_description: pkg.tagline,
+        description: pkg.features.join('. '),
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+        active: 1
+      };
+      onBuyNow(productObj, {
+        id: pkg.id,
+        name: pkg.name,
+        price: pkg.usdPrice,
+        currency: 'USD',
+        displayPrice: pkg.displayPrice,
+        tagline: pkg.tagline
       });
-
-      if (res.success && res.redirectUrl) {
-        window.location.href = res.redirectUrl;
-      } else {
-        alert(res.error || 'Failed to initiate Yoco checkout session.');
-        setLoading(false);
-      }
-    } catch (err: any) {
-      console.error('[Yoco Academy Checkout Error]:', err);
-      alert(err.message || 'Unable to connect to Yoco payment gateway.');
-      setLoading(false);
     }
   };
-
 
   return (
     <div className="min-h-screen bg-slate-50 text-slate-900 font-sans selection:bg-emerald-500/20 selection:text-emerald-900">
@@ -410,185 +381,6 @@ export function AcademyPricingPage({ onNavigate, onOpenAuth }: AcademyPricingPag
           </div>
         </div>
       </main>
-
-      {/* Checkout / Enrollment Confirmation Modal */}
-      {checkoutModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/40 backdrop-blur-md">
-          <div className="w-full max-w-md bg-white rounded-3xl p-6 sm:p-8 border border-slate-200/90 shadow-2xl space-y-6 text-slate-900 animate-in fade-in zoom-in-95 duration-200">
-            {enrolledSuccess ? (
-              <div className="text-center py-8 space-y-3">
-                <div className="w-16 h-16 rounded-full bg-emerald-50 text-emerald-600 flex items-center justify-center mx-auto mb-2 border border-emerald-200">
-                  <CheckCircle2 className="w-10 h-10" />
-                </div>
-                <h3 className="text-2xl font-bold text-slate-900">Welcome to Masterclass!</h3>
-                <p className="text-xs text-slate-600">
-                  Your account has been upgraded to Paid Tier. Redirecting you to Level 4...
-                </p>
-              </div>
-            ) : (
-              <>
-                <div className="flex items-start justify-between border-b border-slate-100 pb-4">
-                  <div>
-                    <span className="text-[10px] font-mono uppercase tracking-wider text-emerald-700 font-bold bg-emerald-50 px-2 py-0.5 rounded">
-                      Enrollment Checkout
-                    </span>
-                    <h3 className="text-xl font-bold text-slate-900 mt-1">
-                      {activeSelectedPackage.name}
-                    </h3>
-                  </div>
-                  <button
-                    onClick={() => setCheckoutModalOpen(false)}
-                    className="text-slate-400 hover:text-slate-700 text-lg p-1"
-                  >
-                    ✕
-                  </button>
-                </div>
-
-                <div className="p-4 bg-slate-50 border border-slate-200 rounded-2xl space-y-2 text-xs">
-                  <div className="flex justify-between items-center">
-                    <span className="text-slate-600 font-medium">Selected Package:</span>
-                    <span className="font-bold text-slate-900">{activeSelectedPackage.name}</span>
-                  </div>
-                  <div className="flex justify-between items-center">
-                    <span className="text-slate-600 font-medium">Total Amount:</span>
-                    <div className="text-right">
-                      <span className="font-bold text-slate-900 font-mono text-base">{activeSelectedPackage.displayPrice}</span>
-                      {currentCurrency.code !== 'USD' && (
-                        <span className="text-[10px] text-slate-500 font-mono block">Base: ${activeSelectedPackage.usdPrice.toFixed(2)} USD</span>
-                      )}
-                    </div>
-                  </div>
-                  <div className="flex justify-between items-center">
-                    <span className="text-slate-600 font-medium">Access Period:</span>
-                    <span className="text-emerald-700 font-semibold font-mono">Lifetime Curriculum Access</span>
-                  </div>
-                </div>
-
-                <div className="space-y-3">
-                  <span className="text-[11px] font-mono uppercase tracking-wider text-slate-500 font-semibold block">
-                    Account Status & Enrollment Verification:
-                  </span>
-                  {user ? (
-                    <div className="space-y-2">
-                      <div className="p-3 bg-emerald-50/50 border border-emerald-200 rounded-xl text-xs flex items-center justify-between">
-                        <span className="text-slate-700 font-medium">{user.email}</span>
-                        <span className="text-[10px] font-mono text-emerald-800 font-bold">LOGGED IN ✓</span>
-                      </div>
-
-                      {/* If user is not yet verified and not admin, require verification for Masterclass */}
-                      {!isEmailVerified && !isAdmin && (
-                        <div className="p-3 bg-amber-50/80 border border-amber-300 rounded-xl text-xs space-y-2.5">
-                          <div className="flex items-center justify-between">
-                            <span className="font-semibold text-amber-950 flex items-center gap-1.5">
-                              <ShieldAlert className="w-3.5 h-3.5 text-amber-600" />
-                              Masterclass Email Confirmation Required
-                            </span>
-                            <span className="text-[9px] font-mono uppercase bg-amber-200 text-amber-900 px-2 py-0.5 rounded-full font-bold">
-                              Certification Security
-                            </span>
-                          </div>
-                          <p className="text-amber-900 text-[11px] leading-relaxed">
-                            To ensure your official Strategy Architect Certificate and MQL5 automated bot presets are issued to a verified student, please confirm your email address.
-                          </p>
-
-                          {verificationFeedback && (
-                            <div className="p-2 rounded-lg bg-emerald-100/80 text-emerald-900 text-[11px] font-medium flex items-center gap-1.5">
-                              <CheckCircle2 className="w-3.5 h-3.5 text-emerald-700 shrink-0" />
-                              <span>{verificationFeedback}</span>
-                            </div>
-                          )}
-
-                          <div className="flex items-center gap-2 pt-1">
-                            <button
-                              type="button"
-                              onClick={handleSendVerification}
-                              disabled={verificationSending}
-                              className="px-3 py-1.5 rounded-lg bg-amber-600 hover:bg-amber-700 disabled:opacity-50 text-white font-medium text-xs flex items-center gap-1.5 shadow-xs cursor-pointer transition-colors"
-                            >
-                              <Send className="w-3 h-3" />
-                              {verificationSending ? 'Sending...' : 'Send Verification Link'}
-                            </button>
-                            <span className="text-[10px] text-amber-800">
-                              (Sent to {user.email})
-                            </span>
-                          </div>
-                        </div>
-                      )}
-                    </div>
-                  ) : (
-                    <div className="p-3 bg-amber-50 border border-amber-200 rounded-xl text-xs space-y-2">
-                      <p className="text-amber-900">
-                        You are currently browsing as a guest. Please sign in or register to verify your account and receive your course certificate.
-                      </p>
-                      {onOpenAuth && (
-                        <button
-                          onClick={() => {
-                            setCheckoutModalOpen(false);
-                            onOpenAuth('login');
-                          }}
-                          className="text-emerald-700 hover:text-emerald-800 font-bold underline cursor-pointer"
-                        >
-                          Sign In / Register First →
-                        </button>
-                      )}
-                    </div>
-                  )}
-                </div>
-
-                {/* Payment Section (Powered by Yoco) */}
-                <div className="p-4 rounded-2xl bg-sky-50 border border-sky-200 space-y-2.5">
-                  <div className="flex items-center justify-between">
-                    <span className="font-semibold text-sky-900 font-mono text-[11px] uppercase tracking-wide flex items-center gap-1.5">
-                      <Lock className="w-3.5 h-3.5 text-sky-600" />
-                      <span>Payment Provider</span>
-                    </span>
-                    <span className="text-[10px] text-sky-700 font-medium">🇿🇦 South Africa Ready</span>
-                  </div>
-                  <div className="text-xs text-slate-600 leading-relaxed">
-                    Your payment will be completed securely on Yoco&apos;s hosted payment page. No card details are collected on this website.
-                  </div>
-                </div>
-
-                <div className="pt-2 flex flex-col gap-2">
-                  <Button
-                    variant="primary"
-                    size="lg"
-                    fullWidth
-                    disabled={loading}
-                    onClick={handleContinueToYoco}
-                    className="font-bold bg-sky-600 hover:bg-sky-500 text-white shadow-md flex items-center justify-center gap-2 cursor-pointer"
-                  >
-                    {loading ? (
-                      <span>Redirecting to Yoco...</span>
-                    ) : (
-                      <>
-                        <Lock className="w-4 h-4" />
-                        <span>Continue to Yoco ({activeSelectedPackage.displayPrice} · R {Math.round(activeSelectedPackage.usdPrice * 18.25).toLocaleString('en-ZA')} ZAR)</span>
-                        <ExternalLink className="w-4 h-4 opacity-80" />
-                      </>
-                    )}
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    fullWidth
-                    disabled={loading}
-                    onClick={() => setCheckoutModalOpen(false)}
-                    className="text-slate-500 hover:text-slate-700 cursor-pointer"
-                  >
-                    Cancel
-                  </Button>
-                </div>
-
-
-                <div className="text-[11px] text-slate-400 text-center font-mono">
-                  🔒 Secure transaction • 100% Satisfaction Guarantee
-                </div>
-              </>
-            )}
-          </div>
-        </div>
-      )}
     </div>
   );
 }

@@ -1062,7 +1062,8 @@ app.get('/api/payments/yoco/config', (req, res) => {
 function resolveCheckoutProduct(productId: string) {
   let product = dbQueries.getProductById(productId) as any;
   if (!product) {
-    if (productId === 'masterclass') {
+    const pid = String(productId || '').toLowerCase().trim();
+    if (pid === 'masterclass') {
       product = {
         id: 'masterclass',
         name: 'Academy Masterclass (Core Curriculum)',
@@ -1071,49 +1072,78 @@ function resolveCheckoutProduct(productId: string) {
         currency: 'USD',
         description: 'Complete mastery of Levels 4 through 8, advanced AI prompt engineering & certification.'
       };
-    } else if (productId === 'masterclass-ea') {
+    } else if (pid === 'masterclass-ea' || pid === 'bundle') {
       product = {
         id: 'masterclass-ea',
         name: 'Masterclass + Adaptive EA Bundle',
         type: 'service',
-        price: 299,
+        price: 199,
         currency: 'USD',
         description: 'Masterclass Curriculum + Full Adaptive Liquidity Pro EA Terminal License.'
       };
-    } else if (productId === 'masterclass-vip') {
+    } else if (pid === 'masterclass-vip' || pid === 'premium' || pid === 'vip') {
       product = {
         id: 'masterclass-vip',
         name: 'Masterclass VIP Strategy Architect',
         type: 'service',
-        price: 599,
+        price: 299,
         currency: 'USD',
         description: '1-on-1 strategy architecture reviews, private Discord master tier & custom EA compilation.'
       };
-    } else if (productId === 'prod_ebook_mql5_guide') {
+    } else if (pid === 'prod_ebook_mql5_guide' || pid === 'prod_ebook_school_ai' || pid === 'school-of-ai' || pid === 'ebook-mql5') {
       product = {
         id: 'prod_ebook_mql5_guide',
         name: 'The School of AI Trading Architecture',
         type: 'ebook',
         price: 89,
         currency: 'USD',
-        description: 'The Complete 71-Page Guide to Building Professional Trading Robots with ChatGPT & Claude.',
+        description: 'A Complete, Zero-Code Course for Building Professional MetaTrader 5 Robots with AI (71-Page PDF Edition).',
         download_url: '/downloads/the-school-of-ai-trading-architecture-vol1.pdf'
+      };
+    } else if (pid === 'prod_ebook_ai_prompt' || pid === 'ai-prompt-handbook' || pid === 'ebook-prompt') {
+      product = {
+        id: 'prod_ebook_ai_prompt',
+        name: 'The AI Prompt Engineering Handbook for Trading Automation (Vol 2)',
+        type: 'ebook',
+        price: 59,
+        currency: 'USD',
+        description: 'Learn how to direct AI models with the precision of a senior software architect. 150+ tested prompts.',
+        download_url: '/downloads/the-school-of-ai-trading-architecture-vol1.pdf'
+      };
+    } else if (pid === 'prod_ea_adaptive_liquidity' || pid === 'ea' || pid === 'adaptive-liquidity-pro') {
+      product = {
+        id: 'prod_ea_adaptive_liquidity',
+        name: 'Adaptive Liquidity Pro V1.0',
+        type: 'ea',
+        price: 199,
+        currency: 'USD',
+        description: 'Professional automated trading system for MetaTrader 5 (MT5).'
+      };
+    } else if (pid === 'prod_service_custom_ea' || pid === 'custom-ea') {
+      product = {
+        id: 'prod_service_custom_ea',
+        name: 'Custom EA Architecture & Development',
+        type: 'service',
+        price: 499,
+        currency: 'USD',
+        description: 'Bespoke MQL5 robot architecture developed to your exact strategy specification.'
       };
     }
   }
   return product;
 }
 
-// 2. Create Yoco Checkout Session (Server-Side)
-app.post('/api/payments/yoco/create-checkout', async (req, res) => {
+// 2. Universal Yoco Checkout Session Creator (Server-Side)
+const handleCreateYocoCheckout = async (req: express.Request, res: express.Response) => {
   try {
+    const body = req.method === 'GET' ? req.query : req.body;
     const {
       productId,
       customerEmail,
       customerName,
       tierName,
       amountInCents: customAmountInCents
-    } = req.body;
+    } = body as any;
 
     if (!productId) {
       return res.status(400).json({ success: false, error: 'Product ID is required for checkout.' });
@@ -1121,15 +1151,16 @@ app.post('/api/payments/yoco/create-checkout', async (req, res) => {
 
     const product = resolveCheckoutProduct(productId);
     if (!product) {
-      return res.status(404).json({ success: false, error: 'Product not found in catalog.' });
+      return res.status(404).json({ success: false, error: `Product '${productId}' not found in catalog.` });
     }
 
     const zarRate = 18.25;
     let zarAmount = product.currency === 'ZAR' ? product.price : Math.round(product.price * zarRate * 100) / 100;
     let amountInCents = Math.round(zarAmount * 100);
 
-    if (typeof customAmountInCents === 'number' && customAmountInCents > 0) {
-      amountInCents = Math.round(customAmountInCents);
+    const parsedCustomCents = Number(customAmountInCents);
+    if (!isNaN(parsedCustomCents) && parsedCustomCents > 0) {
+      amountInCents = Math.round(parsedCustomCents);
       zarAmount = amountInCents / 100;
     }
 
@@ -1146,7 +1177,7 @@ app.post('/api/payments/yoco/create-checkout', async (req, res) => {
     let redirectUrl = `${origin}/yoco-hosted-checkout?checkout_id=${checkoutId}`;
     let remoteCheckoutId = checkoutId;
 
-    // If live/custom Yoco secret key is supplied, invoke official Yoco Checkout API
+    // If live/custom Yoco secret key is supplied, invoke official Yoco Checkout API server-side
     if (secretKey && secretKey.startsWith('sk_') && secretKey !== 'sk_test_placeholder_key') {
       try {
         const yocoRes = await fetch('https://payments.yoco.com/api/checkouts', {
@@ -1214,7 +1245,10 @@ app.post('/api/payments/yoco/create-checkout', async (req, res) => {
     console.error('[Yoco Create Checkout Error]:', err);
     res.status(500).json({ success: false, error: err.message || 'Failed to initiate Yoco checkout session.' });
   }
-});
+};
+
+app.post('/api/payments/yoco/create-checkout', handleCreateYocoCheckout);
+app.get('/api/payments/yoco/create-checkout', handleCreateYocoCheckout);
 
 // 3. Yoco Hosted Checkout Page (Official High-Fidelity Simulator)
 app.get('/yoco-hosted-checkout', (req, res) => {
@@ -1604,7 +1638,7 @@ app.post('/api/payments/yoco/complete-hosted-checkout', express.urlencoded({ ext
 // Helper for idempotent fulfillment of verified Yoco payments
 async function fulfillYocoCheckout(checkout: any) {
   const product = resolveCheckoutProduct(checkout.product_id);
-  const isMasterclass = checkout.product_id.startsWith('masterclass');
+  const isMasterclass = checkout.product_id?.startsWith('masterclass') || checkout.product_id === 'bundle' || checkout.product_id === 'premium' || checkout.product_id === 'vip';
   const isEa = product?.type === 'ea';
 
   // 1. Idempotency Check: If already fulfilled, return existing order record
@@ -1618,7 +1652,7 @@ async function fulfillYocoCheckout(checkout: any) {
       order: existingOrder,
       license: existingLicense,
       downloadUrl: isEa ? null : (product?.download_url || '/downloads/the-school-of-ai-trading-architecture-vol1.pdf'),
-      studentTier: isMasterclass ? (checkout.product_id === 'masterclass-vip' ? 'vip' : 'paid') : null,
+      studentTier: isMasterclass ? ((checkout.product_id === 'masterclass-vip' || checkout.product_id === 'premium' || checkout.product_id === 'vip') ? 'vip' : 'paid') : null,
       product
     };
   }
@@ -1669,7 +1703,7 @@ async function fulfillYocoCheckout(checkout: any) {
   // 5. Entitlement Specifics
   let studentTier = null;
   if (isMasterclass) {
-    studentTier = checkout.product_id === 'masterclass-vip' ? 'vip' : 'paid';
+    studentTier = (checkout.product_id === 'masterclass-vip' || checkout.product_id === 'premium') ? 'vip' : 'paid';
     syncComplimentaryAccessToSupabase({
       id: `acc_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`,
       user_id: userId || 'usr_masterclass',
