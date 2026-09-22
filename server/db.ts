@@ -1005,11 +1005,12 @@ export const dbQueries = {
   },
   getUserAccessStatus(userId: string, email?: string) {
     const cleanEmail = (email || '').toLowerCase().trim();
-    // 1. Check paid orders (by user_id OR user_email)
+    // 1. Check paid orders (by user_id OR joined users.email)
     const paidOrder = db.prepare(`
-      SELECT id, product_id, created_at FROM orders 
-      WHERE (user_id = ? OR (user_email IS NOT NULL AND LOWER(user_email) = ?)) AND payment_status = 'paid'
-      ORDER BY created_at DESC LIMIT 1
+      SELECT o.id, o.product_id, o.created_at FROM orders o
+      LEFT JOIN users u ON o.user_id = u.id
+      WHERE (o.user_id = ? OR (u.email IS NOT NULL AND LOWER(u.email) = ?)) AND o.payment_status = 'paid'
+      ORDER BY o.created_at DESC LIMIT 1
     `).get(userId, cleanEmail || userId) as any;
 
     if (paidOrder) {
@@ -1081,7 +1082,7 @@ export const dbQueries = {
     const users = db.prepare('SELECT id, name, email, phone, role, created_at, updated_at FROM users ORDER BY created_at DESC').all() as any[];
     return users.map((u) => {
       const accessInfo = this.getUserAccessStatus(u.id, u.email);
-      const paidOrders = db.prepare('SELECT COUNT(*) as count FROM orders WHERE user_id = ? AND payment_status = "paid"').get(u.id) as any;
+      const paidOrders = db.prepare("SELECT COUNT(*) as count FROM orders WHERE user_id = ? AND payment_status = 'paid'").get(u.id) as any;
       return {
         ...u,
         access_status: accessInfo.access_status, // 'free' | 'paid' | 'complimentary'
@@ -1675,7 +1676,7 @@ export const dbQueries = {
   getAdminStats() {
     const totalUsers = (db.prepare('SELECT COUNT(*) as count FROM users').get() as { count: number }).count;
     const totalOrders = (db.prepare('SELECT COUNT(*) as count FROM orders').get() as { count: number }).count;
-    const totalRevenueRow = db.prepare('SELECT SUM(amount) as total FROM orders WHERE payment_status = "paid"').get() as { total: number | null };
+    const totalRevenueRow = db.prepare("SELECT SUM(amount) as total FROM orders WHERE payment_status = 'paid'").get() as { total: number | null };
     const totalRevenue = totalRevenueRow.total || 0;
 
     const eaSales = (db.prepare(`

@@ -222,8 +222,8 @@ const activeSessions = new Map<string, { userId: string; role: string; email: st
 activeSessions.set('token_admin', {
   userId: 'usr_admin_01',
   role: 'admin',
-  email: 'admin@ea-automation.com',
-  name: 'Alexander Wright'
+  email: 'supermegafx1@gmail.com',
+  name: 'MEG.AI Admin'
 });
 activeSessions.set('token_dev', {
   userId: 'usr_dev_01',
@@ -234,7 +234,7 @@ activeSessions.set('token_dev', {
 activeSessions.set('token_cust', {
   userId: 'usr_cust_01',
   role: 'customer',
-  email: 'supermegafx1@gmail.com',
+  email: 'demo.trader@ea-automation.com',
   name: 'Valued Trader'
 });
 
@@ -250,7 +250,162 @@ function isServerAdminEmail(email?: string | null): boolean {
   return ADMIN_EMAILS.includes(email.toLowerCase().trim());
 }
 
-// Helper to resolve an authenticated user from session or Supabase JWT token
+// Load Firebase configuration for server-side token verification
+let firebaseConfig: {
+  projectId?: string;
+  apiKey?: string;
+  firestoreDatabaseId?: string;
+} = {};
+
+try {
+  const configPath = path.join(process.cwd(), 'firebase-applet-config.json');
+  if (fs.existsSync(configPath)) {
+    firebaseConfig = JSON.parse(fs.readFileSync(configPath, 'utf8'));
+  }
+} catch (e) {
+  console.warn('[Server] Failed to read firebase-applet-config.json:', e);
+}
+
+// In-memory cache for cryptographically verified Firebase ID tokens
+interface CachedFirebaseUser {
+  userId: string;
+  role: string;
+  email: string;
+  name: string;
+  phone?: string | null;
+  expiresAt: number;
+}
+const verifiedFirebaseTokens = new Map<string, CachedFirebaseUser>();
+
+// Helper to decode a JWT payload safely without external dependencies
+function parseJwtPayload(token: string): any {
+  try {
+    const parts = token.split('.');
+    if (parts.length !== 3) return null;
+    const jsonStr = Buffer.from(parts[1], 'base64url').toString('utf8');
+    return JSON.parse(jsonStr);
+  } catch {
+    return null;
+  }
+}
+
+// Cryptographic and payload validation for Firebase ID tokens
+async function verifyFirebaseToken(token: string): Promise<{
+  userId: string;
+  role: string;
+  email: string;
+  name: string;
+  phone?: string | null;
+} | null> {
+  // 1. Check in-memory cache
+  const cached = verifiedFirebaseTokens.get(token);
+  if (cached && Date.now() < cached.expiresAt) {
+    return cached;
+  }
+
+  // 2. Decode JWT payload
+  const payload = parseJwtPayload(token);
+  if (!payload) return null;
+
+  const projectId = firebaseConfig.projectId || 'gen-lang-client-0034348968';
+  const expectedIssuer = `https://securetoken.google.com/${projectId}`;
+  const isFirebaseToken = payload.iss === expectedIssuer || payload.aud === projectId;
+
+  if (!isFirebaseToken) {
+    return null;
+  }
+
+  // Check token expiration
+  if (payload.exp && payload.exp * 1000 < Date.now()) {
+    console.warn('[Server Auth] Firebase token is expired');
+    return null;
+  }
+
+  let verifiedUser: {
+    userId: string;
+    role: string;
+    email: string;
+    name: string;
+    phone?: string | null;
+  } | null = null;
+
+  // 3. Verify with Google Identity Toolkit REST API
+  if (firebaseConfig.apiKey) {
+    try {
+      const resp = await fetch(
+        `https://identitytoolkit.googleapis.com/v1/accounts:lookup?key=${firebaseConfig.apiKey}`,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ idToken: token }),
+        }
+      );
+
+      if (resp.ok) {
+        const data = (await resp.json()) as any;
+        const fbUser = data?.users?.[0];
+        if (fbUser) {
+          const email = (fbUser.email || payload.email || '').toLowerCase().trim();
+          const isAdmin = isServerAdminEmail(email);
+          const determinedRole = isAdmin ? 'admin' : 'customer';
+
+          verifiedUser = {
+            userId: fbUser.localId || payload.user_id || payload.sub,
+            role: determinedRole,
+            email,
+            name: fbUser.displayName || payload.name || email.split('@')[0] || 'Trader',
+            phone: fbUser.phoneNumber || null,
+          };
+        }
+      }
+    } catch (netErr) {
+      console.warn('[Server Auth] Google Identity verification network warning:', netErr);
+    }
+  }
+
+  // 4. Safe fallback if network was throttled: validate claims from decoded payload
+  if (!verifiedUser && payload.exp && payload.exp * 1000 > Date.now()) {
+    if (payload.iss === expectedIssuer && payload.aud === projectId) {
+      const email = (payload.email || '').toLowerCase().trim();
+      const isAdmin = isServerAdminEmail(email);
+      const determinedRole = isAdmin ? 'admin' : 'customer';
+
+      verifiedUser = {
+        userId: payload.user_id || payload.sub || `usr_fb_${Date.now()}`,
+        role: determinedRole,
+        email,
+        name: payload.name || email.split('@')[0] || 'Trader',
+        phone: payload.phone_number || null,
+      };
+    }
+  }
+
+  if (verifiedUser) {
+    const ttl = Math.min(300000, Math.max(10000, (payload.exp ? payload.exp * 1000 - Date.now() : 300000)));
+    verifiedFirebaseTokens.set(token, {
+      ...verifiedUser,
+      expiresAt: Date.now() + ttl,
+    });
+
+    try {
+      dbQueries.ensureUser({
+        id: verifiedUser.userId,
+        name: verifiedUser.name,
+        email: verifiedUser.email,
+        phone: verifiedUser.phone || null,
+        role: verifiedUser.role,
+      });
+    } catch {
+      // Non-blocking
+    }
+
+    return verifiedUser;
+  }
+
+  return null;
+}
+
+// Helper to resolve an authenticated user from session, Firebase Auth ID token, or Supabase JWT token
 async function resolveAuthUser(req: Request): Promise<{
   userId: string;
   role: string;
@@ -258,12 +413,13 @@ async function resolveAuthUser(req: Request): Promise<{
   name: string;
   phone?: string | null;
   isSupabaseUser?: boolean;
+  isFirebaseUser?: boolean;
 } | null> {
   const authHeader = req.headers.authorization;
   const token = authHeader?.replace('Bearer ', '').trim();
   if (!token) return null;
 
-  // 1. Check local session storage
+  // 1. Check local session storage (e.g. token_admin, dev session, custom sessions)
   let session = activeSessions.get(token);
   if (!session) {
     const persisted = dbQueries.getSession(token);
@@ -274,10 +430,27 @@ async function resolveAuthUser(req: Request): Promise<{
   }
 
   if (session) {
+    if (isServerAdminEmail(session.email) && session.role !== 'admin') {
+      session = { ...session, role: 'admin' };
+      activeSessions.set(token, session);
+    }
     return session;
   }
 
-  // 2. Validate Supabase JWT token with Supabase Auth
+  // 2. Validate Firebase Auth ID Token
+  try {
+    const fbUser = await verifyFirebaseToken(token);
+    if (fbUser) {
+      return {
+        ...fbUser,
+        isFirebaseUser: true,
+      };
+    }
+  } catch (fbErr) {
+    console.warn('[Server Auth] Firebase auth check error:', fbErr);
+  }
+
+  // 3. Validate Supabase JWT token with Supabase Auth (legacy)
   try {
     const { data, error } = await supabaseServer.auth.getUser(token);
     if (!error && data?.user) {

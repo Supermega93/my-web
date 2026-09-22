@@ -1,4 +1,5 @@
 import { Product, Order, AdminStats, CustomerDashboardData, User, EAProject, License, AdminUserRecord, UserAccessStatus } from '../types.ts';
+import { auth } from '../lib/firebase.ts';
 
 const TOKEN_KEY = 'ea_auth_token';
 
@@ -34,7 +35,20 @@ export function setStoredToken(token: string | null) {
 }
 
 async function request<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
-  const token = getStoredToken();
+  let token = getStoredToken();
+
+  // If token is not present in storage but Firebase is signed in, get fresh token
+  if (!token && auth?.currentUser) {
+    try {
+      token = await auth.currentUser.getIdToken();
+      if (token) {
+        setStoredToken(token);
+      }
+    } catch {
+      // Non-blocking fallback
+    }
+  }
+
   const headers: Record<string, string> = {
     'Content-Type': 'application/json',
     ...(options.headers as Record<string, string> || {}),
@@ -44,10 +58,27 @@ async function request<T>(endpoint: string, options: RequestInit = {}): Promise<
     headers['Authorization'] = `Bearer ${token}`;
   }
 
-  const response = await fetch(endpoint, {
+  let response = await fetch(endpoint, {
     ...options,
     headers,
   });
+
+  // If response is 401 Unauthorized and user is logged into Firebase, attempt token refresh and retry once
+  if (response.status === 401 && auth?.currentUser) {
+    try {
+      const refreshedToken = await auth.currentUser.getIdToken(true);
+      if (refreshedToken) {
+        setStoredToken(refreshedToken);
+        headers['Authorization'] = `Bearer ${refreshedToken}`;
+        response = await fetch(endpoint, {
+          ...options,
+          headers,
+        });
+      }
+    } catch {
+      // Non-blocking retry fallback
+    }
+  }
 
   const data = await response.json().catch(() => ({}));
 
