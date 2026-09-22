@@ -3,7 +3,7 @@ import { Modal } from '../common/Modal.tsx';
 import { Button } from '../common/Button.tsx';
 import { useAuth } from '../../context/AuthContext.tsx';
 import { UserRole } from '../../types.ts';
-import { LogIn, UserPlus, Mail, AlertCircle, CheckCircle2, Eye, EyeOff } from 'lucide-react';
+import { LogIn, UserPlus, Mail, AlertCircle, CheckCircle2, Eye, EyeOff, Globe, ArrowRight, ExternalLink } from 'lucide-react';
 
 interface AuthModalProps {
   isOpen: boolean;
@@ -30,14 +30,28 @@ export function AuthModal({
   const [resending, setResending] = useState(false);
   const [needsVerification, setNeedsVerification] = useState(false);
   const [unverifiedEmail, setUnverifiedEmail] = useState('');
+  const [domainAuthPrompt, setDomainAuthPrompt] = useState<{
+    show: boolean;
+    domain: string;
+    consoleUrl: string;
+  } | null>(null);
 
   const handleGoogleLogin = async () => {
     setError('');
+    setDomainAuthPrompt(null);
     setLoading(true);
     try {
       const res = await loginWithGoogle();
       if (!res.success) {
-        setError(res.error || 'Google Sign-In prompt failed. Please try with email.');
+        if (res.isUnauthorizedDomain) {
+          setDomainAuthPrompt({
+            show: true,
+            domain: window.location.hostname,
+            consoleUrl: res.authorizedDomainUrl || 'https://console.firebase.google.com/project/gen-lang-client-0034348968/authentication/settings',
+          });
+        } else {
+          setError(res.error || 'Google Sign-In prompt failed. Please try with email.');
+        }
       } else {
         onClose();
       }
@@ -150,6 +164,44 @@ export function AuthModal({
             >
               Create Account
             </button>
+          </div>
+        )}
+
+        {domainAuthPrompt?.show && (
+          <div className="p-4 rounded-2xl bg-amber-950/40 border border-amber-800/70 text-amber-200 text-xs animate-in fade-in duration-150 space-y-2.5">
+            <div className="flex items-start gap-2">
+              <Globe className="w-4 h-4 shrink-0 mt-0.5 text-amber-400" />
+              <div>
+                <p className="font-semibold text-amber-300">Domain Authorization Required for Google Popup</p>
+                <p className="text-[11px] text-amber-300/80 leading-relaxed mt-0.5">
+                  Google OAuth requires domain <span className="font-mono bg-amber-950/80 px-1 py-0.5 rounded text-amber-200">{domainAuthPrompt.domain}</span> in your Firebase Console Authorized Domains list.
+                </p>
+              </div>
+            </div>
+
+            <div className="flex flex-col sm:flex-row gap-2 pt-1">
+              <button
+                type="button"
+                onClick={() => {
+                  setMode('register');
+                  setDomainAuthPrompt(null);
+                }}
+                className="flex-1 py-2 px-3 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-semibold text-xs flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
+              >
+                <span>Create with Email (Instant Access)</span>
+                <ArrowRight className="w-3.5 h-3.5" />
+              </button>
+
+              <a
+                href={domainAuthPrompt.consoleUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="py-2 px-3 rounded-xl bg-amber-900/60 hover:bg-amber-850 text-amber-200 border border-amber-700/60 font-medium text-xs flex items-center justify-center gap-1.5 transition-colors"
+              >
+                <span>Add in Firebase</span>
+                <ExternalLink className="w-3.5 h-3.5" />
+              </a>
+            </div>
           </div>
         )}
 

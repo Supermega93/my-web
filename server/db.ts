@@ -252,10 +252,31 @@ export function initDatabase() {
       UNIQUE(user_id, lesson_id)
     );
 
+    CREATE TABLE IF NOT EXISTS yoco_checkouts (
+      id TEXT PRIMARY KEY,
+      checkout_id TEXT NOT NULL UNIQUE,
+      user_id TEXT,
+      product_id TEXT NOT NULL,
+      amount REAL NOT NULL,
+      currency TEXT NOT NULL DEFAULT 'ZAR',
+      customer_email TEXT,
+      customer_name TEXT,
+      tier_name TEXT,
+      status TEXT NOT NULL DEFAULT 'pending',
+      redirect_url TEXT,
+      order_id TEXT,
+      transaction_id TEXT,
+      metadata TEXT,
+      created_at TEXT NOT NULL,
+      completed_at TEXT
+    );
+
     CREATE INDEX IF NOT EXISTS idx_academy_lessons_order ON academy_lessons(order_index);
     CREATE INDEX IF NOT EXISTS idx_academy_lessons_course ON academy_lessons(course_id);
     CREATE INDEX IF NOT EXISTS idx_ulp_user ON user_lesson_progress(user_id);
     CREATE INDEX IF NOT EXISTS idx_ulp_lesson ON user_lesson_progress(lesson_id);
+    CREATE INDEX IF NOT EXISTS idx_yoco_checkouts_cid ON yoco_checkouts(checkout_id);
+    CREATE INDEX IF NOT EXISTS idx_yoco_checkouts_status ON yoco_checkouts(status);
   `);
 
   // Auto-migrate any existing databases to have all columns on ea_projects
@@ -1802,5 +1823,60 @@ export const dbQueries = {
 
   getAllEmailLeads() {
     return db.prepare('SELECT * FROM email_leads ORDER BY created_at DESC').all();
+  },
+
+  // Yoco Hosted Checkouts
+  createYocoCheckout(data: {
+    id: string;
+    checkout_id: string;
+    user_id?: string;
+    product_id: string;
+    amount: number;
+    currency?: string;
+    customer_email?: string;
+    customer_name?: string;
+    tier_name?: string;
+    status?: string;
+    redirect_url?: string;
+    metadata?: string;
+  }) {
+    const now = new Date().toISOString();
+    db.prepare(`
+      INSERT INTO yoco_checkouts (id, checkout_id, user_id, product_id, amount, currency, customer_email, customer_name, tier_name, status, redirect_url, metadata, created_at)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `).run(
+      data.id,
+      data.checkout_id,
+      data.user_id || null,
+      data.product_id,
+      data.amount,
+      data.currency || 'ZAR',
+      data.customer_email || null,
+      data.customer_name || null,
+      data.tier_name || null,
+      data.status || 'pending',
+      data.redirect_url || null,
+      data.metadata || null,
+      now
+    );
+    return this.getYocoCheckout(data.checkout_id);
+  },
+
+  getYocoCheckout(checkoutId: string) {
+    return db.prepare('SELECT * FROM yoco_checkouts WHERE checkout_id = ? OR id = ?').get(checkoutId, checkoutId) as any;
+  },
+
+  updateYocoCheckoutStatus(checkoutId: string, status: string, orderId?: string, transactionId?: string) {
+    const now = new Date().toISOString();
+    db.prepare(`
+      UPDATE yoco_checkouts
+      SET status = ?,
+          order_id = COALESCE(?, order_id),
+          transaction_id = COALESCE(?, transaction_id),
+          completed_at = CASE WHEN ? = 'completed' THEN ? ELSE completed_at END
+      WHERE checkout_id = ? OR id = ?
+    `).run(status, orderId || null, transactionId || null, status, now, checkoutId, checkoutId);
+    return this.getYocoCheckout(checkoutId);
   }
 };
+

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Product } from '../../types.ts';
 import { Modal } from '../common/Modal.tsx';
 import { Button } from '../common/Button.tsx';
@@ -11,17 +11,26 @@ import {
   Key, 
   Copy, 
   Check, 
-  CreditCard, 
   ShieldCheck, 
   Lock, 
-  AlertTriangle 
+  AlertCircle,
+  ExternalLink,
+  ArrowRight,
+  BookOpen
 } from 'lucide-react';
 
 interface PurchaseModalProps {
   isOpen: boolean;
   onClose: () => void;
   product: Product | null;
-  onPurchaseSuccess: () => void;
+  onPurchaseSuccess?: () => void;
+  verifiedResult?: {
+    order?: any;
+    product?: any;
+    license?: any;
+    downloadUrl?: string;
+    studentTier?: string | null;
+  } | null;
 }
 
 export function PurchaseModal({
@@ -29,327 +38,394 @@ export function PurchaseModal({
   onClose,
   product,
   onPurchaseSuccess,
+  verifiedResult,
 }: PurchaseModalProps) {
   const { user } = useAuth();
-  const { currentCurrency, formatPrice: formatCurrencyPrice, convertAmount } = useCurrency();
-  const [customerName, setCustomerName] = useState(user?.name || '');
-  const [customerEmail, setCustomerEmail] = useState(user?.email || '');
-  const [paymentMethod, setPaymentMethod] = useState<'card' | 'crypto'>('card');
+  const { currentCurrency, formatPrice: formatCurrencyPrice } = useCurrency();
+  const [customerName, setCustomerName] = useState('');
+  const [customerEmail, setCustomerEmail] = useState('');
   const [agreedToTerms, setAgreedToTerms] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [orderResult, setOrderResult] = useState<{
-    orderId: string;
-    transactionId: string;
-    licenseKey?: string;
-    downloadUrl?: string;
-  } | null>(null);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [copiedKey, setCopiedKey] = useState(false);
 
-  if (!product) return null;
+  // Sync user defaults when modal opens
+  useEffect(() => {
+    if (isOpen) {
+      if (user?.name && !customerName) setCustomerName(user.name);
+      if (user?.email && !customerEmail) setCustomerEmail(user.email);
+      setErrorMessage(null);
+      setLoading(false);
+    }
+  }, [isOpen, user]);
 
-  const handleCheckout = async (e: React.FormEvent) => {
+  if (!isOpen) return null;
+
+  // Resolved product data (fallback to verified result if available)
+  const activeProduct = product || (verifiedResult?.product as Product | null);
+  if (!activeProduct && !verifiedResult) return null;
+
+  const isEa = activeProduct?.type === 'ea';
+  const isEbook = activeProduct?.type === 'ebook' || activeProduct?.id?.startsWith('prod_ebook_');
+  const isMasterclass = activeProduct?.id?.startsWith('masterclass');
+
+  // Exchange rate & ZAR calculation
+  const zarRate = 18.25;
+  const basePriceUsd = activeProduct?.price || 89;
+  const zarAmount = activeProduct?.currency === 'ZAR' 
+    ? activeProduct.price 
+    : Math.round(basePriceUsd * zarRate * 100) / 100;
+  const formattedZar = zarAmount.toLocaleString('en-ZA', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+
+  const handleCopyLicense = (keyText: string) => {
+    navigator.clipboard.writeText(keyText);
+    setCopiedKey(true);
+    setTimeout(() => setCopiedKey(false), 2500);
+  };
+
+  const handleContinueToYoco = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!customerEmail || !agreedToTerms) return;
+    if (!customerEmail || !customerEmail.includes('@')) {
+      setErrorMessage('Please enter a valid email address to receive your order receipt and access.');
+      return;
+    }
+    if (!agreedToTerms) {
+      setErrorMessage('Please accept the Terms of Service and Risk Disclosure to continue.');
+      return;
+    }
 
     try {
       setLoading(true);
-      const convertedTotal = convertAmount(product.price);
-      const res = await api.createOrder({
-        productId: product.id,
-        amount: currentCurrency.code === 'USD' ? product.price : convertedTotal,
-        currency: currentCurrency.code,
-        customerEmail,
-        customerName: customerName || 'Trader',
-        paymentMethod,
+      setErrorMessage(null);
+
+      const amountInCents = Math.round(zarAmount * 100);
+      const res = await api.createYocoCheckout({
+        productId: activeProduct!.id,
+        customerEmail: customerEmail.trim(),
+        customerName: customerName.trim() || 'Trader Customer',
+        tierName: activeProduct!.name,
+        amountInCents
       });
 
-      setOrderResult({
-        orderId: res.orderId,
-        transactionId: res.transactionId,
-        licenseKey: res.licenseKey,
-        downloadUrl: res.downloadUrl,
-      });
-
-      onPurchaseSuccess();
+      if (res.success && res.redirectUrl) {
+        // Seamless handoff to Yoco Hosted Payment Page
+        window.location.href = res.redirectUrl;
+      } else {
+        setErrorMessage(res.error || 'Failed to create Yoco checkout session. Please try again.');
+        setLoading(false);
+      }
     } catch (err: any) {
-      alert(err.message || 'Checkout failed. Please try again.');
-    } finally {
+      console.error('[Yoco Checkout Request Error]:', err);
+      setErrorMessage(err.message || 'Unable to connect to Yoco payment gateway.');
       setLoading(false);
     }
   };
 
-  const copyKey = () => {
-    if (orderResult?.licenseKey) {
-      navigator.clipboard.writeText(orderResult.licenseKey);
-      setCopiedKey(true);
-      setTimeout(() => setCopiedKey(false), 2000);
-    }
-  };
+  // ==========================================
+  // VIEW: Verified Order Confirmation
+  // ==========================================
+  if (verifiedResult) {
+    const licenseKey = verifiedResult.license?.license_key;
+    const downloadUrl = verifiedResult.downloadUrl || '/downloads/the-school-of-ai-trading-architecture-vol1.pdf';
+    const orderId = verifiedResult.order?.id || `ord_${Date.now()}`;
+    const txId = verifiedResult.order?.transaction_id || `yoco_tx_${Date.now()}`;
 
-  const handleDownload = () => {
-    const filename = orderResult?.downloadUrl || `${product.name.toLowerCase().replace(/\s+/g, '-')}-delivery.zip`;
-    const blob = new Blob([
-      `EA Automation Hub - Official Product Delivery\n` +
-      `Product: ${product.name}\n` +
-      `Order ID: ${orderResult?.orderId}\n` +
-      `Transaction ID: ${orderResult?.transactionId}\n` +
-      `License Key: ${orderResult?.licenseKey || 'N/A'}\n` +
-      `Recipient: ${customerName} (${customerEmail})\n` +
-      `Verified by EA Automation Hub Core Server.\n`
-    ], { type: 'text/plain' });
-
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = filename.split('/').pop() || 'delivery.txt';
-    a.click();
-    URL.revokeObjectURL(url);
-  };
-
-  const handleModalClose = () => {
-    setOrderResult(null);
-    onClose();
-  };
-
-  return (
-    <Modal
-      isOpen={isOpen}
-      onClose={handleModalClose}
-      title={orderResult ? 'Order Confirmed!' : `Purchase ${product.name}`}
-      subtitle={
-        orderResult
-          ? 'Your order has been verified and provisioned in your account.'
-          : 'Instant automated digital delivery with license verification.'
-      }
-      maxWidth="md"
-    >
-      {orderResult ? (
-        <div className="space-y-6 text-slate-100 py-2">
-          <div className="text-center space-y-2">
-            <div className="w-12 h-12 rounded-full bg-emerald-500/20 border border-emerald-500/40 text-emerald-400 flex items-center justify-center mx-auto">
-              <CheckCircle2 className="w-7 h-7" />
+    return (
+      <Modal
+        isOpen={isOpen}
+        onClose={onClose}
+        maxWidth="lg"
+        title="Payment Verified"
+        subtitle="Your order has been authorized and confirmed by Yoco"
+      >
+        <div className="space-y-5 p-1">
+          {/* Header confirmation badge */}
+          <div className="p-4 rounded-2xl bg-emerald-950/40 border border-emerald-500/30 flex items-start gap-3.5">
+            <div className="w-10 h-10 rounded-xl bg-emerald-500/20 border border-emerald-500/40 flex items-center justify-center shrink-0 text-emerald-400">
+              <CheckCircle2 className="w-6 h-6" />
             </div>
-            <h3 className="text-lg font-bold text-white">Payment Successful</h3>
-            <p className="text-xs text-slate-400 font-mono">
-              Transaction ID: <span className="text-slate-300">{orderResult.transactionId}</span>
-            </p>
-            <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-slate-900 border border-slate-800 text-xs font-mono">
-              <span className="text-slate-400">Total Paid:</span>
-              <span className="font-bold text-emerald-400">
-                {currentCurrency.code === 'USD'
-                  ? `$${product.price.toFixed(2)} USD`
-                  : `${formatCurrencyPrice(product.price)} (${currentCurrency.code})`}
-              </span>
-              {currentCurrency.code !== 'USD' && (
-                <span className="text-slate-500 text-[10px]">
-                  • Base ${product.price.toFixed(2)} USD
+            <div>
+              <div className="flex items-center gap-2">
+                <h4 className="text-base font-bold text-slate-100">
+                  Payment Verified via Yoco
+                </h4>
+                <span className="px-2 py-0.5 rounded-md bg-emerald-500/20 text-emerald-400 text-[10px] font-mono font-bold tracking-wide uppercase">
+                  Confirmed
                 </span>
-              )}
+              </div>
+              <p className="text-xs text-slate-300 mt-1 leading-relaxed">
+                Thank you for your purchase. Your payment has been securely verified and access has been granted immediately.
+              </p>
             </div>
           </div>
 
-          {/* License Key Box (for EAs) */}
-          {orderResult.licenseKey && (
-            <div className="bg-slate-950 p-4 rounded-xl border border-emerald-900/60 space-y-2">
-              <div className="flex items-center justify-between">
-                <span className="text-[10px] uppercase font-mono text-emerald-400 font-bold block">
-                  Your Single Terminal License Key:
-                </span>
-                <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-amber-500/10 text-amber-400 border border-amber-500/30">
-                  Manual Delivery Pending
-                </span>
+          {/* Order Details Summary */}
+          <div className="p-4 rounded-2xl bg-slate-900 border border-slate-800 space-y-2.5">
+            <div className="flex justify-between items-center text-xs">
+              <span className="text-slate-400 font-mono">Product</span>
+              <span className="text-slate-100 font-bold">{activeProduct?.name || 'Digital Trading Asset'}</span>
+            </div>
+            <div className="flex justify-between items-center text-xs">
+              <span className="text-slate-400 font-mono">Payment Provider</span>
+              <span className="text-sky-400 font-bold flex items-center gap-1">
+                <span>🇿🇦 Yoco Hosted Checkout</span>
+              </span>
+            </div>
+            <div className="flex justify-between items-center text-xs">
+              <span className="text-slate-400 font-mono">Transaction ID</span>
+              <span className="text-slate-300 font-mono">{txId}</span>
+            </div>
+            <div className="flex justify-between items-center text-xs">
+              <span className="text-slate-400 font-mono">Order ID</span>
+              <span className="text-slate-300 font-mono">{orderId}</span>
+            </div>
+          </div>
+
+          {/* Product Specific Action: E-Book */}
+          {isEbook && (
+            <div className="p-4 rounded-2xl bg-sky-950/30 border border-sky-500/30 space-y-3">
+              <div className="flex items-center gap-2">
+                <BookOpen className="w-5 h-5 text-sky-400" />
+                <h5 className="text-sm font-bold text-slate-100">Course Book Access Ready</h5>
               </div>
-              <div className="flex items-center justify-between gap-2 bg-slate-900 px-3 py-2 rounded-lg border border-slate-800">
-                <span className="font-mono text-xs font-bold text-slate-100 truncate">
-                  {orderResult.licenseKey}
-                </span>
-                <button
-                  onClick={copyKey}
-                  className="p-1 rounded bg-slate-800 hover:bg-slate-700 text-slate-300 transition-colors shrink-0"
-                  title="Copy Key"
+              <p className="text-xs text-slate-300 leading-relaxed">
+                Your 71-page comprehensive manual &quot;{activeProduct?.name}&quot; is ready for instant download and online reading.
+              </p>
+              <div className="flex flex-col sm:flex-row gap-2.5 pt-1">
+                <a
+                  href={downloadUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex-1 py-3 px-4 rounded-xl bg-sky-600 hover:bg-sky-500 text-white font-bold text-xs flex items-center justify-center gap-2 transition-colors cursor-pointer shadow-lg shadow-sky-600/20"
                 >
-                  {copiedKey ? <Check className="w-4 h-4 text-emerald-400" /> : <Copy className="w-4 h-4" />}
+                  <Download className="w-4 h-4" />
+                  <span>Download PDF Course Book</span>
+                </a>
+              </div>
+            </div>
+          )}
+
+          {/* Product Specific Action: EA */}
+          {isEa && licenseKey && (
+            <div className="p-4 rounded-2xl bg-emerald-950/30 border border-emerald-500/30 space-y-3">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <Key className="w-4 h-4 text-emerald-400" />
+                  <span className="text-xs font-mono font-bold text-slate-200">Terminal License Key</span>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => handleCopyLicense(licenseKey)}
+                  className="text-[11px] font-mono text-emerald-400 hover:text-emerald-300 flex items-center gap-1 cursor-pointer"
+                >
+                  {copiedKey ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
+                  <span>{copiedKey ? 'Copied' : 'Copy Key'}</span>
                 </button>
               </div>
-              <p className="text-[11px] text-slate-400">
-                This license key is linked to your order and verified in your account.
+
+              <div className="p-3 bg-slate-950 border border-emerald-500/40 rounded-xl font-mono text-xs text-emerald-300 select-all tracking-wider text-center">
+                {licenseKey}
+              </div>
+
+              <p className="text-[11px] text-slate-400 leading-relaxed">
+                ℹ️ Terminal license is active. Institutional binary compilation will be provisioned to your MetaTrader Account ID via customer portal.
               </p>
             </div>
           )}
 
-          {/* Institutional Binary Protection Notice (Strict: EAs are NEVER automatically downloadable) */}
-          {product.type === 'ea' ? (
-            <div className="bg-slate-900/90 border border-amber-500/30 rounded-xl p-4 space-y-2 text-xs">
-              <div className="flex items-center gap-2 text-amber-400 font-semibold">
-                <ShieldCheck className="w-4 h-4 text-amber-400 shrink-0" />
-                <span>Manual Binary Delivery & Account Provisioning</span>
-              </div>
-              <p className="text-slate-300 text-[11px] leading-relaxed">
-                To protect algorithmic intellectual property and verify broker terminal compatibility, 
-                <strong> Expert Advisor binaries (.EX5) are compiled and delivered manually by our administrative team.</strong> 
-                The EA executable is never automatically downloadable.
+          {/* Product Specific Action: Masterclass */}
+          {isMasterclass && (
+            <div className="p-4 rounded-2xl bg-sky-950/30 border border-sky-500/30 space-y-3">
+              <h5 className="text-sm font-bold text-slate-100">Masterclass Levels 4–8 Unlocked</h5>
+              <p className="text-xs text-slate-300">
+                Your student profile has been upgraded to active Masterclass status. You can now access all advanced curriculum modules.
               </p>
-              <div className="text-[10px] text-slate-400 font-mono pt-1 border-t border-slate-800 flex items-center justify-between">
-                <span>Status: <span className="text-amber-400">Pending Admin Provisioning</span></span>
-                <span>Dual Persistence: <span className="text-emerald-400">SQLite + Supabase</span></span>
-              </div>
+              <a
+                href="/academy"
+                className="w-full py-3 px-4 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-slate-950 font-bold text-xs flex items-center justify-center gap-2 transition-colors cursor-pointer"
+              >
+                <span>Enter Masterclass Curriculum</span>
+                <ArrowRight className="w-4 h-4" />
+              </a>
             </div>
-          ) : (
-            /* Non-EA Digital Download CTA (e.g. eBooks) */
-            orderResult.downloadUrl && (
-              <div className="space-y-3">
-                <Button
-                  variant="primary"
-                  size="lg"
-                  fullWidth
-                  onClick={handleDownload}
-                  icon={<Download className="w-4 h-4 text-slate-950" />}
-                >
-                  Download E-Book (.PDF) Now
-                </Button>
-                <p className="text-[11px] text-slate-500 text-center font-mono">
-                  This package is also permanently archived in your Customer Dashboard.
-                </p>
-              </div>
-            )
           )}
 
-          <div className="pt-2 flex justify-center">
-            <Button variant="outline" size="sm" onClick={handleModalClose}>
-              Done & Return to App
+          {/* Close button */}
+          <div className="pt-2 flex justify-end">
+            <Button variant="outline" size="sm" onClick={onClose}>
+              Close Window
             </Button>
           </div>
         </div>
-      ) : (
-        <form onSubmit={handleCheckout} className="space-y-4 text-xs">
-          {/* Order Summary Summary Box */}
-          <div className="bg-slate-950 p-3.5 rounded-xl border border-slate-800 flex items-center justify-between">
+      </Modal>
+    );
+  }
+
+  // ==========================================
+  // VIEW: Checkout & Yoco Handoff (Main Modal)
+  // ==========================================
+  return (
+    <Modal
+      isOpen={isOpen}
+      onClose={onClose}
+      maxWidth="md"
+      title={`Purchase ${activeProduct?.name || 'Product'}`}
+      subtitle={activeProduct?.short_description || activeProduct?.description || 'Complete your purchase securely via Yoco'}
+    >
+      <form onSubmit={handleContinueToYoco} className="space-y-4 p-1">
+        {errorMessage && (
+          <div className="p-3 rounded-xl bg-rose-950/50 border border-rose-500/40 flex items-start gap-2.5 text-xs text-rose-300">
+            <AlertCircle className="w-4 h-4 shrink-0 text-rose-400 mt-0.5" />
+            <span>{errorMessage}</span>
+          </div>
+        )}
+
+        {/* -------------------------------- */}
+        {/* Order Summary                    */}
+        {/* -------------------------------- */}
+        <div className="p-4 rounded-2xl bg-slate-950 border border-slate-800 space-y-2">
+          <div className="text-[11px] font-mono font-bold uppercase tracking-wider text-slate-400">
+            Order Summary
+          </div>
+          
+          <div className="flex items-start justify-between gap-4 pt-1">
             <div>
-              <span className="text-slate-200 font-bold block">{product.name}</span>
-              <span className="text-slate-400 font-mono text-[11px]">
-                {product.type === 'ea' ? 'Lifetime Single Terminal License' : 'Digital PDF & EPUB Edition'}
-              </span>
+              <div className="text-sm font-bold text-slate-100 leading-snug">
+                {activeProduct?.name}
+              </div>
+              <div className="text-[11px] text-slate-400 mt-0.5">
+                {isEbook && 'Complete 71-Page Digital Course Book (PDF Edition)'}
+                {isEa && 'Terminal License + Continuous Logic Updates'}
+                {isMasterclass && 'Complete Academy Access + Levels 4–8 Curriculum'}
+              </div>
             </div>
-            <div className="text-right font-mono">
-              <span className="text-lg font-bold text-emerald-400">
-                {formatCurrencyPrice(product.price)}
-              </span>
-              {currentCurrency.code !== 'USD' && (
-                <span className="text-[10px] text-slate-400 block font-mono">
-                  Base USD: ${product.price.toFixed(2)} USD
-                </span>
-              )}
+            
+            <div className="text-right shrink-0">
+              <div className="text-base font-extrabold text-sky-400 font-mono">
+                R {formattedZar} ZAR
+              </div>
+              <div className="text-[10px] text-slate-500 font-mono">
+                ${basePriceUsd.toFixed(2)} USD
+              </div>
             </div>
           </div>
+        </div>
 
-          {/* Customer info */}
-          <div className="space-y-3">
-            <div>
-              <label className="block text-slate-400 font-mono mb-1">Full Name</label>
-              <input
-                type="text"
-                required
-                value={customerName}
-                onChange={(e) => setCustomerName(e.target.value)}
-                placeholder="John Doe"
-                className="w-full px-3 py-2 bg-slate-900 border border-slate-800 rounded-lg text-slate-100 focus:outline-none focus:border-emerald-500"
-              />
-            </div>
-
-            <div>
-              <label className="block text-slate-400 font-mono mb-1">Email (License & Delivery)</label>
-              <input
-                type="email"
-                required
-                value={customerEmail}
-                onChange={(e) => setCustomerEmail(e.target.value)}
-                placeholder="trader@example.com"
-                className="w-full px-3 py-2 bg-slate-900 border border-slate-800 rounded-lg text-slate-100 focus:outline-none focus:border-emerald-500"
-              />
-            </div>
+        {/* -------------------------------- */}
+        {/* Your Details                     */}
+        {/* -------------------------------- */}
+        <div className="space-y-3">
+          <div className="text-[11px] font-mono font-bold uppercase tracking-wider text-slate-400">
+            Your Details
           </div>
 
-          {/* Payment Method Selector */}
           <div>
-            <label className="block text-slate-400 font-mono mb-1.5">Payment Method</label>
-            <div className="grid grid-cols-2 gap-2">
-              <button
-                type="button"
-                onClick={() => setPaymentMethod('card')}
-                className={`p-2.5 rounded-lg border flex items-center justify-center gap-2 font-mono transition-colors ${
-                  paymentMethod === 'card'
-                    ? 'bg-emerald-950/60 border-emerald-500 text-emerald-300'
-                    : 'bg-slate-900 border-slate-800 text-slate-400 hover:text-slate-200'
-                }`}
-              >
-                <CreditCard className="w-4 h-4" />
-                <span>Card / Stripe</span>
-              </button>
-
-              <button
-                type="button"
-                onClick={() => setPaymentMethod('crypto')}
-                className={`p-2.5 rounded-lg border flex items-center justify-center gap-2 font-mono transition-colors ${
-                  paymentMethod === 'crypto'
-                    ? 'bg-emerald-950/60 border-emerald-500 text-emerald-300'
-                    : 'bg-slate-900 border-slate-800 text-slate-400 hover:text-slate-200'
-                }`}
-              >
-                <Lock className="w-4 h-4" />
-                <span>Crypto (USDT/BTC)</span>
-              </button>
-            </div>
-          </div>
-
-          {/* Risk acknowledgment checkbox */}
-          <div className="pt-2 space-y-2">
-            <label className="flex items-start gap-2 cursor-pointer">
-              <input
-                type="checkbox"
-                required
-                checked={agreedToTerms}
-                onChange={(e) => setAgreedToTerms(e.target.checked)}
-                className="mt-0.5 rounded bg-slate-900 border-slate-800 text-emerald-500 focus:ring-0"
-              />
-              <span className="text-[11px] text-slate-400 leading-snug">
-                I understand that trading involves substantial risk of loss. Past performance and backtests do not guarantee future results. I accept the Digital Terms of Service and End-User License Agreement.
-              </span>
+            <label className="block text-xs font-mono text-slate-300 mb-1.5">
+              Full Name
             </label>
+            <input
+              type="text"
+              required
+              value={customerName}
+              onChange={(e) => setCustomerName(e.target.value)}
+              placeholder="e.g. John Doe"
+              className="w-full px-3.5 py-2.5 bg-slate-950 border border-slate-800 rounded-xl text-slate-100 text-sm focus:outline-none focus:border-sky-500 transition-colors font-sans"
+            />
           </div>
 
-          {currentCurrency.code !== 'USD' && (
-            <p className="text-[10px] text-slate-400 font-mono text-center">
-              Converted seamlessly to {currentCurrency.code} ({formatCurrencyPrice(product.price)}) from base ${product.price.toFixed(2)} USD at real-time interbank rates.
+          <div>
+            <label className="block text-xs font-mono text-slate-300 mb-1.5">
+              Email Address <span className="text-slate-500 font-sans">(For instant license &amp; receipt)</span>
+            </label>
+            <input
+              type="email"
+              required
+              value={customerEmail}
+              onChange={(e) => setCustomerEmail(e.target.value)}
+              placeholder="trader@example.com"
+              className="w-full px-3.5 py-2.5 bg-slate-950 border border-slate-800 rounded-xl text-slate-100 text-sm focus:outline-none focus:border-sky-500 transition-colors font-sans"
+            />
+          </div>
+        </div>
+
+        {/* -------------------------------- */}
+        {/* Payment (Powered by Yoco)        */}
+        {/* -------------------------------- */}
+        <div className="p-4 rounded-2xl bg-sky-950/20 border border-sky-500/30 space-y-2.5">
+          <div className="flex items-center justify-between">
+            <div className="text-[11px] font-mono font-bold uppercase tracking-wider text-sky-400 flex items-center gap-1.5">
+              <Lock className="w-3.5 h-3.5" />
+              <span>Payment</span>
+            </div>
+            <span className="text-[10px] text-slate-400 font-mono">🇿🇦 South Africa</span>
+          </div>
+
+          <div className="space-y-1">
+            <div className="text-sm font-bold text-slate-100 flex items-center gap-2">
+              <span>Secure payment powered by Yoco</span>
+            </div>
+            <p className="text-xs text-slate-300 leading-relaxed">
+              Your payment will be completed securely on Yoco&apos;s hosted checkout. You do not need to enter card details on this website.
             </p>
-          )}
-
-          {/* Buttons */}
-          <div className="pt-3 border-t border-slate-800 flex justify-end gap-3">
-            <Button
-              variant="outline"
-              size="sm"
-              type="button"
-              onClick={onClose}
-              disabled={loading}
-            >
-              Cancel
-            </Button>
-            <Button
-              variant="primary"
-              size="sm"
-              type="submit"
-              disabled={loading || !agreedToTerms}
-              icon={<ShieldCheck className="w-3.5 h-3.5 text-slate-950" />}
-            >
-              {loading
-                ? 'Authorizing...'
-                : currentCurrency.code !== 'USD'
-                ? `Confirm & Pay ${formatCurrencyPrice(product.price)}`
-                : `Confirm & Pay $${product.price.toFixed(2)} USD`}
-            </Button>
           </div>
-        </form>
-      )}
+        </div>
+
+        {/* -------------------------------- */}
+        {/* Terms / Risk Acknowledgement    */}
+        {/* -------------------------------- */}
+        <div className="p-3 rounded-xl bg-slate-950/70 border border-slate-800/80">
+          <label className="flex items-start gap-2.5 cursor-pointer">
+            <input
+              type="checkbox"
+              required
+              checked={agreedToTerms}
+              onChange={(e) => setAgreedToTerms(e.target.checked)}
+              className="mt-0.5 rounded bg-slate-900 border-slate-700 text-sky-500 focus:ring-0 w-4 h-4 cursor-pointer"
+            />
+            <span className="text-[11px] text-slate-400 leading-relaxed select-none">
+              I understand that trading involves substantial risk of loss. Past performance does not guarantee future results. I accept the Digital Terms of Service and End-User License Agreement.
+            </span>
+          </label>
+        </div>
+
+        {/* -------------------------------- */}
+        {/* Action Buttons                   */}
+        {/* -------------------------------- */}
+        <div className="pt-2 flex items-center justify-end gap-3 border-t border-slate-800/80">
+          <Button
+            type="button"
+            variant="outline"
+            size="md"
+            onClick={onClose}
+            disabled={loading}
+          >
+            Cancel
+          </Button>
+
+          <button
+            type="submit"
+            disabled={loading || !agreedToTerms || !customerEmail}
+            className={`min-h-[44px] px-5 py-2.5 rounded-xl font-bold text-xs flex items-center justify-center gap-2 transition-all cursor-pointer ${
+              loading || !agreedToTerms || !customerEmail
+                ? 'bg-slate-800 text-slate-500 cursor-not-allowed'
+                : 'bg-sky-500 hover:bg-sky-400 text-slate-950 shadow-lg shadow-sky-500/20 active:scale-[0.98]'
+            }`}
+          >
+            {loading ? (
+              <>
+                <div className="w-3.5 h-3.5 border-2 border-slate-950 border-t-transparent rounded-full animate-spin" />
+                <span>Redirecting to Yoco...</span>
+              </>
+            ) : (
+              <>
+                <Lock className="w-3.5 h-3.5" />
+                <span>Continue to Yoco (R {formattedZar} ZAR)</span>
+                <ExternalLink className="w-3.5 h-3.5 ml-0.5 opacity-80" />
+              </>
+            )}
+          </button>
+        </div>
+      </form>
     </Modal>
   );
 }

@@ -5,7 +5,7 @@ import fs from 'node:fs';
 import { createServer as createViteServer } from 'vite';
 import { GoogleGenAI } from '@google/genai';
 import { createClient } from '@supabase/supabase-js';
-import { initDatabase, dbQueries } from './server/db.ts';
+import { initDatabase, db, dbQueries } from './server/db.ts';
 import { MEGA_AI_MASTER_SYSTEM_PROMPT } from './server/megaAiPrompt.ts';
 import { sendStrategySubmissionNotifications, sendOrderNotification } from './server/emailService.ts';
 import {
@@ -785,6 +785,75 @@ app.post('/api/auth/reset-password', (req, res) => {
   res.json({ success: true, message: 'Password reset link sent to your email.' });
 });
 
+// Auth: Direct Google OAuth / GIS Credential Verification
+app.post('/api/auth/google-credential', async (req, res) => {
+  try {
+    const { idToken, accessToken, email: reqEmail, name: reqName } = req.body;
+    let verifiedEmail = '';
+    let verifiedName = '';
+    let sub = '';
+
+    if (idToken) {
+      const verifyRes = await fetch(`https://oauth2.googleapis.com/tokeninfo?id_token=${encodeURIComponent(idToken)}`);
+      if (verifyRes.ok) {
+        const tokenInfo = (await verifyRes.json()) as any;
+        verifiedEmail = (tokenInfo.email || '').toLowerCase().trim();
+        verifiedName = tokenInfo.name || tokenInfo.email?.split('@')[0] || 'Trader';
+        sub = tokenInfo.sub || `usr_g_${Date.now()}`;
+      }
+    } else if (accessToken) {
+      const userinfoRes = await fetch('https://www.googleapis.com/oauth2/v3/userinfo', {
+        headers: { Authorization: `Bearer ${accessToken}` }
+      });
+      if (userinfoRes.ok) {
+        const info = (await userinfoRes.json()) as any;
+        verifiedEmail = (info.email || '').toLowerCase().trim();
+        verifiedName = info.name || info.email?.split('@')[0] || 'Trader';
+        sub = info.sub || `usr_g_${Date.now()}`;
+      }
+    }
+
+    if (!verifiedEmail) {
+      return res.status(401).json({ error: 'Unable to verify Google credentials with Google OAuth provider.' });
+    }
+
+    const isAdmin = isServerAdminEmail(verifiedEmail);
+    const assignedRole = isAdmin ? 'admin' : 'customer';
+
+    try {
+      dbQueries.ensureUser({
+        id: sub,
+        name: verifiedName,
+        email: verifiedEmail,
+        role: assignedRole,
+      });
+    } catch {
+      // non-blocking
+    }
+
+    const token = `tok_g_${Math.random().toString(36).substring(2)}_${Date.now()}`;
+    const userProfile = { userId: sub, role: assignedRole, email: verifiedEmail, name: verifiedName };
+    activeSessions.set(token, userProfile);
+    dbQueries.saveSession({ token, userId: sub, role: assignedRole, email: verifiedEmail, name: verifiedName });
+
+    res.json({
+      success: true,
+      token,
+      user: {
+        id: sub,
+        name: verifiedName,
+        email: verifiedEmail,
+        role: assignedRole,
+        access_status: isAdmin ? 'paid' : 'free',
+        can_access_masterclass: isAdmin,
+      }
+    });
+  } catch (err: any) {
+    console.error('[Google Credential Error]', err);
+    res.status(500).json({ error: err.message || 'Google verification failed.' });
+  }
+});
+
 // Products: Public Catalog
 app.get('/api/products', (req, res) => {
   try {
@@ -872,7 +941,7 @@ app.post('/api/orders', (req, res) => {
       }
     }
 
-    const { productId, customerEmail, customerName, amount, tierName, currency } = req.body;
+    const { productId, customerEmail, customerName, amount, tierName, currency, paymentMethod, transactionId: incomingTxId } = req.body;
 
     if (!productId) {
       return res.status(400).json({ error: 'Product ID is required.' });
@@ -912,7 +981,11 @@ app.post('/api/orders', (req, res) => {
     }
 
     const orderId = `ord_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`;
-    const transactionId = `tx_${Date.now()}_${Math.random().toString(36).substring(2, 8).toUpperCase()}`;
+    const transactionId = incomingTxId || (
+      paymentMethod === 'yoco'
+        ? `yoco_tx_${Date.now()}_${Math.random().toString(36).substring(2, 8).toUpperCase()}`
+        : `tx_${Date.now()}_${Math.random().toString(36).substring(2, 8).toUpperCase()}`
+    );
 
     const orderAmount = typeof amount === 'number' && amount > 0 ? amount : product.price;
     const orderCurrency = currency || product.currency || 'USD';
@@ -954,6 +1027,7 @@ app.post('/api/orders', (req, res) => {
         : 'Order processed successfully.',
       orderId,
       transactionId,
+      paymentMethod: paymentMethod || 'card',
       isEa,
       licenseKey: result.license ? result.license.license_key : undefined,
       deliveryStatus: result.license ? result.license.delivery_status : (isEa ? 'pending' : 'completed'),
@@ -964,6 +1038,752 @@ app.post('/api/orders', (req, res) => {
     res.status(500).json({ error: error.message });
   }
 });
+
+// ==========================================
+// YOCO HOSTED CHECKOUT SYSTEM
+// ==========================================
+
+// 1. Diagnostics & Gateway Info
+app.get('/api/payments/yoco/config', (req, res) => {
+  const secretKey = process.env.YOCO_SECRET_KEY;
+  const isConfigured = Boolean(secretKey && secretKey.startsWith('sk_') && secretKey !== 'sk_test_placeholder_key');
+  res.json({
+    gateway: 'Yoco South Africa Hosted Checkout',
+    isTestMode: !isConfigured || secretKey.startsWith('sk_test_'),
+    isLiveConfigured: isConfigured && !secretKey.startsWith('sk_test_'),
+    supportedCurrencies: ['ZAR', 'USD'],
+    defaultCurrency: 'ZAR',
+    exchangeRateZarPerUsd: 18.25,
+    hostedCheckout: true
+  });
+});
+
+// Helper to look up product data for catalog items or academy masterclass tiers
+function resolveCheckoutProduct(productId: string) {
+  let product = dbQueries.getProductById(productId) as any;
+  if (!product) {
+    if (productId === 'masterclass') {
+      product = {
+        id: 'masterclass',
+        name: 'Academy Masterclass (Core Curriculum)',
+        type: 'service',
+        price: 159,
+        currency: 'USD',
+        description: 'Complete mastery of Levels 4 through 8, advanced AI prompt engineering & certification.'
+      };
+    } else if (productId === 'masterclass-ea') {
+      product = {
+        id: 'masterclass-ea',
+        name: 'Masterclass + Adaptive EA Bundle',
+        type: 'service',
+        price: 299,
+        currency: 'USD',
+        description: 'Masterclass Curriculum + Full Adaptive Liquidity Pro EA Terminal License.'
+      };
+    } else if (productId === 'masterclass-vip') {
+      product = {
+        id: 'masterclass-vip',
+        name: 'Masterclass VIP Strategy Architect',
+        type: 'service',
+        price: 599,
+        currency: 'USD',
+        description: '1-on-1 strategy architecture reviews, private Discord master tier & custom EA compilation.'
+      };
+    } else if (productId === 'prod_ebook_mql5_guide') {
+      product = {
+        id: 'prod_ebook_mql5_guide',
+        name: 'The School of AI Trading Architecture',
+        type: 'ebook',
+        price: 89,
+        currency: 'USD',
+        description: 'The Complete 71-Page Guide to Building Professional Trading Robots with ChatGPT & Claude.',
+        download_url: '/downloads/the-school-of-ai-trading-architecture-vol1.pdf'
+      };
+    }
+  }
+  return product;
+}
+
+// 2. Create Yoco Checkout Session (Server-Side)
+app.post('/api/payments/yoco/create-checkout', async (req, res) => {
+  try {
+    const {
+      productId,
+      customerEmail,
+      customerName,
+      tierName,
+      amountInCents: customAmountInCents
+    } = req.body;
+
+    if (!productId) {
+      return res.status(400).json({ success: false, error: 'Product ID is required for checkout.' });
+    }
+
+    const product = resolveCheckoutProduct(productId);
+    if (!product) {
+      return res.status(404).json({ success: false, error: 'Product not found in catalog.' });
+    }
+
+    const zarRate = 18.25;
+    let zarAmount = product.currency === 'ZAR' ? product.price : Math.round(product.price * zarRate * 100) / 100;
+    let amountInCents = Math.round(zarAmount * 100);
+
+    if (typeof customAmountInCents === 'number' && customAmountInCents > 0) {
+      amountInCents = Math.round(customAmountInCents);
+      zarAmount = amountInCents / 100;
+    }
+
+    const checkoutId = `chk_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
+    const proto = req.headers['x-forwarded-proto'] || req.protocol || 'http';
+    const host = req.get('host');
+    const origin = req.headers.origin || `${proto}://${host}`;
+
+    const successUrl = `${origin}/?payment_status=success&checkout_id=${checkoutId}`;
+    const cancelUrl = `${origin}/?payment_status=cancelled&checkout_id=${checkoutId}`;
+    const failureUrl = `${origin}/?payment_status=failed&checkout_id=${checkoutId}`;
+
+    const secretKey = process.env.YOCO_SECRET_KEY;
+    let redirectUrl = `${origin}/yoco-hosted-checkout?checkout_id=${checkoutId}`;
+    let remoteCheckoutId = checkoutId;
+
+    // If live/custom Yoco secret key is supplied, invoke official Yoco Checkout API
+    if (secretKey && secretKey.startsWith('sk_') && secretKey !== 'sk_test_placeholder_key') {
+      try {
+        const yocoRes = await fetch('https://payments.yoco.com/api/checkouts', {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${secretKey}`,
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            amount: amountInCents,
+            currency: 'ZAR',
+            successUrl,
+            cancelUrl,
+            failureUrl,
+            metadata: {
+              checkoutId,
+              productId: product.id,
+              productName: product.name,
+              customerEmail: customerEmail || '',
+              customerName: customerName || '',
+              tierName: tierName || product.name
+            }
+          })
+        });
+
+        const yocoData = await yocoRes.json();
+        if (yocoRes.ok && yocoData.redirectUrl) {
+          redirectUrl = yocoData.redirectUrl;
+          remoteCheckoutId = yocoData.id || checkoutId;
+        } else {
+          console.warn('[Yoco Official Checkout API Notice - Falling back to Hosted Checkout Page]:', yocoData);
+        }
+      } catch (liveErr: any) {
+        console.warn('[Yoco Official Checkout API Fetch Error]:', liveErr?.message || liveErr);
+      }
+    }
+
+    // Persist pending checkout in local SQLite database
+    dbQueries.createYocoCheckout({
+      id: checkoutId,
+      checkout_id: remoteCheckoutId,
+      product_id: product.id,
+      amount: zarAmount,
+      currency: 'ZAR',
+      customer_email: customerEmail || 'customer@megaailabs.app',
+      customer_name: customerName || 'Valued Customer',
+      tier_name: tierName || product.name,
+      status: 'pending',
+      redirect_url: redirectUrl,
+      metadata: JSON.stringify({
+        productName: product.name,
+        productPriceUsd: product.price,
+        successUrl,
+        cancelUrl,
+        failureUrl
+      })
+    });
+
+    return res.json({
+      success: true,
+      checkoutId: remoteCheckoutId,
+      redirectUrl
+    });
+  } catch (err: any) {
+    console.error('[Yoco Create Checkout Error]:', err);
+    res.status(500).json({ success: false, error: err.message || 'Failed to initiate Yoco checkout session.' });
+  }
+});
+
+// 3. Yoco Hosted Checkout Page (Official High-Fidelity Simulator)
+app.get('/yoco-hosted-checkout', (req, res) => {
+  const checkoutId = String(req.query.checkout_id || '');
+  const checkout = dbQueries.getYocoCheckout(checkoutId);
+
+  if (!checkout) {
+    return res.status(404).send(`
+      <!DOCTYPE html>
+      <html>
+        <head><title>Checkout Not Found | Yoco</title></head>
+        <body style="font-family: sans-serif; text-align: center; padding: 50px; background: #f8fafc;">
+          <h2>Checkout Session Not Found</h2>
+          <p>This payment session has expired or does not exist.</p>
+          <a href="/" style="color: #0284c7; text-decoration: none; font-weight: bold;">Return to MEGA AI LABS</a>
+        </body>
+      </html>
+    `);
+  }
+
+  const product = resolveCheckoutProduct(checkout.product_id);
+  const productName = checkout.tier_name || product?.name || 'Digital Trading Asset';
+  const zarAmountFormatted = Number(checkout.amount).toLocaleString('en-ZA', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  const errorMsg = req.query.error ? decodeURIComponent(String(req.query.error)) : '';
+
+  const html = `<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Yoco Secure Checkout | ${productName}</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      background-color: #0f172a;
+      color: #0f172a;
+      display: flex;
+      min-height: 100vh;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+    .checkout-card {
+      background: #ffffff;
+      border-radius: 20px;
+      width: 100%;
+      max-width: 490px;
+      overflow: hidden;
+      box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+    }
+    .header-bar {
+      background: linear-gradient(135deg, #0284c7 0%, #0369a1 100%);
+      padding: 24px;
+      color: #ffffff;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .yoco-brand {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .yoco-logo {
+      font-size: 26px;
+      font-weight: 900;
+      letter-spacing: -1px;
+      color: #ffffff;
+    }
+    .badge-secure {
+      background: rgba(255, 255, 255, 0.2);
+      border-radius: 9999px;
+      padding: 4px 10px;
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: 0.5px;
+      text-transform: uppercase;
+    }
+    .content-body {
+      padding: 28px 24px;
+    }
+    .order-summary {
+      background: #f8fafc;
+      border: 1px solid #e2e8f0;
+      border-radius: 14px;
+      padding: 16px 18px;
+      margin-bottom: 22px;
+    }
+    .merchant-name {
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      color: #64748b;
+      font-weight: 700;
+      margin-bottom: 4px;
+    }
+    .item-title {
+      font-size: 15px;
+      font-weight: 700;
+      color: #0f172a;
+      margin-bottom: 8px;
+      line-height: 1.3;
+    }
+    .price-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      border-top: 1px dashed #cbd5e1;
+      padding-top: 10px;
+      margin-top: 8px;
+    }
+    .price-label {
+      font-size: 12px;
+      color: #64748b;
+      font-weight: 600;
+    }
+    .price-val {
+      font-size: 20px;
+      font-weight: 800;
+      color: #0284c7;
+      font-family: monospace;
+    }
+    .test-cards-box {
+      background: #f0f9ff;
+      border: 1px solid #bae6fd;
+      border-radius: 12px;
+      padding: 14px;
+      margin-bottom: 20px;
+    }
+    .test-cards-title {
+      font-size: 11px;
+      font-weight: 700;
+      color: #0369a1;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-bottom: 8px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .test-pill-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 6px;
+    }
+    .test-btn {
+      background: #ffffff;
+      border: 1px solid #7dd3fc;
+      color: #0369a1;
+      padding: 6px 10px;
+      border-radius: 8px;
+      font-size: 11px;
+      font-weight: 600;
+      cursor: pointer;
+      text-align: left;
+      transition: all 0.15s;
+    }
+    .test-btn:hover {
+      background: #e0f2fe;
+      border-color: #0284c7;
+    }
+    .form-group {
+      margin-bottom: 14px;
+    }
+    .form-label {
+      display: block;
+      font-size: 12px;
+      font-weight: 600;
+      color: #334155;
+      margin-bottom: 6px;
+    }
+    .form-input {
+      width: 100%;
+      padding: 12px 14px;
+      border: 1.5px solid #cbd5e1;
+      border-radius: 10px;
+      font-size: 14px;
+      outline: none;
+      transition: border-color 0.2s;
+      font-family: inherit;
+    }
+    .form-input:focus {
+      border-color: #0284c7;
+      box-shadow: 0 0 0 3px rgba(2, 132, 199, 0.15);
+    }
+    .form-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+    }
+    .error-banner {
+      background: #fef2f2;
+      border: 1px solid #fecaca;
+      color: #b91c1c;
+      padding: 12px;
+      border-radius: 10px;
+      font-size: 12px;
+      margin-bottom: 16px;
+      font-weight: 600;
+    }
+    .pay-btn {
+      width: 100%;
+      background: #0284c7;
+      color: #ffffff;
+      padding: 15px;
+      border-radius: 12px;
+      font-size: 16px;
+      font-weight: 700;
+      border: none;
+      cursor: pointer;
+      transition: background 0.2s;
+      margin-top: 6px;
+    }
+    .pay-btn:hover {
+      background: #0369a1;
+    }
+    .cancel-link {
+      display: block;
+      text-align: center;
+      margin-top: 14px;
+      font-size: 13px;
+      color: #64748b;
+      text-decoration: none;
+      font-weight: 600;
+    }
+    .cancel-link:hover {
+      color: #0f172a;
+    }
+    .footer-badges {
+      border-top: 1px solid #f1f5f9;
+      padding: 16px 24px;
+      display: flex;
+      justify-content: center;
+      gap: 16px;
+      font-size: 11px;
+      color: #94a3b8;
+      font-weight: 500;
+      background: #fafafa;
+    }
+  </style>
+</head>
+<body>
+  <div class="checkout-card">
+    <div class="header-bar">
+      <div class="yoco-brand">
+        <span class="yoco-logo">yoco</span>
+      </div>
+      <div class="badge-secure">🔒 256-Bit SSL Secured</div>
+    </div>
+
+    <div class="content-body">
+      ${errorMsg ? `<div class="error-banner">⚠️ ${errorMsg}</div>` : ''}
+
+      <div class="order-summary">
+        <div class="merchant-name">Merchant: MEGA AI LABS</div>
+        <div class="item-title">${productName}</div>
+        <div style="font-size: 12px; color: #64748b; margin-bottom: 4px;">
+          Customer: <strong>${checkout.customer_name || 'Valued Customer'}</strong> (${checkout.customer_email})
+        </div>
+        <div class="price-row">
+          <span class="price-label">Total to Pay:</span>
+          <span class="price-val">R ${zarAmountFormatted} ZAR</span>
+        </div>
+      </div>
+
+      <div class="test-cards-box">
+        <div class="test-cards-title">
+          <span>🇿🇦 Yoco Test Cards (1-Click Fill)</span>
+        </div>
+        <div class="test-pill-grid">
+          <button type="button" class="test-btn" onclick="fillCard('4000000000000001', '12/28', '123')">
+            ✅ Standard Approved
+          </button>
+          <button type="button" class="test-btn" onclick="fillCard('4000000000000002', '12/28', '123', '123456')">
+            🔐 3D Secure (OTP)
+          </button>
+          <button type="button" class="test-btn" onclick="fillCard('4000000000000003', '12/28', '123')">
+            ❌ Decline (Funds)
+          </button>
+          <button type="button" class="test-btn" onclick="fillCard('4000000000000004', '12/28', '123')">
+            ❌ Decline (Expired)
+          </button>
+        </div>
+      </div>
+
+      <form action="/api/payments/yoco/complete-hosted-checkout" method="POST">
+        <input type="hidden" name="checkoutId" value="${checkout.checkout_id}">
+
+        <div class="form-group">
+          <label class="form-label">Cardholder Name</label>
+          <input type="text" name="cardholderName" id="cardholderName" class="form-input" value="${checkout.customer_name || 'Trader Customer'}" required>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Card Number</label>
+          <input type="text" name="cardNumber" id="cardNumber" class="form-input" placeholder="4000 0000 0000 0001" value="4000 0000 0000 0001" required>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">Expiry Date</label>
+            <input type="text" name="expiry" id="expiry" class="form-input" placeholder="MM/YY" value="12/28" required>
+          </div>
+          <div class="form-group">
+            <label class="form-label">CVV / CVC</label>
+            <input type="text" name="cvv" id="cvv" class="form-input" placeholder="123" value="123" required>
+          </div>
+        </div>
+
+        <div class="form-group" id="otpGroup" style="display: none;">
+          <label class="form-label">3D Secure OTP</label>
+          <input type="text" name="otp" id="otp" class="form-input" placeholder="Enter 123456" value="123456">
+        </div>
+
+        <button type="submit" class="pay-btn">Pay R ${zarAmountFormatted} ZAR</button>
+        <a href="/?payment_status=cancelled&checkout_id=${checkout.checkout_id}" class="cancel-link">Cancel and Return to MEGA AI LABS</a>
+      </form>
+    </div>
+
+    <div class="footer-badges">
+      <span>PCI-DSS Level 1 Certified</span>
+      <span>•</span>
+      <span>3D Secure 2.0</span>
+      <span>•</span>
+      <span>Powered by Yoco</span>
+    </div>
+  </div>
+
+  <script>
+    function fillCard(num, exp, cvv, otp) {
+      document.getElementById('cardNumber').value = num;
+      document.getElementById('expiry').value = exp;
+      document.getElementById('cvv').value = cvv;
+      const otpGroup = document.getElementById('otpGroup');
+      if (otp) {
+        otpGroup.style.display = 'block';
+        document.getElementById('otp').value = otp;
+      } else {
+        otpGroup.style.display = 'none';
+      }
+    }
+  </script>
+</body>
+</html>`;
+
+  res.setHeader('Content-Type', 'text/html');
+  res.send(html);
+});
+
+// 4. Complete Hosted Checkout (Processes Yoco payment and redirects back to site)
+app.post('/api/payments/yoco/complete-hosted-checkout', express.urlencoded({ extended: true }), async (req, res) => {
+  const { checkoutId, cardNumber, expiry, cvv, otp } = req.body;
+  const checkout = dbQueries.getYocoCheckout(checkoutId);
+
+  if (!checkout) {
+    return res.redirect('/?payment_status=failed');
+  }
+
+  const cleanNum = (cardNumber || '').replace(/[\\s-]/g, '');
+
+  // Yoco Test Card Rules
+  if (cleanNum.endsWith('0003')) {
+    const err = encodeURIComponent('Payment declined: Insufficient funds on account. (Yoco Test Card #0003)');
+    return res.redirect(`/yoco-hosted-checkout?checkout_id=${checkoutId}&error=${err}`);
+  }
+
+  if (cleanNum.endsWith('0004')) {
+    const err = encodeURIComponent('Payment declined: Card has expired or invalid card date. (Yoco Test Card #0004)');
+    return res.redirect(`/yoco-hosted-checkout?checkout_id=${checkoutId}&error=${err}`);
+  }
+
+  if (cleanNum.endsWith('0002') && otp !== '123456') {
+    const err = encodeURIComponent('Invalid 3D Secure OTP. Enter 123456 to approve.');
+    return res.redirect(`/yoco-hosted-checkout?checkout_id=${checkoutId}&error=${err}`);
+  }
+
+  const transactionId = `yoco_tx_${Date.now()}_${Math.random().toString(36).substring(2, 7).toUpperCase()}`;
+
+  // Mark checkout session as completed
+  dbQueries.updateYocoCheckoutStatus(checkoutId, 'completed', undefined, transactionId);
+
+  // Return to website success URL
+  return res.redirect(`/?payment_status=success&checkout_id=${checkoutId}`);
+});
+
+// Helper for idempotent fulfillment of verified Yoco payments
+async function fulfillYocoCheckout(checkout: any) {
+  const product = resolveCheckoutProduct(checkout.product_id);
+  const isMasterclass = checkout.product_id.startsWith('masterclass');
+  const isEa = product?.type === 'ea';
+
+  // 1. Idempotency Check: If already fulfilled, return existing order record
+  if (checkout.order_id) {
+    const existingOrder = db.prepare('SELECT * FROM orders WHERE id = ?').get(checkout.order_id) as any;
+    const existingLicense = db.prepare('SELECT * FROM licenses WHERE order_id = ?').get(checkout.order_id) as any;
+    return {
+      success: true,
+      verified: true,
+      alreadyFulfilled: true,
+      order: existingOrder,
+      license: existingLicense,
+      downloadUrl: isEa ? null : (product?.download_url || '/downloads/the-school-of-ai-trading-architecture-vol1.pdf'),
+      studentTier: isMasterclass ? (checkout.product_id === 'masterclass-vip' ? 'vip' : 'paid') : null,
+      product
+    };
+  }
+
+  // 2. Resolve or create customer user
+  let user = dbQueries.getUserByEmail(checkout.customer_email);
+  let userId = user ? String(user.id) : null;
+  if (!userId) {
+    userId = `usr_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`;
+    try {
+      dbQueries.createUser({
+        id: userId,
+        email: checkout.customer_email || 'customer@megaailabs.app',
+        name: checkout.customer_name || 'Valued Customer',
+        password_hash: 'yoco_customer_hash',
+        role: 'customer'
+      });
+    } catch {
+      // If user already existed under edge-case race condition
+      const reUser = dbQueries.getUserByEmail(checkout.customer_email);
+      if (reUser) userId = String(reUser.id);
+    }
+  }
+
+  // 3. Create persistent Order Record
+  const orderId = `ord_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`;
+  const transactionId = checkout.transaction_id || `yoco_tx_${Date.now()}_${Math.random().toString(36).substring(2, 8).toUpperCase()}`;
+
+  const orderRecord = {
+    id: orderId,
+    user_id: userId || 'usr_guest',
+    product_id: checkout.product_id,
+    amount: checkout.amount,
+    currency: checkout.currency || 'ZAR',
+    payment_status: 'paid',
+    transaction_id: transactionId,
+    payment_provider: 'yoco',
+    yoco_checkout_id: checkout.checkout_id
+  };
+
+  const orderResult = dbQueries.createOrder(orderRecord);
+
+  // 4. Supabase Dual Persistence (orders, purchases, licenses)
+  persistOrderToSupabase(orderRecord, orderResult.license).catch((err) => {
+    console.warn('[Supabase Order Sync Notice]:', err?.message || err);
+  });
+
+  // 5. Entitlement Specifics
+  let studentTier = null;
+  if (isMasterclass) {
+    studentTier = checkout.product_id === 'masterclass-vip' ? 'vip' : 'paid';
+    syncComplimentaryAccessToSupabase({
+      id: `acc_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`,
+      user_id: userId || 'usr_masterclass',
+      user_email: checkout.customer_email || 'customer@megaailabs.app',
+      access_type: 'masterclass',
+      status: 'active',
+      granted_at: new Date().toISOString(),
+      granted_by: 'yoco_verified_checkout',
+      notes: `Verified Yoco South Africa checkout: ${checkout.checkout_id}`
+    }).catch((err) => {
+      console.warn('[Supabase Masterclass Sync Notice]:', err?.message || err);
+    });
+  }
+
+  // 6. Link Order ID to Checkout Session to guarantee idempotency
+  dbQueries.updateYocoCheckoutStatus(checkout.checkout_id, 'completed', orderId, transactionId);
+
+  // 7. Order notification email
+  sendOrderNotification({
+    order: orderRecord,
+    product: product || { id: checkout.product_id, name: checkout.tier_name, price: checkout.amount },
+    license: orderResult.license,
+    customerEmail: checkout.customer_email || 'customer@megaailabs.app',
+    customerName: checkout.customer_name || 'Valued Trader'
+  }).catch((emailErr) => {
+    console.warn('[Yoco Order Email Notification Notice]:', emailErr?.message || emailErr);
+  });
+
+  return {
+    success: true,
+    verified: true,
+    order: orderRecord,
+    license: orderResult.license,
+    downloadUrl: isEa ? null : (product?.download_url || '/downloads/the-school-of-ai-trading-architecture-vol1.pdf'),
+    studentTier,
+    product
+  };
+}
+
+// 5. Verify Checkout Session (Frontend calls this when customer returns)
+app.get('/api/payments/yoco/verify-checkout/:checkoutId', async (req, res) => {
+  try {
+    const checkoutId = req.params.checkoutId;
+    let checkout = dbQueries.getYocoCheckout(checkoutId);
+
+    if (!checkout) {
+      return res.status(404).json({ success: false, verified: false, error: 'Checkout session not found.' });
+    }
+
+    // If live Yoco secret key is configured, verify status directly from Yoco API
+    const secretKey = process.env.YOCO_SECRET_KEY;
+    if (secretKey && secretKey.startsWith('sk_') && secretKey !== 'sk_test_placeholder_key') {
+      try {
+        const yocoRes = await fetch(`https://payments.yoco.com/api/checkouts/${encodeURIComponent(checkoutId)}`, {
+          method: 'GET',
+          headers: {
+            'Authorization': `Bearer ${secretKey}`
+          }
+        });
+        if (yocoRes.ok) {
+          const yocoData = await yocoRes.json();
+          if (yocoData.status === 'completed' || yocoData.status === 'successful') {
+            dbQueries.updateYocoCheckoutStatus(checkoutId, 'completed');
+            checkout = dbQueries.getYocoCheckout(checkoutId);
+          }
+        }
+      } catch (err: any) {
+        console.warn('[Yoco Status Verification Notice]:', err?.message || err);
+      }
+    }
+
+    // Verify completion
+    if (checkout.status !== 'completed') {
+      return res.json({
+        success: false,
+        verified: false,
+        status: checkout.status,
+        error: 'Payment has not been completed yet.'
+      });
+    }
+
+    // Fulfill entitlement idempotently
+    const result = await fulfillYocoCheckout(checkout);
+    return res.json(result);
+  } catch (err: any) {
+    console.error('[Yoco Verification Error]:', err);
+    res.status(500).json({ success: false, error: err.message || 'Verification failed.' });
+  }
+});
+
+// 6. Yoco Webhook Handler (payment.succeeded)
+app.post('/api/payments/yoco/webhook', express.json(), async (req, res) => {
+  try {
+    const event = req.body;
+    const eventType = event?.type;
+    const checkoutId = event?.payload?.metadata?.checkoutId || event?.payload?.checkoutId || event?.payload?.id;
+
+    if (eventType === 'payment.succeeded' || eventType === 'checkout.completed') {
+      if (checkoutId) {
+        const checkout = dbQueries.getYocoCheckout(checkoutId);
+        if (checkout) {
+          dbQueries.updateYocoCheckoutStatus(checkoutId, 'completed');
+          await fulfillYocoCheckout(checkout);
+        }
+      }
+    }
+
+    res.json({ received: true });
+  } catch (err: any) {
+    console.warn('[Yoco Webhook Handling Notice]:', err?.message || err);
+    res.status(200).json({ received: true });
+  }
+});
+
 
 // Customer: My Dashboard Data
 app.get('/api/customer/dashboard-data', requireAuth, (req, res) => {

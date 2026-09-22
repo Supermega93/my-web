@@ -149,10 +149,20 @@ export const api = {
   },
 
   // Orders
-  async createOrder(payload: string | { productId: string; amount?: number; currency?: string; tierName?: string; customerEmail?: string; customerName?: string; paymentMethod?: string }): Promise<{
+  async createOrder(payload: string | { 
+    productId: string; 
+    amount?: number; 
+    currency?: string; 
+    tierName?: string; 
+    customerEmail?: string; 
+    customerName?: string; 
+    paymentMethod?: string;
+    transactionId?: string;
+  }): Promise<{
     success: boolean;
     orderId: string;
     transactionId: string;
+    paymentMethod?: string;
     licenseKey?: string;
     downloadUrl?: string;
     license?: any;
@@ -163,6 +173,52 @@ export const api = {
       body: JSON.stringify(body),
     });
   },
+
+  // Yoco Hosted Checkout (Server-Side)
+  async getYocoConfig(): Promise<{
+    gateway: string;
+    isTestMode: boolean;
+    isLiveConfigured?: boolean;
+    supportedCurrencies: string[];
+    defaultCurrency: string;
+    exchangeRateZarPerUsd: number;
+    hostedCheckout: boolean;
+  }> {
+    return request('/api/payments/yoco/config');
+  },
+
+  async createYocoCheckout(payload: {
+    productId: string;
+    customerEmail?: string;
+    customerName?: string;
+    tierName?: string;
+    amountInCents?: number;
+  }): Promise<{
+    success: boolean;
+    checkoutId: string;
+    redirectUrl: string;
+    error?: string;
+  }> {
+    return request('/api/payments/yoco/create-checkout', {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    });
+  },
+
+  async verifyYocoCheckout(checkoutId: string): Promise<{
+    success: boolean;
+    verified: boolean;
+    order?: any;
+    product?: any;
+    license?: any;
+    downloadUrl?: string;
+    studentTier?: string | null;
+    alreadyFulfilled?: boolean;
+    error?: string;
+  }> {
+    return request(`/api/payments/yoco/verify-checkout/${encodeURIComponent(checkoutId)}`);
+  },
+
 
   // Customer Dashboard
   async getCustomerDashboardData(): Promise<CustomerDashboardData> {

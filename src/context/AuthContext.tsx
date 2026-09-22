@@ -89,7 +89,7 @@ interface AuthContextType {
   isEmailVerified: boolean;
   refreshUserAccess: () => Promise<void>;
   login: (email: string, password: string) => Promise<{ success: boolean; error?: string; needsVerification?: boolean; unverifiedEmail?: string }>;
-  loginWithGoogle: () => Promise<{ success: boolean; error?: string }>;
+  loginWithGoogle: () => Promise<{ success: boolean; error?: string; isUnauthorizedDomain?: boolean; authorizedDomainUrl?: string }>;
   register: (
     dataOrEmail: string | { name?: string; email: string; password: string; phone?: string; role?: string },
     password?: string,
@@ -530,13 +530,74 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
+  // Helper to attempt Google Identity Services OAuth fallback
+  const tryGisOAuth = async (): Promise<{ success: boolean; user?: any; token?: string; error?: string }> => {
+    return new Promise((resolve) => {
+      if (typeof window === 'undefined') return resolve({ success: false, error: 'No window context' });
+      const google = (window as any).google;
+      if (!google?.accounts?.oauth2) return resolve({ success: false, error: 'Google Identity Services not loaded' });
+
+      try {
+        const client = google.accounts.oauth2.initTokenClient({
+          client_id: '1057808579968-lktbd0f2cm0rkbka7qpn76uqsrli2svm.apps.googleusercontent.com',
+          scope: 'email profile openid',
+          callback: async (resp: any) => {
+            if (resp?.access_token) {
+              try {
+                // 1. Try Firebase signInWithCredential
+                try {
+                  const cred = GoogleAuthProvider.credential(null, resp.access_token);
+                  const fbResult = await signInWithCredential(auth, cred);
+                  if (fbResult?.user) {
+                    return resolve({ success: true, user: fbResult.user });
+                  }
+                } catch (fbCredErr) {
+                  console.warn('[Firebase GIS Credential Notice]', fbCredErr);
+                }
+
+                // 2. Exchange with backend server directly
+                const sRes = await fetch('/api/auth/google-credential', {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({ accessToken: resp.access_token }),
+                });
+
+                if (sRes.ok) {
+                  const sData = await sRes.json();
+                  if (sData.success && sData.user && sData.token) {
+                    return resolve({ success: true, user: sData.user, token: sData.token });
+                  }
+                }
+              } catch (e: any) {
+                return resolve({ success: false, error: e.message || 'GIS verification failed' });
+              }
+            }
+            resolve({ success: false, error: resp?.error || 'Google login popup closed or declined' });
+          },
+          error_callback: (err: any) => {
+            resolve({ success: false, error: err?.message || 'Google OAuth request error' });
+          }
+        });
+        client.requestAccessToken();
+      } catch (e: any) {
+        resolve({ success: false, error: e.message || 'Failed to initialize Google login' });
+      }
+    });
+  };
+
   // Firebase Auth Google Sign-In with Gmail accounts and Firestore persistence
-  const loginWithGoogle = async (): Promise<{ success: boolean; error?: string }> => {
+  const loginWithGoogle = async (): Promise<{ 
+    success: boolean; 
+    error?: string; 
+    isUnauthorizedDomain?: boolean;
+    authorizedDomainUrl?: string;
+  }> => {
     try {
       setError(null);
       setLoading(true);
 
       let fbUser: any = null;
+      let sessionToken: string | null = null;
 
       try {
         const result = await signInWithPopup(auth, googleAuthProvider);
@@ -544,6 +605,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       } catch (popupErr: any) {
         console.warn('[Firebase Google Auth Popup]', popupErr);
         const code = popupErr?.code || '';
+
         if (code === 'auth/popup-closed-by-user') {
           return { success: false, error: 'Google Sign-In was cancelled. The login popup was closed.' };
         }
@@ -556,13 +618,27 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             error: 'Popup was blocked by your browser. Please allow popups for this site, or open the app in a new browser tab.' 
           };
         }
+
+        // If domain is not authorized in Firebase Auth, attempt Google Identity Services (GIS) fallback
         if (code === 'auth/unauthorized-domain') {
-          return {
-            success: false,
-            error: `This preview domain (${window.location.hostname}) is not yet registered in Firebase Auth. Please use Email & Password sign in below, or add this domain in Firebase Console.`
-          };
+          console.info('[Google Auth] Attempting Google Identity Services fallback for domain:', window.location.hostname);
+          const gisResult = await tryGisOAuth();
+          if (gisResult.success && gisResult.user) {
+            fbUser = gisResult.user;
+            if (gisResult.token) {
+              sessionToken = gisResult.token;
+            }
+          } else {
+            return {
+              success: false,
+              isUnauthorizedDomain: true,
+              authorizedDomainUrl: 'https://console.firebase.google.com/project/gen-lang-client-0034348968/authentication/settings',
+              error: `Custom domain "${window.location.hostname}" is not yet added in Firebase Auth Authorized Domains. You can add it in Firebase Console, or register below with Email & Password for instant access.`
+            };
+          }
+        } else {
+          throw popupErr;
         }
-        throw popupErr;
       }
 
       if (!fbUser) {
@@ -575,16 +651,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
       // Persist & sync user profile in Firestore safely
       let firestoreProfile: any = {
-        name: fbUser.displayName || email.split('@')[0] || 'Trader',
+        name: fbUser.displayName || fbUser.name || email.split('@')[0] || 'Trader',
         role: determinedRole,
         access_status: isAdminDetected ? 'paid' : 'free',
         can_access_masterclass: isAdminDetected,
       };
 
       try {
-        firestoreProfile = await syncUserProfileToFirestore(fbUser.uid, {
-          id: fbUser.uid,
-          name: fbUser.displayName || email.split('@')[0] || 'Trader',
+        firestoreProfile = await syncUserProfileToFirestore(fbUser.uid || fbUser.id, {
+          id: fbUser.uid || fbUser.id,
+          name: fbUser.displayName || fbUser.name || email.split('@')[0] || 'Trader',
           email,
           role: determinedRole,
           access_status: isAdminDetected ? 'paid' : 'free',
@@ -595,18 +671,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         console.warn('[Firebase Auth] Non-fatal profile sync notice:', syncErr);
       }
 
-      const token = await fbUser.getIdToken();
+      const token = sessionToken || (fbUser.getIdToken ? await fbUser.getIdToken() : `tok_g_${Date.now()}`);
       setStoredToken(token);
 
       const activeUser: User = {
-        id: fbUser.uid,
-        name: firestoreProfile?.name || fbUser.displayName || email.split('@')[0] || 'Trader',
+        id: fbUser.uid || fbUser.id,
+        name: firestoreProfile?.name || fbUser.displayName || fbUser.name || email.split('@')[0] || 'Trader',
         email,
         phone: fbUser.phoneNumber || null,
         role: firestoreProfile?.role || determinedRole,
         access_status: firestoreProfile?.access_status || (isAdminDetected ? 'paid' : 'free'),
         can_access_masterclass: firestoreProfile?.can_access_masterclass ?? isAdminDetected,
-        created_at: fbUser.metadata.creationTime || new Date().toISOString(),
+        created_at: fbUser.metadata?.creationTime || new Date().toISOString(),
         updated_at: new Date().toISOString(),
       };
 
@@ -616,7 +692,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
       // Hydrate lesson progress from Firestore
       try {
-        const progressIds = await fetchUserProgressFromFirestore(fbUser.uid);
+        const progressIds = await fetchUserProgressFromFirestore(activeUser.id);
         if (progressIds && progressIds.length > 0) {
           const local = JSON.parse(localStorage.getItem('completed_lesson_ids') || '[]');
           const combined = Array.from(new Set([...local, ...progressIds]));
@@ -638,10 +714,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       } else if (err.code === 'auth/popup-blocked') {
         msg = 'Popup was blocked by your browser. Please allow popups for this site and try again.';
       } else if (err.code === 'auth/unauthorized-domain') {
-        msg = `Domain ${window.location.hostname} is not yet authorized in Firebase Console. Please sign in with email and password below.`;
+        msg = `Domain ${window.location.hostname} is not yet authorized in Firebase Console. Please register below with Email & Password for instant access.`;
       }
       setError(msg);
-      return { success: false, error: msg };
+      return { 
+        success: false, 
+        error: msg,
+        isUnauthorizedDomain: err.code === 'auth/unauthorized-domain'
+      };
     } finally {
       setLoading(false);
     }

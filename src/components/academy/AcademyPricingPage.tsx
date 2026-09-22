@@ -17,7 +17,8 @@ import {
   MessageSquareCode,
   Mail,
   ShieldAlert,
-  Send
+  Send,
+  CreditCard
 } from 'lucide-react';
 import { ActiveView } from '../../types.ts';
 import { useCurrency } from '../../context/CurrencyContext.tsx';
@@ -26,6 +27,7 @@ import { Button } from '../common/Button.tsx';
 import { AcademyNav } from './AcademyNav.tsx';
 import { setActiveStudentTier, StudentTier, getActiveStudentTier } from '../../services/academyAccess.ts';
 import { api } from '../../services/api.ts';
+import { ExternalLink } from 'lucide-react';
 
 interface AcademyPricingPageProps {
   onNavigate: (view: ActiveView, extraId?: string) => void;
@@ -37,6 +39,7 @@ export function AcademyPricingPage({ onNavigate, onOpenAuth }: AcademyPricingPag
   const { user, isAdmin, isEmailVerified, sendMasterclassVerification } = useAuth();
   const [selectedTierId, setSelectedTierId] = useState<string>('masterclass-ea');
   const [checkoutModalOpen, setCheckoutModalOpen] = useState(false);
+  const [paymentGateway, setPaymentGateway] = useState<'yoco' | 'card'>('yoco');
   const [enrolledSuccess, setEnrolledSuccess] = useState(false);
   const [loading, setLoading] = useState(false);
   const [verificationSending, setVerificationSending] = useState(false);
@@ -144,34 +147,32 @@ export function AcademyPricingPage({ onNavigate, onOpenAuth }: AcademyPricingPag
     }
   };
 
-  const handleConfirmEnrollment = async () => {
+  const handleContinueToYoco = async () => {
     try {
       setLoading(true);
-      const convertedAmount = convertAmount(activeSelectedPackage.usdPrice);
-      await api.createOrder({
+      const zarTotal = Math.round(activeSelectedPackage.usdPrice * 18.25);
+      const amountInCents = zarTotal * 100;
+      const res = await api.createYocoCheckout({
         productId: activeSelectedPackage.id,
-        amount: currentCurrency.code === 'USD' ? activeSelectedPackage.usdPrice : convertedAmount,
-        currency: currentCurrency.code,
         customerEmail: user?.email || 'student@academy.com',
         customerName: user?.name || 'Academy Student',
-        paymentMethod: 'card',
         tierName: activeSelectedPackage.name,
+        amountInCents
       });
-    } catch (e) {
-      console.warn('Enrollment order record:', e);
-    } finally {
-      // Elevate active session tier to paid
-      setActiveStudentTier('paid');
-      setCurrentStudentTier('paid');
-      setEnrolledSuccess(true);
+
+      if (res.success && res.redirectUrl) {
+        window.location.href = res.redirectUrl;
+      } else {
+        alert(res.error || 'Failed to initiate Yoco checkout session.');
+        setLoading(false);
+      }
+    } catch (err: any) {
+      console.error('[Yoco Academy Checkout Error]:', err);
+      alert(err.message || 'Unable to connect to Yoco payment gateway.');
       setLoading(false);
-      setTimeout(() => {
-        setCheckoutModalOpen(false);
-        setEnrolledSuccess(false);
-        onNavigate('level-hub', '4');
-      }, 1800);
     }
   };
+
 
   return (
     <div className="min-h-screen bg-slate-50 text-slate-900 font-sans selection:bg-emerald-500/20 selection:text-emerald-900">
@@ -534,26 +535,51 @@ export function AcademyPricingPage({ onNavigate, onOpenAuth }: AcademyPricingPag
                   )}
                 </div>
 
+                {/* Payment Section (Powered by Yoco) */}
+                <div className="p-4 rounded-2xl bg-sky-50 border border-sky-200 space-y-2.5">
+                  <div className="flex items-center justify-between">
+                    <span className="font-semibold text-sky-900 font-mono text-[11px] uppercase tracking-wide flex items-center gap-1.5">
+                      <Lock className="w-3.5 h-3.5 text-sky-600" />
+                      <span>Payment Provider</span>
+                    </span>
+                    <span className="text-[10px] text-sky-700 font-medium">🇿🇦 South Africa Ready</span>
+                  </div>
+                  <div className="text-xs text-slate-600 leading-relaxed">
+                    Your payment will be completed securely on Yoco&apos;s hosted payment page. No card details are collected on this website.
+                  </div>
+                </div>
+
                 <div className="pt-2 flex flex-col gap-2">
                   <Button
                     variant="primary"
                     size="lg"
                     fullWidth
-                    onClick={handleConfirmEnrollment}
-                    className="font-bold bg-emerald-700 hover:bg-emerald-600 text-white shadow-md"
+                    disabled={loading}
+                    onClick={handleContinueToYoco}
+                    className="font-bold bg-sky-600 hover:bg-sky-500 text-white shadow-md flex items-center justify-center gap-2 cursor-pointer"
                   >
-                    Confirm & Activate Masterclass ({activeSelectedPackage.displayPrice})
+                    {loading ? (
+                      <span>Redirecting to Yoco...</span>
+                    ) : (
+                      <>
+                        <Lock className="w-4 h-4" />
+                        <span>Continue to Yoco ({activeSelectedPackage.displayPrice} · R {Math.round(activeSelectedPackage.usdPrice * 18.25).toLocaleString('en-ZA')} ZAR)</span>
+                        <ExternalLink className="w-4 h-4 opacity-80" />
+                      </>
+                    )}
                   </Button>
                   <Button
                     variant="ghost"
                     size="sm"
                     fullWidth
+                    disabled={loading}
                     onClick={() => setCheckoutModalOpen(false)}
-                    className="text-slate-500 hover:text-slate-700"
+                    className="text-slate-500 hover:text-slate-700 cursor-pointer"
                   >
                     Cancel
                   </Button>
                 </div>
+
 
                 <div className="text-[11px] text-slate-400 text-center font-mono">
                   🔒 Secure transaction • 100% Satisfaction Guarantee

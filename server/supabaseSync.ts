@@ -87,7 +87,7 @@ export async function persistOrderToSupabase(order: any, license?: any): Promise
   let licenseError: string | undefined;
 
   try {
-    const { error } = await supabase.from('orders').upsert({
+    const baseOrderPayload = {
       id: order.id,
       user_id: order.user_id,
       product_id: order.product_id,
@@ -95,9 +95,30 @@ export async function persistOrderToSupabase(order: any, license?: any): Promise
       currency: order.currency || 'USD',
       payment_status: order.payment_status || 'paid',
       transaction_id: order.transaction_id,
+      payment_provider: order.payment_provider || 'yoco',
+      yoco_checkout_id: order.yoco_checkout_id || null,
       created_at: order.created_at,
       updated_at: order.updated_at || order.created_at
-    });
+    };
+
+    let { error } = await supabase.from('orders').upsert(baseOrderPayload);
+
+    // If custom columns don't exist yet, retry with standard core columns
+    if (error && (error.message.includes('column') || error.message.includes('not found') || error.message.includes('schema'))) {
+      const fallbackOrderPayload = {
+        id: order.id,
+        user_id: order.user_id,
+        product_id: order.product_id,
+        amount: order.amount,
+        currency: order.currency || 'USD',
+        payment_status: order.payment_status || 'paid',
+        transaction_id: order.transaction_id,
+        created_at: order.created_at,
+        updated_at: order.updated_at || order.created_at
+      };
+      const res = await supabase.from('orders').upsert(fallbackOrderPayload);
+      error = res.error;
+    }
 
     if (error) {
       orderError = error.message;
@@ -113,11 +134,28 @@ export async function persistOrderToSupabase(order: any, license?: any): Promise
         order_id: order.id,
         user_id: order.user_id,
         product_id: order.product_id,
+        amount: order.amount,
+        currency: order.currency || 'ZAR',
+        payment_provider: order.payment_provider || 'yoco',
+        yoco_checkout_id: order.yoco_checkout_id || null,
         status: order.payment_status || 'paid',
-        created_at: order.created_at || new Date().toISOString()
+        created_at: order.created_at || new Date().toISOString(),
+        completed_at: order.created_at || new Date().toISOString()
       });
     } catch {
-      // Non-blocking
+      // Non-blocking fallback for basic purchases table
+      try {
+        await supabase.from('purchases').upsert({
+          id: order.id,
+          order_id: order.id,
+          user_id: order.user_id,
+          product_id: order.product_id,
+          status: order.payment_status || 'paid',
+          created_at: order.created_at || new Date().toISOString()
+        });
+      } catch {
+        // Non-blocking
+      }
     }
   } catch (err: any) {
     orderError = err.message;
