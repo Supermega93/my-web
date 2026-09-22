@@ -1,4 +1,5 @@
-import 'dotenv/config';
+import dotenv from 'dotenv';
+dotenv.config({ override: true });
 import express, { Request, Response, NextFunction } from 'express';
 import path from 'node:path';
 import fs from 'node:fs';
@@ -1042,15 +1043,27 @@ app.post('/api/orders', (req, res) => {
 // ==========================================
 // YOCO HOSTED CHECKOUT SYSTEM
 // ==========================================
+// YOCO PAYMENT GATEWAY CONFIGURATION (Server-Side Only)
+// ==========================================
+function getYocoSecretKey(): string {
+  return process.env.YOCO_SECRET_KEY || '';
+}
+
+function getYocoPublicKey(): string {
+  return process.env.YOCO_PUBLIC_KEY || process.env.VITE_YOCO_PUBLIC_KEY || 'pk_live_dd328e20N4bO85168944';
+}
 
 // 1. Diagnostics & Gateway Info
 app.get('/api/payments/yoco/config', (req, res) => {
-  const secretKey = process.env.YOCO_SECRET_KEY;
-  const isConfigured = Boolean(secretKey && secretKey.startsWith('sk_') && secretKey !== 'sk_test_placeholder_key');
+  const secretKey = getYocoSecretKey();
+  const publicKey = getYocoPublicKey();
+  const isConfigured = Boolean(secretKey && secretKey.startsWith('sk_'));
+  const isLive = secretKey.startsWith('sk_live_');
   res.json({
     gateway: 'Yoco South Africa Hosted Checkout',
-    isTestMode: !isConfigured || secretKey.startsWith('sk_test_'),
-    isLiveConfigured: isConfigured && !secretKey.startsWith('sk_test_'),
+    isTestMode: !isLive,
+    isLiveConfigured: isLive,
+    publicKey,
     supportedCurrencies: ['ZAR', 'USD'],
     defaultCurrency: 'ZAR',
     exchangeRateZarPerUsd: 18.25,
@@ -1165,20 +1178,33 @@ const handleCreateYocoCheckout = async (req: express.Request, res: express.Respo
     }
 
     const checkoutId = `chk_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
-    const proto = req.headers['x-forwarded-proto'] || req.protocol || 'http';
-    const host = req.get('host');
-    const origin = req.headers.origin || `${proto}://${host}`;
+    const secretKey = getYocoSecretKey();
+    const isLive = secretKey.startsWith('sk_live_');
+
+    let resolvedOrigin = (req.headers.origin as string) || (req.headers.referer ? new URL(req.headers.referer as string).origin : '') || process.env.APP_URL || '';
+    if (!resolvedOrigin || resolvedOrigin.includes('localhost') || resolvedOrigin.startsWith('http://')) {
+      if (process.env.APP_URL && process.env.APP_URL.startsWith('https://')) {
+        resolvedOrigin = process.env.APP_URL;
+      } else {
+        const proto = req.headers['x-forwarded-proto'] || req.protocol || 'https';
+        const host = req.get('host') || 'localhost:3000';
+        resolvedOrigin = `${proto}://${host}`;
+      }
+    }
+    if (isLive && resolvedOrigin.startsWith('http://')) {
+      resolvedOrigin = resolvedOrigin.replace('http://', 'https://');
+    }
+    const origin = resolvedOrigin.replace(/\/+$/, '');
 
     const successUrl = `${origin}/?payment_status=success&checkout_id=${checkoutId}`;
     const cancelUrl = `${origin}/?payment_status=cancelled&checkout_id=${checkoutId}`;
     const failureUrl = `${origin}/?payment_status=failed&checkout_id=${checkoutId}`;
 
-    const secretKey = process.env.YOCO_SECRET_KEY;
     let redirectUrl = `${origin}/yoco-hosted-checkout?checkout_id=${checkoutId}`;
     let remoteCheckoutId = checkoutId;
 
-    // If live/custom Yoco secret key is supplied, invoke official Yoco Checkout API server-side
-    if (secretKey && secretKey.startsWith('sk_') && secretKey !== 'sk_test_placeholder_key') {
+    // Invoke official Yoco Checkout API server-side with live secret key
+    if (secretKey && secretKey.startsWith('sk_')) {
       try {
         const yocoRes = await fetch('https://payments.yoco.com/api/checkouts', {
           method: 'POST',
@@ -1753,9 +1779,9 @@ app.get('/api/payments/yoco/verify-checkout/:checkoutId', async (req, res) => {
       return res.status(404).json({ success: false, verified: false, error: 'Checkout session not found.' });
     }
 
-    // If live Yoco secret key is configured, verify status directly from Yoco API
-    const secretKey = process.env.YOCO_SECRET_KEY;
-    if (secretKey && secretKey.startsWith('sk_') && secretKey !== 'sk_test_placeholder_key') {
+    // Verify status directly from Yoco API using live secret key
+    const secretKey = getYocoSecretKey();
+    if (secretKey && secretKey.startsWith('sk_')) {
       try {
         const yocoRes = await fetch(`https://payments.yoco.com/api/checkouts/${encodeURIComponent(checkoutId)}`, {
           method: 'GET',

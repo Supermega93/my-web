@@ -3,7 +3,6 @@ import { motion, AnimatePresence } from 'motion/react';
 import { ActiveView } from '../../types.ts';
 import { STOREFRONT_MEDIA } from '../../constants/media.ts';
 import { Button } from '../common/Button.tsx';
-import { CoverUploader } from '../common/CoverUploader.tsx';
 import { useAuth } from '../../context/AuthContext.tsx';
 import { requestFreeEbookDownload } from '../../services/ebookService.ts';
 import confetti from 'canvas-confetti';
@@ -210,14 +209,6 @@ export function FreeEbookPage({ onNavigate, onTriggerBuildMyEa }: FreeEbookPageP
               {/* Underlying depth shadow glow */}
               <div className="absolute -inset-2 bg-gradient-to-r from-emerald-500/10 to-teal-500/10 rounded-2xl blur-xl -z-10 group-hover:opacity-100 transition-opacity opacity-70" />
             </div>
-
-            <CoverUploader
-              productId="prod_ebook_free"
-              bookTitle="The Trader's Guide to Understanding Trading Automation"
-              onUploaded={(newUrl) => setCoverUrl(newUrl)}
-              buttonLabel="Upload Exact Cover (.jfif / .jpg / .png)"
-              className="w-full max-w-xs"
-            />
           </motion.div>
 
           {/* Lead Magnet Copy & Instant Download Box */}
