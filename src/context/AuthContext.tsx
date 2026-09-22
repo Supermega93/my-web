@@ -5,7 +5,20 @@ import { supabase } from '../lib/supabase.ts';
 import { api, getStoredToken, setStoredToken } from '../services/api.ts';
 import { fetchUserProgressFromSupabase } from '../services/academy.ts';
 import { setActiveStudentTier, getActiveStudentTier } from '../services/academyAccess.ts';
-import { auth, googleAuthProvider, signInWithPopup, signInWithCredential, GoogleAuthProvider, fbSignOut, onAuthStateChanged } from '../lib/firebase.ts';
+import { 
+  auth, 
+  googleAuthProvider, 
+  signInWithPopup, 
+  signInWithCredential, 
+  createUserWithEmailAndPassword,
+  signInWithEmailAndPassword,
+  sendPasswordResetEmail,
+  sendEmailVerification,
+  updateProfile,
+  GoogleAuthProvider, 
+  fbSignOut, 
+  onAuthStateChanged 
+} from '../lib/firebase.ts';
 import { syncUserProfileToFirestore, fetchUserProgressFromFirestore } from '../services/firestoreService.ts';
 
 // Administrator emails recognised by the platform
@@ -15,6 +28,8 @@ export const ADMIN_EMAILS = [
   'admin@ea-automation-hub.com'
 ];
 
+export const CANONICAL_APP_DOMAIN = 'https://www.megaailabs.app';
+
 export function checkIsAdminEmail(email?: string | null): boolean {
   if (!email) return false;
   return ADMIN_EMAILS.includes(email.toLowerCase().trim());
@@ -23,9 +38,13 @@ export function checkIsAdminEmail(email?: string | null): boolean {
 /**
  * Checks if a user's email is verified.
  * Google OAuth accounts are automatically pre-verified by Google.
- * Email/password accounts require email_confirmed_at / confirmed_at from Supabase.
+ * Email/password accounts can be verified via Firebase or Supabase.
  */
-export function isUserVerified(supabaseUser?: any): boolean {
+export function isUserVerified(supabaseUser?: any, firebaseUser?: any): boolean {
+  if (firebaseUser) {
+    if (firebaseUser.emailVerified) return true;
+    if (firebaseUser.providerData?.some((p: any) => p.providerId === 'google.com')) return true;
+  }
   if (!supabaseUser) return false;
   if (
     supabaseUser.app_metadata?.provider === 'google' ||
@@ -36,8 +55,7 @@ export function isUserVerified(supabaseUser?: any): boolean {
   return Boolean(supabaseUser.email_confirmed_at || supabaseUser.confirmed_at);
 }
 
-// Helper to obtain the canonical application domain for Supabase email verification and OAuth callbacks.
-// Prevents local container or iframe localhost URLs (e.g. http://localhost:3000) from being embedded in confirmation emails.
+// Canonical application domain for auth callbacks & email verification
 export const getAppRedirectUrl = (): string => {
   // 1. If runtime environment variable is provided
   const envAppUrl = typeof process !== 'undefined' ? (process.env?.APP_URL || (process.env as any)?.VITE_APP_URL) : undefined;
@@ -53,8 +71,8 @@ export const getAppRedirectUrl = (): string => {
     }
   }
 
-  // 3. Fallback to the active deployed Cloud Run website domain
-  return 'https://ais-dev-y34gbws5veojx7kebkrid5-102937162047.europe-west2.run.app';
+  // 3. Fallback to production custom domain
+  return CANONICAL_APP_DOMAIN;
 };
 
 interface AuthContextType {
@@ -68,6 +86,7 @@ interface AuthContextType {
   isLoggedIn: boolean;
   userAccessStatus: UserAccessStatus;
   canAccessMasterclass: boolean;
+  isEmailVerified: boolean;
   refreshUserAccess: () => Promise<void>;
   login: (email: string, password: string) => Promise<{ success: boolean; error?: string; needsVerification?: boolean; unverifiedEmail?: string }>;
   loginWithGoogle: () => Promise<{ success: boolean; error?: string }>;
@@ -77,6 +96,8 @@ interface AuthContextType {
     name?: string
   ) => Promise<{ success: boolean; error?: string; message?: string; needsVerification?: boolean; unverifiedEmail?: string }>;
   resendVerificationEmail: (email: string) => Promise<{ success: boolean; message?: string; error?: string }>;
+  sendMasterclassVerification: () => Promise<{ success: boolean; message?: string; error?: string }>;
+  sendPasswordReset: (email: string) => Promise<{ success: boolean; message?: string; error?: string }>;
   logout: () => Promise<void>;
   quickLogin: (role: UserRole) => Promise<void>;
   clearError: () => void;
@@ -171,15 +192,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           const currentSession = data?.session;
 
           if (currentSession?.user) {
-            // Enforce email verification for standard accounts
-            if (!isUserVerified(currentSession.user)) {
-              console.log('[Auth] Unverified email session detected on load - requiring email confirmation');
-              await supabase.auth.signOut().catch(() => null);
-              setUser(null);
-              setSession(null);
-              return;
-            }
-
             setSession(currentSession);
             const email = currentSession.user.email || '';
             const isAdminDetected = checkIsAdminEmail(email) || currentSession.user.user_metadata?.role === 'admin';
@@ -345,7 +357,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     };
   }, []);
 
-  // Supabase Auth Login with mandatory email verification check
+  // Primary Firebase Auth Login with legacy Supabase fallback
   const login = async (
     email: string,
     password: string
@@ -355,8 +367,70 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setLoading(true);
 
       const cleanEmail = email.trim().toLowerCase();
+      const isAdminDetected = checkIsAdminEmail(cleanEmail);
 
-      // Sign in with Supabase Auth
+      // 1. PRIMARY: Authenticate via Firebase Auth
+      try {
+        const userCred = await signInWithEmailAndPassword(auth, cleanEmail, password);
+        const fbUser = userCred.user;
+        if (fbUser) {
+          const token = await fbUser.getIdToken();
+          setStoredToken(token);
+
+          let firestoreProfile: any = null;
+          try {
+            firestoreProfile = await syncUserProfileToFirestore(fbUser.uid, {
+              id: fbUser.uid,
+              name: fbUser.displayName || cleanEmail.split('@')[0],
+              email: cleanEmail,
+              role: isAdminDetected ? 'admin' : 'customer',
+              access_status: isAdminDetected ? 'paid' : 'free',
+              can_access_masterclass: isAdminDetected,
+            });
+          } catch (syncErr) {
+            console.warn('[Firebase Auth] Login profile sync notice:', syncErr);
+          }
+
+          const determinedRole: UserRole = firestoreProfile?.role || (isAdminDetected ? 'admin' : 'customer');
+          const activeUser: User = {
+            id: fbUser.uid,
+            name: firestoreProfile?.name || fbUser.displayName || cleanEmail.split('@')[0] || 'Trader',
+            email: cleanEmail,
+            phone: fbUser.phoneNumber || firestoreProfile?.phone || null,
+            role: determinedRole,
+            access_status: firestoreProfile?.access_status || (isAdminDetected ? 'paid' : 'free'),
+            can_access_masterclass: firestoreProfile?.can_access_masterclass ?? isAdminDetected,
+            created_at: fbUser.metadata.creationTime || new Date().toISOString(),
+            updated_at: new Date().toISOString(),
+          };
+
+          setUser(activeUser);
+          setActiveStudentTier(activeUser.access_status === 'paid' ? 'paid' : 'free');
+
+          // Hydrate progress from Firestore
+          fetchUserProgressFromFirestore(fbUser.uid).then((progressIds) => {
+            if (progressIds && progressIds.length > 0) {
+              const local = JSON.parse(localStorage.getItem('completed_lesson_ids') || '[]');
+              const combined = Array.from(new Set([...local, ...progressIds]));
+              localStorage.setItem('completed_lesson_ids', JSON.stringify(combined));
+              window.dispatchEvent(new CustomEvent('academy-progress-change', { detail: { completedIds: combined } }));
+            }
+          }).catch(() => null);
+
+          return { success: true };
+        }
+      } catch (fbErr: any) {
+        if (fbErr.code === 'auth/wrong-password' || fbErr.code === 'auth/invalid-credential') {
+          // Check if user was registered in Supabase earlier
+          console.log('[Firebase login credential notice, attempting Supabase fallback]');
+        } else if (fbErr.code === 'auth/too-many-requests') {
+          const msg = 'Too many failed login attempts. Please wait a few moments or reset your password.';
+          setError(msg);
+          return { success: false, error: msg };
+        }
+      }
+
+      // 2. FALLBACK: Supabase Auth for legacy accounts
       const { data, error: signInError } = await supabase.auth.signInWithPassword({
         email: cleanEmail,
         password,
@@ -364,20 +438,33 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
       if (signInError) {
         const errMsg = signInError.message || '';
-        const isUnconfirmed =
+        // If Supabase claims email not confirmed, we DO NOT block the user!
+        if (
           errMsg.toLowerCase().includes('email not confirmed') ||
           errMsg.toLowerCase().includes('not confirmed') ||
-          errMsg.toLowerCase().includes('unconfirmed');
-
-        if (isUnconfirmed) {
-          const verificationMsg = 'Email verification required. Please click the confirmation link sent by Supabase before accessing your account.';
-          setError(verificationMsg);
-          return {
-            success: false,
-            needsVerification: true,
-            unverifiedEmail: cleanEmail,
-            error: verificationMsg,
-          };
+          errMsg.toLowerCase().includes('unconfirmed')
+        ) {
+          // Create Firebase account directly so user can continue without confirmation
+          try {
+            const userCred = await createUserWithEmailAndPassword(auth, cleanEmail, password);
+            const fbUser = userCred.user;
+            if (fbUser) {
+              const activeUser: User = {
+                id: fbUser.uid,
+                name: cleanEmail.split('@')[0],
+                email: cleanEmail,
+                role: isAdminDetected ? 'admin' : 'customer',
+                access_status: isAdminDetected ? 'paid' : 'free',
+                can_access_masterclass: isAdminDetected,
+                created_at: new Date().toISOString(),
+                updated_at: new Date().toISOString(),
+              };
+              setUser(activeUser);
+              return { success: true };
+            }
+          } catch {
+            // Non-blocking
+          }
         }
 
         setError(errMsg || 'Invalid email or password.');
@@ -385,21 +472,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
 
       if (data?.user) {
-        // Double check verification state
-        if (!isUserVerified(data.user)) {
-          await supabase.auth.signOut().catch(() => null);
-          setUser(null);
-          setSession(null);
-          const verificationMsg = 'Email verification required. Please check your inbox and verify your email address before logging in.';
-          setError(verificationMsg);
-          return {
-            success: false,
-            needsVerification: true,
-            unverifiedEmail: cleanEmail,
-            error: verificationMsg,
-          };
-        }
-
+        // We do NOT block on unconfirmed email! Allow immediate continuation.
         const userEmail = data.user.email || cleanEmail;
         const isAdminDetected = checkIsAdminEmail(userEmail) || data.user.user_metadata?.role === 'admin';
         const determinedRole: UserRole = isAdminDetected 
@@ -412,14 +485,33 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           email: userEmail,
           phone: data.user.phone || data.user.user_metadata?.phone || null,
           role: determinedRole,
+          access_status: isAdminDetected ? 'paid' : 'free',
+          can_access_masterclass: isAdminDetected,
           created_at: data.user.created_at,
           updated_at: data.user.updated_at || data.user.created_at,
         };
 
         setUser(loggedInUser);
-        setSession(data.session);
+        if (data.session) setSession(data.session);
 
-        // Hydrate and sync Supabase user_progress
+        // Migrate to Firebase Auth in background
+        createUserWithEmailAndPassword(auth, cleanEmail, password)
+          .then((cred) => {
+            if (loggedInUser.name) {
+              updateProfile(cred.user, { displayName: loggedInUser.name }).catch(() => null);
+            }
+            syncUserProfileToFirestore(cred.user.uid, {
+              id: cred.user.uid,
+              name: loggedInUser.name,
+              email: cleanEmail,
+              role: determinedRole,
+              access_status: loggedInUser.access_status,
+              can_access_masterclass: loggedInUser.can_access_masterclass,
+            }).catch(() => null);
+          })
+          .catch(() => null);
+
+        // Hydrate progress
         const supaIds = await fetchUserProgressFromSupabase(loggedInUser.id);
         const local = JSON.parse(localStorage.getItem('completed_lesson_ids') || '[]');
         const combined = Array.from(new Set([...local, ...supaIds]));
@@ -428,7 +520,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         return { success: true };
       }
 
-      return { success: false, error: 'Authentication failed.' };
+      return { success: false, error: 'Authentication failed. Please verify your credentials.' };
     } catch (err: any) {
       const msg = err.message || 'Login failed. Please verify your credentials.';
       setError(msg);
@@ -555,7 +647,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
-  // Supabase Auth Registration requiring email address verification
+  // Firebase Auth Primary Registration - lets users access the platform immediately without mandatory email confirmation
   const register = async (
     dataOrEmail: string | { name?: string; email: string; password: string; phone?: string; role?: string },
     passwordParam?: string,
@@ -582,15 +674,88 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
 
       const cleanEmail = email.trim().toLowerCase();
-      const redirectUrl = getAppRedirectUrl();
+      const displayName = name.trim() || cleanEmail.split('@')[0] || 'Trader';
+      const isAdminDetected = checkIsAdminEmail(cleanEmail);
 
-      // Supabase Auth signup with verification redirect
+      // 1. PRIMARY: Create account in Firebase Auth
+      try {
+        const userCred = await createUserWithEmailAndPassword(auth, cleanEmail, password);
+        const fbUser = userCred.user;
+
+        if (displayName) {
+          await updateProfile(fbUser, { displayName }).catch(() => null);
+        }
+
+        const token = await fbUser.getIdToken();
+        setStoredToken(token);
+
+        // Sync initial profile to Firestore
+        await syncUserProfileToFirestore(fbUser.uid, {
+          id: fbUser.uid,
+          name: displayName,
+          email: cleanEmail,
+          phone: phone.trim() || null,
+          role: isAdminDetected ? 'admin' : 'customer',
+          access_status: isAdminDetected ? 'paid' : 'free',
+          can_access_masterclass: isAdminDetected,
+        }).catch((err) => console.warn('[Firestore] Register sync notice:', err));
+
+        const activeUser: User = {
+          id: fbUser.uid,
+          name: displayName,
+          email: cleanEmail,
+          phone: phone.trim() || null,
+          role: isAdminDetected ? 'admin' : 'customer',
+          access_status: isAdminDetected ? 'paid' : 'free',
+          can_access_masterclass: isAdminDetected,
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+        };
+
+        setUser(activeUser);
+        setActiveStudentTier(isAdminDetected ? 'paid' : 'free');
+
+        // Non-blocking sync with Supabase for dual compatibility
+        supabase.auth.signUp({
+          email: cleanEmail,
+          password,
+          options: {
+            data: { name: displayName, phone: phone.trim() || undefined },
+            emailRedirectTo: CANONICAL_APP_DOMAIN,
+          },
+        }).catch(() => null);
+
+        // Immediate continuation - no email blocking!
+        return {
+          success: true,
+          needsVerification: false,
+          message: `Welcome to MEG.AI Labs, ${displayName}! Your account is active.`,
+        };
+      } catch (fbErr: any) {
+        if (fbErr.code === 'auth/email-already-in-use') {
+          const msg = 'An account with this email address already exists. Please log in.';
+          setError(msg);
+          return { success: false, error: msg };
+        } else if (fbErr.code === 'auth/weak-password') {
+          const msg = 'Password should be at least 6 characters.';
+          setError(msg);
+          return { success: false, error: msg };
+        } else if (fbErr.code === 'auth/invalid-email') {
+          const msg = 'Please enter a valid email address.';
+          setError(msg);
+          return { success: false, error: msg };
+        }
+        console.warn('[Firebase Auth Register warning, falling back to Supabase]', fbErr);
+      }
+
+      // 2. FALLBACK: Supabase Auth signup without blocking access
+      const redirectUrl = getAppRedirectUrl();
       const { data, error: signUpError } = await supabase.auth.signUp({
         email: cleanEmail,
         password,
         options: {
           data: {
-            name: name.trim() || cleanEmail.split('@')[0],
+            name: displayName,
             phone: phone.trim() || undefined,
           },
           emailRedirectTo: redirectUrl,
@@ -603,48 +768,25 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         return { success: false, error: msg };
       }
 
-      const isConfirmed = isUserVerified(data?.user);
+      const activeUser: User = {
+        id: data?.user?.id || `usr_${Date.now()}`,
+        name: displayName,
+        email: cleanEmail,
+        phone: phone.trim() || null,
+        role: isAdminDetected ? 'admin' : 'customer',
+        access_status: isAdminDetected ? 'paid' : 'free',
+        can_access_masterclass: isAdminDetected,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      };
 
-      // If user requires email confirmation (standard security requirement)
-      if (!isConfirmed) {
-        // Prevent unconfirmed session from holding active login state
-        await supabase.auth.signOut().catch(() => null);
-        setUser(null);
-        setSession(null);
-
-        return {
-          success: true,
-          needsVerification: true,
-          unverifiedEmail: cleanEmail,
-          message: `Verification link sent to ${cleanEmail}! Please check your inbox and confirm your address before logging in.`,
-        };
-      }
-
-      // If already confirmed (e.g. project setting or Google)
-      if (data?.session && data.user) {
-        const isAdminDetected = checkIsAdminEmail(data.user.email);
-        const determinedRole: UserRole = isAdminDetected 
-          ? 'admin' 
-          : (data.user.user_metadata?.role === 'developer' ? 'developer' : 'customer');
-
-        setUser({
-          id: data.user.id,
-          name: data.user.user_metadata?.name || cleanEmail.split('@')[0] || 'Trader',
-          email: cleanEmail,
-          phone: data.user.phone || phone || null,
-          role: determinedRole,
-          created_at: data.user.created_at,
-          updated_at: data.user.updated_at || data.user.created_at,
-        });
-        setSession(data.session);
-        return { success: true };
-      }
+      setUser(activeUser);
+      if (data?.session) setSession(data.session);
 
       return {
         success: true,
-        needsVerification: true,
-        unverifiedEmail: cleanEmail,
-        message: `Account created. Please check ${cleanEmail} for your verification link before accessing the platform.`,
+        needsVerification: false,
+        message: `Welcome to MEG.AI Labs, ${displayName}! Your account is active.`,
       };
     } catch (err: any) {
       const msg = err.message || 'Registration failed. Please check your details.';
@@ -655,13 +797,27 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
-  // Resend Supabase signup confirmation email
+  // Resend verification email for Masterclass or account verification
   const resendVerificationEmail = async (targetEmail: string): Promise<{ success: boolean; message?: string; error?: string }> => {
     try {
       const clean = targetEmail.trim().toLowerCase();
       if (!clean) {
         return { success: false, error: 'Please enter a valid email address.' };
       }
+
+      // If Firebase user is current, use Firebase sendEmailVerification
+      if (auth.currentUser && auth.currentUser.email?.toLowerCase() === clean) {
+        await sendEmailVerification(auth.currentUser, {
+          url: CANONICAL_APP_DOMAIN,
+          handleCodeInApp: true,
+        });
+        return {
+          success: true,
+          message: `Verification link sent to ${clean} via Firebase Auth. Please check your inbox and spam folder.`,
+        };
+      }
+
+      // Supabase fallback
       const redirectUrl = getAppRedirectUrl();
       const { error: resendErr } = await supabase.auth.resend({
         type: 'signup',
@@ -677,10 +833,67 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
       return {
         success: true,
-        message: `Verification link successfully resent to ${clean}. Please check your inbox and spam folders!`,
+        message: `Verification link successfully sent to ${clean}. Please check your inbox and spam folders!`,
       };
     } catch (err: any) {
       return { success: false, error: err.message || 'Failed to resend confirmation email.' };
+    }
+  };
+
+  // Dedicated email verification trigger for Masterclass enrollment
+  const sendMasterclassVerification = async (): Promise<{ success: boolean; message?: string; error?: string }> => {
+    try {
+      if (auth.currentUser) {
+        await sendEmailVerification(auth.currentUser, {
+          url: CANONICAL_APP_DOMAIN,
+          handleCodeInApp: true,
+        });
+        return {
+          success: true,
+          message: `Masterclass verification link sent to ${auth.currentUser.email}. Check your inbox!`,
+        };
+      }
+
+      if (user?.email) {
+        return await resendVerificationEmail(user.email);
+      }
+
+      return { success: false, error: 'Please sign in first to verify your email.' };
+    } catch (err: any) {
+      return { success: false, error: err.message || 'Failed to send Masterclass verification email.' };
+    }
+  };
+
+  // Password reset via Firebase Auth and Supabase fallback
+  const sendPasswordReset = async (targetEmail: string): Promise<{ success: boolean; message?: string; error?: string }> => {
+    try {
+      const clean = targetEmail.trim().toLowerCase();
+      if (!clean) return { success: false, error: 'Please enter a valid email address.' };
+
+      try {
+        await sendPasswordResetEmail(auth, clean, {
+          url: CANONICAL_APP_DOMAIN,
+        });
+        return {
+          success: true,
+          message: `Password reset instructions sent to ${clean}. Check your inbox!`,
+        };
+      } catch (fbErr: any) {
+        console.log('[Firebase reset attempt note, trying Supabase fallback]');
+      }
+
+      const { error: supaErr } = await supabase.auth.resetPasswordForEmail(clean, {
+        redirectTo: `${CANONICAL_APP_DOMAIN}/reset-password`,
+      });
+      if (supaErr) {
+        return { success: false, error: supaErr.message };
+      }
+      return {
+        success: true,
+        message: `Password reset link sent to ${clean}.`,
+      };
+    } catch (err: any) {
+      return { success: false, error: err.message || 'Failed to send password reset.' };
     }
   };
 
@@ -764,6 +977,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const isCustomer = !isAdmin && !isDeveloper && !!user;
   const isLoggedIn = !!user;
 
+  const isEmailVerified = Boolean(
+    auth.currentUser?.emailVerified ||
+    auth.currentUser?.providerData?.some((p) => p.providerId === 'google.com') ||
+    (session?.user && isUserVerified(session.user)) ||
+    isAdmin
+  );
+
   const userAccessStatus: UserAccessStatus = isAdmin ? 'paid' : (user?.access_status || 'free');
   const canAccessMasterclass = isAdmin || userAccessStatus === 'paid' || userAccessStatus === 'complimentary' || Boolean(user?.can_access_masterclass);
 
@@ -780,11 +1000,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         isLoggedIn,
         userAccessStatus,
         canAccessMasterclass,
+        isEmailVerified,
         refreshUserAccess,
         login,
         loginWithGoogle,
         register,
         resendVerificationEmail,
+        sendMasterclassVerification,
+        sendPasswordReset,
         logout,
         quickLogin,
         clearError,

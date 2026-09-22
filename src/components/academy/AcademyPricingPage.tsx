@@ -14,7 +14,10 @@ import {
   CheckCircle2, 
   Star,
   Lock,
-  MessageSquareCode
+  MessageSquareCode,
+  Mail,
+  ShieldAlert,
+  Send
 } from 'lucide-react';
 import { ActiveView } from '../../types.ts';
 import { useCurrency } from '../../context/CurrencyContext.tsx';
@@ -31,11 +34,13 @@ interface AcademyPricingPageProps {
 
 export function AcademyPricingPage({ onNavigate, onOpenAuth }: AcademyPricingPageProps) {
   const { currentCurrency, formatPrice, convertAmount } = useCurrency();
-  const { user, isAdmin } = useAuth();
+  const { user, isAdmin, isEmailVerified, sendMasterclassVerification } = useAuth();
   const [selectedTierId, setSelectedTierId] = useState<string>('masterclass-ea');
   const [checkoutModalOpen, setCheckoutModalOpen] = useState(false);
   const [enrolledSuccess, setEnrolledSuccess] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [verificationSending, setVerificationSending] = useState(false);
+  const [verificationFeedback, setVerificationFeedback] = useState<string | null>(null);
   const [currentStudentTier, setCurrentStudentTier] = useState<StudentTier>(() => getActiveStudentTier(user, isAdmin));
 
   // The 3 Required Masterclass Pricing Packages
@@ -118,7 +123,25 @@ export function AcademyPricingPage({ onNavigate, onOpenAuth }: AcademyPricingPag
 
   const handleSelectPackage = (pkg: typeof packages[0]) => {
     setSelectedTierId(pkg.id);
+    setVerificationFeedback(null);
     setCheckoutModalOpen(true);
+  };
+
+  const handleSendVerification = async () => {
+    setVerificationSending(true);
+    setVerificationFeedback(null);
+    try {
+      const res = await sendMasterclassVerification();
+      if (res.success) {
+        setVerificationFeedback(res.message || 'Verification link sent! Please check your inbox.');
+      } else {
+        setVerificationFeedback(res.error || 'Failed to send verification email.');
+      }
+    } catch (err: any) {
+      setVerificationFeedback(err.message || 'Failed to send verification email.');
+    } finally {
+      setVerificationSending(false);
+    }
   };
 
   const handleConfirmEnrollment = async () => {
@@ -442,17 +465,59 @@ export function AcademyPricingPage({ onNavigate, onOpenAuth }: AcademyPricingPag
 
                 <div className="space-y-3">
                   <span className="text-[11px] font-mono uppercase tracking-wider text-slate-500 font-semibold block">
-                    Confirm Account:
+                    Account Status & Enrollment Verification:
                   </span>
                   {user ? (
-                    <div className="p-3 bg-emerald-50/50 border border-emerald-200 rounded-xl text-xs flex items-center justify-between">
-                      <span className="text-slate-700 font-medium">{user.email}</span>
-                      <span className="text-[10px] font-mono text-emerald-800 font-bold">LOGGED IN ✓</span>
+                    <div className="space-y-2">
+                      <div className="p-3 bg-emerald-50/50 border border-emerald-200 rounded-xl text-xs flex items-center justify-between">
+                        <span className="text-slate-700 font-medium">{user.email}</span>
+                        <span className="text-[10px] font-mono text-emerald-800 font-bold">LOGGED IN ✓</span>
+                      </div>
+
+                      {/* If user is not yet verified and not admin, require verification for Masterclass */}
+                      {!isEmailVerified && !isAdmin && (
+                        <div className="p-3 bg-amber-50/80 border border-amber-300 rounded-xl text-xs space-y-2.5">
+                          <div className="flex items-center justify-between">
+                            <span className="font-semibold text-amber-950 flex items-center gap-1.5">
+                              <ShieldAlert className="w-3.5 h-3.5 text-amber-600" />
+                              Masterclass Email Confirmation Required
+                            </span>
+                            <span className="text-[9px] font-mono uppercase bg-amber-200 text-amber-900 px-2 py-0.5 rounded-full font-bold">
+                              Certification Security
+                            </span>
+                          </div>
+                          <p className="text-amber-900 text-[11px] leading-relaxed">
+                            To ensure your official Strategy Architect Certificate and MQL5 automated bot presets are issued to a verified student, please confirm your email address.
+                          </p>
+
+                          {verificationFeedback && (
+                            <div className="p-2 rounded-lg bg-emerald-100/80 text-emerald-900 text-[11px] font-medium flex items-center gap-1.5">
+                              <CheckCircle2 className="w-3.5 h-3.5 text-emerald-700 shrink-0" />
+                              <span>{verificationFeedback}</span>
+                            </div>
+                          )}
+
+                          <div className="flex items-center gap-2 pt-1">
+                            <button
+                              type="button"
+                              onClick={handleSendVerification}
+                              disabled={verificationSending}
+                              className="px-3 py-1.5 rounded-lg bg-amber-600 hover:bg-amber-700 disabled:opacity-50 text-white font-medium text-xs flex items-center gap-1.5 shadow-xs cursor-pointer transition-colors"
+                            >
+                              <Send className="w-3 h-3" />
+                              {verificationSending ? 'Sending...' : 'Send Verification Link'}
+                            </button>
+                            <span className="text-[10px] text-amber-800">
+                              (Sent to {user.email})
+                            </span>
+                          </div>
+                        </div>
+                      )}
                     </div>
                   ) : (
                     <div className="p-3 bg-amber-50 border border-amber-200 rounded-xl text-xs space-y-2">
                       <p className="text-amber-900">
-                        You are currently browsing as a guest. You can enroll now or sign in to link your certificate to your profile.
+                        You are currently browsing as a guest. Please sign in or register to verify your account and receive your course certificate.
                       </p>
                       {onOpenAuth && (
                         <button
