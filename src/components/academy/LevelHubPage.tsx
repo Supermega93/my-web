@@ -277,7 +277,7 @@ export function LevelHubPage({ levelId, onNavigate }: LevelHubPageProps) {
               <div className="pt-2 flex flex-wrap items-center justify-center md:justify-start gap-4">
                 {levelMeta.isFree ? (
                   <button
-                    onClick={() => onNavigate('lesson-detail', nextLessonToTake?.id || 'lesson-1-1')}
+                    onClick={() => onNavigate('lesson-detail', nextLessonToTake?.id || visibleLessons[0]?.id || 'lesson-1-0')}
                     className="px-6 py-3.5 rounded-full bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-black text-sm tracking-wide transition-all shadow-[0_0_25px_rgba(16,185,129,0.35)] hover:shadow-[0_0_35px_rgba(16,185,129,0.55)] hover:scale-[1.02] flex items-center gap-2 group"
                   >
                     <span>{completedLessons > 0 ? 'Continue Course' : 'Start Course'}</span>
