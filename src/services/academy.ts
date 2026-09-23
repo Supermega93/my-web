@@ -205,8 +205,21 @@ export async function fetchLessonById(lessonId: string, token?: string | null): 
     if (res.ok) {
       const data = await res.json().catch(() => ({}));
       if (data && data.lesson) {
+        const fallback = FALLBACK_LESSONS.find(
+          (f) =>
+            f.id === data.lesson.id ||
+            f.id === lessonId ||
+            f.order_index === data.lesson.order_index ||
+            f.title?.toLowerCase() === (data.lesson.title || '').toLowerCase()
+        );
         return {
+          ...fallback,
           ...data.lesson,
+          video_url: data.lesson.video_url || fallback?.video_url,
+          video_id: data.lesson.video_id || fallback?.video_id,
+          video_title: data.lesson.video_title || fallback?.video_title,
+          video_subtitle: data.lesson.video_subtitle || fallback?.video_subtitle,
+          video_badge: data.lesson.video_badge || fallback?.video_badge,
           is_free: Boolean(data.lesson.is_free),
           accessGranted: true,
           accessType: data.accessType,
@@ -215,8 +228,21 @@ export async function fetchLessonById(lessonId: string, token?: string | null): 
     } else if (res.status === 403) {
       const data = await res.json().catch(() => ({}));
       if (data && data.lesson) {
+        const fallback = FALLBACK_LESSONS.find(
+          (f) =>
+            f.id === data.lesson.id ||
+            f.id === lessonId ||
+            f.order_index === data.lesson.order_index ||
+            f.title?.toLowerCase() === (data.lesson.title || '').toLowerCase()
+        );
         return {
+          ...fallback,
           ...data.lesson,
+          video_url: data.lesson.video_url || fallback?.video_url,
+          video_id: data.lesson.video_id || fallback?.video_id,
+          video_title: data.lesson.video_title || fallback?.video_title,
+          video_subtitle: data.lesson.video_subtitle || fallback?.video_subtitle,
+          video_badge: data.lesson.video_badge || fallback?.video_badge,
           is_free: false,
           content: '', // Zero bytes delivered
           accessGranted: false,

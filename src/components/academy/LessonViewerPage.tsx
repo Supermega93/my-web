@@ -167,10 +167,46 @@ export function LessonViewerPage({ lessonId, onNavigate, onOpenCheckout }: Lesso
   const isIndicatorWorkshop = lesson?.id === INDICATOR_WORKSHOP_LESSON_ID || lesson?.id === 'lesson-3-6';
   const isPractical = isBreakoutWorkshop || isIndicatorWorkshop;
 
-  // Level 1, 2, and 3 Lesson 1 identification for introductory masterclass video embedding
-  const isLevel1Lesson1 = lesson ? (lesson.id === 'lesson-1-0' || (lesson.level_name?.includes('Level 1') && (lesson.lesson_number === 1 || lesson.order_index === 1))) : false;
-  const isLevel2Lesson1 = lesson ? (lesson.id === 'lesson-2-1' || (lesson.level_name?.includes('Level 2') && (lesson.lesson_number === 1 || lesson.order_index === 5))) : false;
-  const isLevel3Lesson1 = lesson ? (lesson.id === 'lesson-3-1' || (lesson.level_name?.includes('Level 3') && (lesson.lesson_number === 1 || lesson.order_index === 9))) : false;
+  // Level 1, 2, and 3 Lesson identification for masterclass video embedding:
+  // Lesson 1.1 (and orientation 1.0) -> Level 1 video
+  // Lesson 2.1 -> Level 2 video
+  // Lesson 3.1 -> Level 3 video
+  // Generic -> any other lesson with video_url or video_id
+  const isLevel1Lesson = lesson
+    ? (
+        lesson.id === 'lesson-1-1' ||
+        lesson.id === 'lesson-1-0' ||
+        lesson.title?.toLowerCase().includes('lesson 1.1') ||
+        (lesson.level_name?.includes('Level 1') && (lesson.lesson_number === 1 || lesson.lesson_number === 2 || lesson.order_index === 1 || lesson.order_index === 2))
+      )
+    : false;
+
+  const isLevel2Lesson = lesson
+    ? (
+        lesson.id === 'lesson-2-1' ||
+        lesson.title?.toLowerCase().includes('lesson 2.1') ||
+        (lesson.level_name?.includes('Level 2') && (lesson.lesson_number === 1 || lesson.order_index === 5 || lesson.id?.includes('2-1')))
+      )
+    : false;
+
+  const isLevel3Lesson = lesson
+    ? (
+        lesson.id === 'lesson-3-1' ||
+        lesson.title?.toLowerCase().includes('lesson 3.1') ||
+        (lesson.level_name?.includes('Level 3') && (lesson.lesson_number === 1 || lesson.order_index === 9 || lesson.id?.includes('3-1')))
+      )
+    : false;
+
+  const isOtherDedicatedVideoLesson = lesson
+    ? (
+        Boolean(lesson.video_url || lesson.video_id) &&
+        !isLevel1Lesson &&
+        !isLevel2Lesson &&
+        !isLevel3Lesson &&
+        !isBreakoutWorkshop &&
+        !isIndicatorWorkshop
+      )
+    : false;
   const practicalProgress = useMemo(
     () => getPracticalExerciseProgress(completedLessonIds),
     [completedLessonIds]
@@ -614,25 +650,25 @@ export function LessonViewerPage({ lessonId, onNavigate, onOpenCheckout }: Lesso
           </div>
         ) : isUnlocked ? (
           <div className="mt-4 p-6 sm:p-10 rounded-2xl bg-slate-900/60 border border-slate-800 shadow-xl space-y-10">
-            {/* Embedded YouTube Video at the very beginning of Level 1 Lesson 1 */}
-            {isLevel1Lesson1 && (
+            {/* Embedded YouTube Video for Level 1 (Lesson 1.1 & Orientation) */}
+            {isLevel1Lesson && (
               <LessonVideoPlayer
                 videoUrl={lesson.video_url || "https://www.youtube.com/watch?v=POVEstXyCkg"}
                 videoId={lesson.video_id || "POVEstXyCkg"}
-                title={lesson.video_title || "Level 1: Strategy Architect Mindset & Foundations"}
-                subtitle={lesson.video_subtitle || "Watch this orientation masterclass before beginning the written lesson below."}
+                title={lesson.video_title || "Level 1 Masterclass: Strategy Architect Mindset & Foundations"}
+                subtitle={lesson.video_subtitle || "Watch this masterclass before beginning the written lesson below."}
                 badgeText={lesson.video_badge || "Level 1 Video Masterclass"}
-                footerHint="Watch the orientation video above, then follow the full written lesson and take the quick quiz below."
-                footerSubtext="Written Orientation & Quiz Below ↓"
+                footerHint="Watch the Level 1 masterclass video above, then follow the full written lesson and take the quick quiz below."
+                footerSubtext="Written Lesson & Quiz Below ↓"
               />
             )}
 
-            {/* Embedded YouTube Video at the very beginning of Level 2 Lesson 1 */}
-            {isLevel2Lesson1 && (
+            {/* Embedded YouTube Video for Level 2 (Lesson 2.1) */}
+            {isLevel2Lesson && (
               <LessonVideoPlayer
                 videoUrl={lesson.video_url || "https://www.youtube.com/watch?v=sQBo6OO0JOo"}
                 videoId={lesson.video_id || "sQBo6OO0JOo"}
-                title={lesson.video_title || "Level 2: Programming Concepts in Plain English"}
+                title={lesson.video_title || "Level 2 Masterclass: Programming Concepts in Plain English"}
                 subtitle={lesson.video_subtitle || "Watch this video walkthrough before beginning the written lesson below."}
                 badgeText={lesson.video_badge || "Level 2 Video Masterclass"}
                 footerHint="Watch the video walkthrough above, then study the labelled boxes and variables below."
@@ -640,16 +676,27 @@ export function LessonViewerPage({ lessonId, onNavigate, onOpenCheckout }: Lesso
               />
             )}
 
-            {/* Embedded YouTube Video at the very beginning of Level 3 Lesson 1 */}
-            {isLevel3Lesson1 && (
+            {/* Embedded YouTube Video for Level 3 (Lesson 3.1) */}
+            {isLevel3Lesson && (
               <LessonVideoPlayer
                 videoUrl={lesson.video_url || "https://www.youtube.com/watch?v=qSFuZUI-y8U"}
                 videoId={lesson.video_id || "qSFuZUI-y8U"}
-                title={lesson.video_title || "Level 3: Robot Architecture & Blueprints"}
+                title={lesson.video_title || "Level 3 Masterclass: Robot Architecture & Blueprints"}
                 subtitle={lesson.video_subtitle || "Watch this video walkthrough before beginning the written lesson below."}
                 badgeText={lesson.video_badge || "Level 3 Video Masterclass"}
                 footerHint="Watch the video walkthrough above, then study the 5 program types and blueprints below."
                 footerSubtext="Written Architecture Guide Below ↓"
+              />
+            )}
+
+            {/* Embedded YouTube Video for any subsequent lesson with video configuration */}
+            {isOtherDedicatedVideoLesson && (
+              <LessonVideoPlayer
+                videoUrl={lesson.video_url!}
+                videoId={lesson.video_id}
+                title={lesson.video_title || lesson.title}
+                subtitle={lesson.video_subtitle || lesson.summary}
+                badgeText={lesson.video_badge || "Video Masterclass"}
               />
             )}
 
