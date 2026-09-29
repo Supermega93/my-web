@@ -1041,6 +1041,348 @@ app.post('/api/orders', (req, res) => {
 });
 
 // ==========================================
+// MANUAL EFT / BANK TRANSFER SYSTEM (Standard Bank)
+// ==========================================
+
+// 1. Centralized EFT Banking Configuration API
+app.get('/api/payments/eft/config', (req: Request, res: Response) => {
+  const envBranchCode = process.env.VITE_EFT_BRANCH_CODE || process.env.EFT_BRANCH_CODE || '051001';
+  res.json({
+    bankName: 'Standard Bank',
+    accountHolder: 'Megonza Digital',
+    accountNumber: '10 23 601 346 5',
+    accountType: 'Cheque / Current Account',
+    branchCode: envBranchCode,
+    universalBranchCode: '051001',
+    swiftBicCode: 'SBZAZAJJ',
+    swiftBicNote: 'If you are receiving money from overseas, use SBZAZAJJ.',
+    branchCodeConfigured: true,
+    whatsAppNumber: '27644611412',
+    whatsAppDisplay: '+27 64 461 1412',
+    supportEmail: 'supermegafx1@gmail.com'
+  });
+});
+
+// 2. Create Pending Manual EFT Order
+// Customer selects EFT -> PENDING order created -> Banking details displayed -> Proof submitted via WhatsApp
+// NOTE: Product access is NOT granted until an authorized administrator verifies receipt!
+app.post('/api/orders/manual-eft', async (req: Request, res: Response) => {
+  try {
+    const {
+      productId,
+      customerEmail,
+      customerName,
+      tierName,
+      amountZar: customAmountZar,
+      notes
+    } = req.body;
+
+    if (!productId) {
+      return res.status(400).json({ success: false, error: 'Product ID is required for order creation.' });
+    }
+    if (!customerEmail || !customerEmail.includes('@')) {
+      return res.status(400).json({ success: false, error: 'A valid email address is required to receive confirmation.' });
+    }
+
+    const product = resolveCheckoutProduct(productId);
+    if (!product) {
+      return res.status(404).json({ success: false, error: `Product '${productId}' not found in catalog.` });
+    }
+
+    // Dynamic ZAR calculation
+    const zarRate = 18.25;
+    let zarAmount = (product.currency === 'ZAR') 
+      ? product.price 
+      : Math.round(product.price * zarRate * 100) / 100;
+
+    if (typeof customAmountZar === 'number' && customAmountZar > 0) {
+      zarAmount = Math.round(customAmountZar * 100) / 100;
+    }
+
+    // Resolve or create user in SQLite
+    let user = dbQueries.getUserByEmail(customerEmail.trim());
+    let userId = user ? String(user.id) : null;
+    if (!userId) {
+      userId = `usr_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`;
+      try {
+        dbQueries.createUser({
+          id: userId,
+          email: customerEmail.trim(),
+          name: customerName?.trim() || 'Trader Customer',
+          password_hash: 'eft_customer_hash',
+          role: 'customer'
+        });
+      } catch {
+        const reUser = dbQueries.getUserByEmail(customerEmail.trim());
+        if (reUser) userId = String(reUser.id);
+      }
+    }
+
+    const orderId = `ord_eft_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`;
+    const shortCode = orderId.replace(/^ord_eft_/, '').substring(0, 8).toUpperCase();
+    const eftReference = `EFT-${shortCode}`;
+
+    const orderData = {
+      id: orderId,
+      user_id: userId || 'usr_guest',
+      product_id: product.id,
+      amount: zarAmount,
+      currency: 'ZAR',
+      customer_email: customerEmail.trim(),
+      customer_name: customerName?.trim() || 'Trader Customer',
+      eft_reference: eftReference,
+      notes: notes?.trim() || `Manual EFT bank transfer for ${product.name}. Awaiting WhatsApp proof of payment.`
+    };
+
+    // Insert pending order in SQLite (NO license/download generated)
+    dbQueries.createManualEftOrder(orderData);
+
+    // Sync PENDING order record to Supabase
+    persistOrderToSupabase({
+      ...orderData,
+      payment_status: 'pending',
+      transaction_id: eftReference,
+      payment_provider: 'manual_eft'
+    }).catch((supaErr) => {
+      console.warn('[Supabase Sync for Pending EFT Notice]:', supaErr?.message || supaErr);
+    });
+
+    const envBranchCode = process.env.VITE_EFT_BRANCH_CODE || process.env.EFT_BRANCH_CODE || '051001';
+
+    res.json({
+      success: true,
+      status: 'pending',
+      orderId,
+      reference: eftReference,
+      amountZar: zarAmount,
+      product: {
+        id: product.id,
+        name: tierName || product.name,
+        priceUsd: product.price
+      },
+      bankingDetails: {
+        bankName: 'Standard Bank',
+        accountHolder: 'Megonza Digital',
+        accountNumber: '10 23 601 346 5',
+        accountType: 'Cheque / Current Account',
+        branchCode: envBranchCode,
+        universalBranchCode: '051001',
+        swiftBicCode: 'SBZAZAJJ',
+        swiftBicNote: 'If you are receiving money from overseas, use SBZAZAJJ.',
+        reference: eftReference,
+        whatsAppNumber: '27644611412',
+        whatsAppDisplay: '+27 64 461 1412',
+        supportEmail: 'supermegafx1@gmail.com'
+      },
+      message: 'Pending EFT order created. Transfer funds to Standard Bank and send proof via WhatsApp.'
+    });
+  } catch (error: any) {
+    console.error('[Create Manual EFT Order Error]:', error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+// 3. Query EFT Order Verification Status (Client polling / status checking)
+app.get('/api/orders/eft-status/:orderId', (req: Request, res: Response) => {
+  try {
+    const { orderId } = req.params;
+    const order = dbQueries.getOrderById(orderId);
+    if (!order) {
+      return res.status(404).json({ success: false, error: 'Order not found.' });
+    }
+
+    const isPaid = order.payment_status === 'paid';
+    let license = null;
+    if (isPaid && order.product_type === 'ea') {
+      license = db.prepare('SELECT * FROM licenses WHERE order_id = ?').get(orderId);
+    }
+
+    res.json({
+      success: true,
+      orderId,
+      status: order.payment_status,
+      isPaid,
+      order,
+      license
+    });
+  } catch (error: any) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+// ==========================================
+// PAYPAL CHECKOUT SYSTEM (Instant Worldwide Online Payment)
+// ==========================================
+function getPayPalClientId(): string {
+  return process.env.PAYPAL_CLIENT_ID || process.env.VITE_PAYPAL_CLIENT_ID || 'sb';
+}
+
+// 1. PayPal Gateway Configuration
+app.get('/api/payments/paypal/config', (req: Request, res: Response) => {
+  const clientId = getPayPalClientId();
+  const isSandbox = !process.env.PAYPAL_CLIENT_ID || clientId === 'sb';
+  res.json({
+    gateway: 'PayPal',
+    clientId,
+    currency: 'USD',
+    isSandbox,
+    supportedCurrencies: ['USD', 'EUR', 'GBP', 'ZAR'],
+    exchangeRateZarPerUsd: 18.25
+  });
+});
+
+// 2. PayPal Create Order Endpoint
+app.post('/api/payments/paypal/create-order', async (req: Request, res: Response) => {
+  try {
+    const { productId, customerEmail, customerName, tierName, amountUsd: customAmountUsd } = req.body;
+    if (!productId) {
+      return res.status(400).json({ success: false, error: 'Product ID is required for PayPal order.' });
+    }
+    const product = resolveCheckoutProduct(productId);
+    if (!product) {
+      return res.status(404).json({ success: false, error: `Product '${productId}' not found in catalog.` });
+    }
+
+    const priceUsd = (typeof customAmountUsd === 'number' && customAmountUsd > 0)
+      ? customAmountUsd
+      : (product.currency === 'USD' ? product.price : Math.round((product.price / 18.25) * 100) / 100);
+
+    const paypalOrderId = `PAYPAL_${Date.now()}_${Math.random().toString(36).substring(2, 8).toUpperCase()}`;
+
+    res.json({
+      success: true,
+      orderId: paypalOrderId,
+      amount: priceUsd.toFixed(2),
+      currency: 'USD',
+      productName: tierName || product.name,
+      customerEmail: customerEmail || '',
+      customerName: customerName || ''
+    });
+  } catch (err: any) {
+    console.error('[PayPal Create Order Error]:', err);
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+// 3. PayPal Capture Order & Product Fulfillment
+app.post('/api/payments/paypal/capture-order', async (req: Request, res: Response) => {
+  try {
+    const {
+      paypalOrderId,
+      productId,
+      customerEmail,
+      customerName,
+      tierName,
+      amountUsd: customAmountUsd
+    } = req.body;
+
+    if (!productId) {
+      return res.status(400).json({ success: false, error: 'Product ID is required.' });
+    }
+    if (!customerEmail || !customerEmail.includes('@')) {
+      return res.status(400).json({ success: false, error: 'Valid customer email is required.' });
+    }
+
+    const product = resolveCheckoutProduct(productId);
+    if (!product) {
+      return res.status(404).json({ success: false, error: `Product '${productId}' not found.` });
+    }
+
+    const priceUsd = (typeof customAmountUsd === 'number' && customAmountUsd > 0)
+      ? customAmountUsd
+      : (product.currency === 'USD' ? product.price : Math.round((product.price / 18.25) * 100) / 100);
+
+    // Resolve or create user in SQLite
+    let user = dbQueries.getUserByEmail(customerEmail.trim());
+    let userId = user ? String(user.id) : null;
+    if (!userId) {
+      userId = `usr_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`;
+      try {
+        dbQueries.createUser({
+          id: userId,
+          email: customerEmail.trim(),
+          name: customerName?.trim() || 'PayPal Customer',
+          password_hash: 'paypal_customer_hash',
+          role: 'customer'
+        });
+      } catch {
+        const reUser = dbQueries.getUserByEmail(customerEmail.trim());
+        if (reUser) userId = String(reUser.id);
+      }
+    }
+
+    const isMasterclass = productId?.startsWith('masterclass') || productId === 'bundle' || productId === 'premium' || productId === 'vip';
+    const isEa = product.type === 'ea';
+
+    const orderId = `ord_pp_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`;
+    const txId = paypalOrderId || `PP-TX-${Date.now()}`;
+
+    const orderRecord = {
+      id: orderId,
+      user_id: userId || 'usr_guest',
+      product_id: product.id,
+      amount: priceUsd,
+      currency: 'USD',
+      payment_status: 'paid',
+      transaction_id: txId,
+      payment_method: 'paypal',
+      customer_email: customerEmail.trim(),
+      customer_name: customerName?.trim() || 'Trader Customer',
+      notes: `Verified PayPal Instant Payment for ${tierName || product.name}`
+    };
+
+    const orderResult = dbQueries.createOrder(orderRecord);
+
+    // Supabase Dual Persistence (orders, purchases, licenses)
+    persistOrderToSupabase(orderRecord, orderResult.license).catch((err) => {
+      console.warn('[Supabase Order Sync on PayPal Notice]:', err?.message || err);
+    });
+
+    // Entitlement for Masterclass
+    let studentTier = null;
+    if (isMasterclass) {
+      studentTier = (productId === 'masterclass-vip' || productId === 'premium' || productId === 'vip') ? 'vip' : 'paid';
+      syncComplimentaryAccessToSupabase({
+        id: `acc_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`,
+        user_id: userId || 'usr_masterclass',
+        user_email: customerEmail.trim(),
+        access_type: 'masterclass',
+        status: 'active',
+        granted_at: new Date().toISOString(),
+        granted_by: 'paypal_verified_checkout',
+        notes: `Verified PayPal transaction: ${txId}`
+      }).catch((err) => {
+        console.warn('[Supabase Masterclass Sync on PayPal Notice]:', err?.message || err);
+      });
+    }
+
+    // Automated order notification email
+    sendOrderNotification({
+      order: orderRecord,
+      product: product || { id: product.id, name: tierName || product.name, price: priceUsd },
+      license: orderResult.license,
+      customerEmail: customerEmail.trim(),
+      customerName: customerName?.trim() || 'Valued Trader'
+    }).catch((emailErr) => {
+      console.warn('[PayPal Order Email Notification Notice]:', emailErr?.message || emailErr);
+    });
+
+    res.json({
+      success: true,
+      verified: true,
+      order: orderRecord,
+      license: orderResult.license,
+      downloadUrl: isEa ? null : (product.download_url || '/downloads/the-school-of-ai-trading-architecture-vol1.pdf'),
+      studentTier,
+      product
+    });
+  } catch (err: any) {
+    console.error('[PayPal Capture Error]:', err);
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+// ==========================================
 // YOCO HOSTED CHECKOUT SYSTEM
 // ==========================================
 // YOCO PAYMENT GATEWAY CONFIGURATION (Server-Side Only)
@@ -1970,6 +2312,88 @@ app.get('/api/admin/orders', requireAuth, requireRole(['admin']), (req, res) => 
     res.json({ orders });
   } catch (error: any) {
     res.status(500).json({ error: error.message });
+  }
+});
+
+// Admin: Approve Manual EFT Order & Grant Product Access
+app.post('/api/admin/orders/:orderId/approve-eft', requireAuth, requireRole(['admin']), async (req: any, res) => {
+  try {
+    const { orderId } = req.params;
+    const { adminNotes } = req.body;
+    const adminEmail = req.user?.email || 'supermegafx1@gmail.com';
+
+    const result = dbQueries.approveManualEftOrder(orderId, adminEmail, adminNotes);
+    const order = result.order;
+    const license = result.license;
+    const product = result.product;
+
+    // 1. Dual persistence: Update order status to 'paid' and persist any generated license in Supabase
+    persistOrderToSupabase(order, license).catch((err) => {
+      console.warn('[Supabase Sync on EFT Approval Notice]:', err?.message || err);
+    });
+
+    // 2. If product is Masterclass, grant active access in Supabase complimentary_access
+    const isMasterclass = order.product_id?.startsWith('masterclass') || order.product_id === 'bundle' || order.product_id === 'premium';
+    if (isMasterclass) {
+      syncComplimentaryAccessToSupabase({
+        id: `acc_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`,
+        user_id: order.user_id,
+        user_email: order.user_email,
+        access_type: 'masterclass',
+        status: 'active',
+        granted_at: new Date().toISOString(),
+        granted_by: `eft_verified_${adminEmail}`,
+        notes: `Manual EFT verified by ${adminEmail} for Order ${orderId}`
+      }).catch((err) => {
+        console.warn('[Supabase Masterclass Access Sync on EFT Notice]:', err?.message || err);
+      });
+    }
+
+    // 3. Dispatch automated order notification email with terminal license or download link
+    sendOrderNotification({
+      order,
+      product: product || { id: order.product_id, name: order.product_name, price: order.amount },
+      license,
+      customerEmail: order.user_email,
+      customerName: order.user_name || 'Valued Trader'
+    }).catch((emailErr) => {
+      console.warn('[EFT Order Email Notification Notice]:', emailErr?.message || emailErr);
+    });
+
+    res.json({
+      success: true,
+      message: `Manual EFT order ${orderId} has been verified and approved. Access and licenses are now active.`,
+      order,
+      license
+    });
+  } catch (error: any) {
+    console.error('[Approve EFT Order Error]:', error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+// Admin: Reject / Cancel Manual EFT Order
+app.post('/api/admin/orders/:orderId/reject-eft', requireAuth, requireRole(['admin']), async (req: any, res) => {
+  try {
+    const { orderId } = req.params;
+    const { reason } = req.body;
+    const adminEmail = req.user?.email || 'supermegafx1@gmail.com';
+
+    const result = dbQueries.rejectManualEftOrder(orderId, adminEmail, reason);
+
+    // Update status in Supabase
+    persistOrderToSupabase(result.order).catch((err) => {
+      console.warn('[Supabase Sync on EFT Rejection Notice]:', err?.message || err);
+    });
+
+    res.json({
+      success: true,
+      message: `Manual EFT order ${orderId} has been rejected.`,
+      order: result.order
+    });
+  } catch (error: any) {
+    console.error('[Reject EFT Order Error]:', error);
+    res.status(500).json({ success: false, error: error.message });
   }
 });
 

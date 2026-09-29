@@ -219,6 +219,122 @@ export const api = {
     return request(`/api/payments/yoco/verify-checkout/${encodeURIComponent(checkoutId)}`);
   },
 
+  // PayPal Checkout System
+  async getPayPalConfig(): Promise<{
+    gateway: string;
+    clientId: string;
+    currency: string;
+    isSandbox: boolean;
+    supportedCurrencies: string[];
+    exchangeRateZarPerUsd: number;
+  }> {
+    return request('/api/payments/paypal/config');
+  },
+
+  async createPayPalOrder(payload: {
+    productId: string;
+    customerEmail?: string;
+    customerName?: string;
+    tierName?: string;
+    amountUsd?: number;
+  }): Promise<{
+    success: boolean;
+    orderId: string;
+    amount: string;
+    currency: string;
+    productName: string;
+    error?: string;
+  }> {
+    return request('/api/payments/paypal/create-order', {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    });
+  },
+
+  async capturePayPalOrder(payload: {
+    paypalOrderId: string;
+    productId: string;
+    customerEmail: string;
+    customerName?: string;
+    tierName?: string;
+    amountUsd?: number;
+  }): Promise<{
+    success: boolean;
+    verified: boolean;
+    order?: any;
+    product?: any;
+    license?: any;
+    downloadUrl?: string;
+    studentTier?: string | null;
+    error?: string;
+  }> {
+    return request('/api/payments/paypal/capture-order', {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    });
+  },
+
+  // Manual EFT / Bank Transfer (Standard Bank)
+  async getEftBankingConfig(): Promise<{
+    bankName: string;
+    accountHolder: string;
+    accountNumber: string;
+    accountType: string;
+    branchCode: string;
+    universalBranchCode?: string;
+    swiftBicCode?: string;
+    swiftBicNote?: string;
+    branchCodeConfigured: boolean;
+    whatsAppNumber: string;
+    whatsAppDisplay: string;
+    supportEmail: string;
+  }> {
+    return request('/api/payments/eft/config');
+  },
+
+  async createManualEftOrder(payload: {
+    productId: string;
+    customerEmail: string;
+    customerName?: string;
+    tierName?: string;
+    amountZar?: number;
+    notes?: string;
+  }): Promise<{
+    success: boolean;
+    status: 'pending';
+    orderId: string;
+    reference: string;
+    amountZar: number;
+    product: { id: string; name: string; priceUsd: number };
+    bankingDetails: {
+      bankName: string;
+      accountHolder: string;
+      accountNumber: string;
+      accountType: string;
+      branchCode: string;
+      reference: string;
+      whatsAppNumber: string;
+      whatsAppDisplay: string;
+      supportEmail: string;
+    };
+    message: string;
+  }> {
+    return request('/api/orders/manual-eft', {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    });
+  },
+
+  async getEftOrderStatus(orderId: string): Promise<{
+    success: boolean;
+    orderId: string;
+    status: 'paid' | 'pending' | 'failed' | 'refunded';
+    isPaid: boolean;
+    order: Order;
+    license?: any;
+  }> {
+    return request(`/api/orders/eft-status/${encodeURIComponent(orderId)}`);
+  },
 
   // Customer Dashboard
   async getCustomerDashboardData(): Promise<CustomerDashboardData> {
@@ -308,6 +424,35 @@ export const api = {
   async getAdminOrders(): Promise<Order[]> {
     const res = await request<{ orders: Order[] }>('/api/admin/orders');
     return res.orders;
+  },
+
+  async approveAdminEftOrder(
+    orderId: string,
+    adminNotes?: string
+  ): Promise<{
+    success: boolean;
+    message: string;
+    order: Order;
+    license?: License;
+  }> {
+    return request(`/api/admin/orders/${encodeURIComponent(orderId)}/approve-eft`, {
+      method: 'POST',
+      body: JSON.stringify({ adminNotes }),
+    });
+  },
+
+  async rejectAdminEftOrder(
+    orderId: string,
+    reason?: string
+  ): Promise<{
+    success: boolean;
+    message: string;
+    order: Order;
+  }> {
+    return request(`/api/admin/orders/${encodeURIComponent(orderId)}/reject-eft`, {
+      method: 'POST',
+      body: JSON.stringify({ reason }),
+    });
   },
 
   async getAdminLicenses(): Promise<License[]> {

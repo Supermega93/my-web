@@ -344,10 +344,14 @@ export function LessonViewerPage({ lessonId, onNavigate, onOpenCheckout }: Lesso
     );
   }
 
+  const currentLevelNumber = lesson?.level_name 
+    ? parseInt(lesson.level_name.match(/Level\s+(\d+)/i)?.[1] || '1', 10) 
+    : undefined;
+
   return (
     <div className="min-h-screen bg-slate-950 text-slate-100 font-sans selection:bg-emerald-500/20 selection:text-emerald-300">
       {/* Academy Navigation */}
-      <AcademyNav onNavigate={onNavigate} activeTab="curriculum" />
+      <AcademyNav onNavigate={onNavigate} activeTab="curriculum" currentLevel={currentLevelNumber} />
 
       {/* Main Container */}
       <main className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-10">

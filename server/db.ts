@@ -325,6 +325,27 @@ export function initDatabase() {
     console.warn('Licenses migration column check notice:', licMigErr);
   }
 
+  // Auto-migrate orders table to include payment_method, customer_email, customer_name, notes, verified_by, verified_at, eft_reference
+  try {
+    const existingOrderCols = (db.prepare('PRAGMA table_info(orders)').all() as any[]).map(c => c.name);
+    const orderColsToAdd = [
+      { name: 'payment_method', type: "TEXT DEFAULT 'card'" },
+      { name: 'customer_email', type: 'TEXT' },
+      { name: 'customer_name', type: 'TEXT' },
+      { name: 'notes', type: 'TEXT' },
+      { name: 'verified_by', type: 'TEXT' },
+      { name: 'verified_at', type: 'TEXT' },
+      { name: 'eft_reference', type: 'TEXT' },
+    ];
+    for (const col of orderColsToAdd) {
+      if (!existingOrderCols.includes(col.name)) {
+        db.exec(`ALTER TABLE orders ADD COLUMN ${col.name} ${col.type};`);
+      }
+    }
+  } catch (ordMigErr) {
+    console.warn('Orders migration column check notice:', ordMigErr);
+  }
+
   seedInitialData();
 }
 
@@ -1235,6 +1256,7 @@ export const dbQueries = {
     transaction_id: string;
   }) {
     const now = new Date().toISOString();
+    const paymentStatus = order.payment_status || 'paid';
     db.prepare(`
       INSERT INTO orders (id, user_id, product_id, amount, currency, payment_status, transaction_id, created_at, updated_at)
       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
@@ -1244,16 +1266,17 @@ export const dbQueries = {
       order.product_id,
       order.amount,
       order.currency || 'USD',
-      order.payment_status || 'paid',
+      paymentStatus,
       order.transaction_id,
       now,
       now
     );
 
-    // If product is an EA, create a license key
+    // If product is an EA and order is paid, create a license key
+    // NOTE: Pending orders (e.g. Manual EFT) do NOT receive a license until admin approval!
     const product = this.getProductById(order.product_id) as { type: string; download_url?: string } | undefined;
     let license = null;
-    if (product && product.type === 'ea') {
+    if (product && product.type === 'ea' && paymentStatus === 'paid') {
       const licenseKey = `EAH-${Math.random().toString(36).substring(2, 6).toUpperCase()}-${Math.random().toString(36).substring(2, 6).toUpperCase()}-${Math.random().toString(36).substring(2, 6).toUpperCase()}`;
       const licId = `lic_${Date.now()}_${Math.random().toString(36).substring(2, 5)}`;
       const startsAt = now;
@@ -1297,9 +1320,8 @@ export const dbQueries = {
       };
     }
 
-    // Create download record ONLY for non-EAs (e.g. eBooks)
-    // The EA itself is NEVER automatically downloadable!
-    if (product && product.type !== 'ea' && product.download_url) {
+    // Create download record ONLY for non-EAs when paid
+    if (product && product.type !== 'ea' && product.download_url && paymentStatus === 'paid') {
       const dlId = `dl_${Date.now()}_${Math.random().toString(36).substring(2, 5)}`;
       db.prepare(`
         INSERT INTO downloads (id, user_id, product_id, order_id, download_url, download_count, created_at)
@@ -1308,6 +1330,173 @@ export const dbQueries = {
     }
 
     return { orderId: order.id, license };
+  },
+
+  createManualEftOrder(data: {
+    id: string;
+    user_id: string;
+    product_id: string;
+    amount: number;
+    currency?: string;
+    customer_email: string;
+    customer_name: string;
+    eft_reference: string;
+    notes?: string;
+  }) {
+    const now = new Date().toISOString();
+    db.prepare(`
+      INSERT INTO orders (id, user_id, product_id, amount, currency, payment_status, transaction_id, payment_method, customer_email, customer_name, eft_reference, notes, created_at, updated_at)
+      VALUES (?, ?, ?, ?, ?, 'pending', ?, 'manual_eft', ?, ?, ?, ?, ?, ?)
+    `).run(
+      data.id,
+      data.user_id,
+      data.product_id,
+      data.amount,
+      data.currency || 'ZAR',
+      data.eft_reference,
+      data.customer_email,
+      data.customer_name,
+      data.eft_reference,
+      data.notes || 'Manual EFT transfer pending proof of payment verification via WhatsApp.',
+      now,
+      now
+    );
+
+    return {
+      orderId: data.id,
+      status: 'pending',
+      reference: data.eft_reference
+    };
+  },
+
+  getOrderById(id: string) {
+    return db.prepare(`
+      SELECT o.*, 
+             COALESCE(o.customer_name, u.name, 'Trader Customer') as user_name, 
+             COALESCE(o.customer_email, u.email, 'customer@megaailabs.app') as user_email, 
+             p.name as product_name, p.type as product_type, p.download_url as product_download_url
+      FROM orders o
+      LEFT JOIN users u ON o.user_id = u.id
+      JOIN products p ON o.product_id = p.id
+      WHERE o.id = ?
+    `).get(id) as any;
+  },
+
+  approveManualEftOrder(orderId: string, adminEmail: string, adminNotes?: string) {
+    const order = this.getOrderById(orderId);
+    if (!order) {
+      throw new Error(`Order ${orderId} not found.`);
+    }
+
+    const now = new Date().toISOString();
+    const finalNotes = adminNotes 
+      ? `Approved by ${adminEmail}: ${adminNotes}` 
+      : `Verified and approved by ${adminEmail} on ${new Date().toLocaleDateString()}`;
+
+    // Update order status to paid
+    db.prepare(`
+      UPDATE orders
+      SET payment_status = 'paid',
+          verified_by = ?,
+          verified_at = ?,
+          notes = ?,
+          updated_at = ?
+      WHERE id = ?
+    `).run(adminEmail, now, finalNotes, now, orderId);
+
+    // Now grant product entitlement because payment is officially verified!
+    const product = this.getProductById(order.product_id) as any;
+    let license = null;
+
+    if (product && product.type === 'ea') {
+      // Check if license already exists for this order
+      const existingLicense = db.prepare('SELECT * FROM licenses WHERE order_id = ?').get(orderId) as any;
+      if (existingLicense) {
+        license = existingLicense;
+      } else {
+        const licenseKey = `EAH-${Math.random().toString(36).substring(2, 6).toUpperCase()}-${Math.random().toString(36).substring(2, 6).toUpperCase()}-${Math.random().toString(36).substring(2, 6).toUpperCase()}`;
+        const licId = `lic_${Date.now()}_${Math.random().toString(36).substring(2, 5)}`;
+        const startsAt = now;
+        const oneYearMs = 365 * 24 * 60 * 60 * 1000;
+        const expiresAt = new Date(Date.now() + oneYearMs).toISOString();
+        const licNotes = `Manual EFT verified by ${adminEmail}. Ready for terminal configuration.`;
+
+        db.prepare(`
+          INSERT INTO licenses (id, user_id, product_id, order_id, license_key, license_type, status, delivery_status, delivery_notes, starts_at, expires_at, created_at, updated_at)
+          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        `).run(
+          licId,
+          order.user_id,
+          order.product_id,
+          order.id,
+          licenseKey,
+          'Terminal License',
+          'active',
+          'pending',
+          licNotes,
+          startsAt,
+          expiresAt,
+          now,
+          now
+        );
+
+        license = {
+          id: licId,
+          user_id: order.user_id,
+          product_id: order.product_id,
+          order_id: order.id,
+          license_key: licenseKey,
+          license_type: 'Terminal License',
+          status: 'active',
+          delivery_status: 'pending',
+          delivery_notes: licNotes,
+          starts_at: startsAt,
+          expires_at: expiresAt,
+          created_at: now,
+          updated_at: now
+        };
+      }
+    }
+
+    // If eBook, ensure download record exists
+    if (product && product.type !== 'ea' && product.download_url) {
+      const existingDl = db.prepare('SELECT * FROM downloads WHERE order_id = ?').get(orderId);
+      if (!existingDl) {
+        const dlId = `dl_${Date.now()}_${Math.random().toString(36).substring(2, 5)}`;
+        db.prepare(`
+          INSERT INTO downloads (id, user_id, product_id, order_id, download_url, download_count, created_at)
+          VALUES (?, ?, ?, ?, ?, ?, ?)
+        `).run(dlId, order.user_id, order.product_id, order.id, product.download_url, 0, now);
+      }
+    }
+
+    const updatedOrder = this.getOrderById(orderId);
+    return { success: true, order: updatedOrder, license, product };
+  },
+
+  rejectManualEftOrder(orderId: string, adminEmail: string, rejectionReason?: string) {
+    const order = this.getOrderById(orderId);
+    if (!order) {
+      throw new Error(`Order ${orderId} not found.`);
+    }
+
+    const now = new Date().toISOString();
+    const finalNotes = rejectionReason
+      ? `Rejected by ${adminEmail}: ${rejectionReason}`
+      : `EFT verification rejected by ${adminEmail}. POP could not be verified.`;
+
+    db.prepare(`
+      UPDATE orders
+      SET payment_status = 'failed',
+          verified_by = ?,
+          verified_at = ?,
+          notes = ?,
+          updated_at = ?
+      WHERE id = ?
+    `).run(adminEmail, now, finalNotes, now, orderId);
+
+    const updatedOrder = this.getOrderById(orderId);
+    return { success: true, order: updatedOrder };
   },
   getOrdersByUser(userId: string) {
     return db.prepare(`
@@ -1320,9 +1509,12 @@ export const dbQueries = {
   },
   getAllOrders() {
     return db.prepare(`
-      SELECT o.*, u.name as user_name, u.email as user_email, p.name as product_name, p.type as product_type
+      SELECT o.*, 
+             COALESCE(o.customer_name, u.name, 'Customer') as user_name, 
+             COALESCE(o.customer_email, u.email, 'customer@megaailabs.app') as user_email, 
+             p.name as product_name, p.type as product_type
       FROM orders o
-      JOIN users u ON o.user_id = u.id
+      LEFT JOIN users u ON o.user_id = u.id
       JOIN products p ON o.product_id = p.id
       ORDER BY o.created_at DESC
     `).all();

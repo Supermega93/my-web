@@ -151,7 +151,7 @@ export function LevelHubPage({ levelId, onNavigate }: LevelHubPageProps) {
   return (
     <div className="min-h-screen bg-slate-950 text-slate-100 font-sans selection:bg-emerald-500/20 selection:text-emerald-300 flex flex-col">
       {/* Academy Top Navigation */}
-      <AcademyNav onNavigate={onNavigate} activeTab="curriculum" />
+      <AcademyNav onNavigate={onNavigate} activeTab="curriculum" currentLevel={levelMeta.levelNumber} />
 
       {/* Main Container */}
       <main className="flex-1 max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12 w-full space-y-10">

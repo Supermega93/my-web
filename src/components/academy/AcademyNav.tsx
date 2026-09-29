@@ -8,17 +8,67 @@ import { MegAiLogoIcon } from '../common/MegAiLogo.tsx';
 import { CurrencySelector } from '../common/CurrencySelector.tsx';
 import { useCurrency } from '../../context/CurrencyContext.tsx';
 import { GlobalSearchModal } from '../common/GlobalSearchModal.tsx';
+import { 
+  getActiveStudentTier, 
+  getStoredCompletedLessonIds, 
+  isPracticalExerciseUnlocked, 
+  subscribeToTierChanges,
+  StudentTier
+} from '../../services/academyAccess.ts';
 
-interface AcademyNavProps {
+export interface AcademyNavProps {
   onNavigate: (view: ActiveView, extraId?: string) => void;
   activeTab?: 'curriculum' | 'prompt-architect' | 'ebook' | 'pricing';
+  currentLevel?: number;
 }
 
-export function AcademyNav({ onNavigate, activeTab }: AcademyNavProps) {
+export function AcademyNav({ onNavigate, activeTab, currentLevel }: AcademyNavProps) {
   const { user, logout, isLoggedIn } = useAuth();
   const { formatPrice } = useCurrency();
   const [authModalOpen, setAuthModalOpen] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
+
+  const [completedLessonIds, setCompletedLessonIds] = useState<string[]>(() => getStoredCompletedLessonIds());
+  const [studentTier, setStudentTier] = useState<StudentTier>(() => 
+    getActiveStudentTier(user, user?.role === 'admin' || user?.role === 'developer')
+  );
+
+  useEffect(() => {
+    setStudentTier(getActiveStudentTier(user, user?.role === 'admin' || user?.role === 'developer'));
+    const unsubscribe = subscribeToTierChanges((newTier) => {
+      setStudentTier(newTier);
+    });
+    return unsubscribe;
+  }, [user]);
+
+  useEffect(() => {
+    const handleProgressChange = () => {
+      setCompletedLessonIds(getStoredCompletedLessonIds());
+    };
+    window.addEventListener('academy-progress-change', handleProgressChange);
+    window.addEventListener('storage', handleProgressChange);
+    return () => {
+      window.removeEventListener('academy-progress-change', handleProgressChange);
+      window.removeEventListener('storage', handleProgressChange);
+    };
+  }, []);
+
+  // Determine if viewing Level 1 (Preschool)
+  const isLevel1 = currentLevel === 1 || (typeof window !== 'undefined' && (
+    window.location.pathname.includes('/level/1') ||
+    window.location.pathname.includes('/lesson/lesson-1-')
+  ));
+
+  // Determine if free tier (Levels 1-3) is completed
+  const isFreeTierDone = isPracticalExerciseUnlocked(
+    completedLessonIds,
+    studentTier,
+    user?.role === 'admin' || user?.role === 'developer'
+  );
+
+  // The button should be removed from Level 1, and only seen after completing the free tier (or when on paid levels/tier or pricing page)
+  const isHigherPaidLevel = currentLevel !== undefined && currentLevel > 3;
+  const showPricingButton = !isLevel1 && (activeTab === 'pricing' || studentTier !== 'free' || isFreeTierDone || isHigherPaidLevel);
 
   // Global keyboard shortcut: Cmd+K or Ctrl+K opens search
   useEffect(() => {
@@ -89,20 +139,22 @@ export function AcademyNav({ onNavigate, activeTab }: AcademyNavProps) {
             <span>Curriculum (Levels 1–8)</span>
           </button>
 
-          <button
-            onClick={() => onNavigate('academy-pricing')}
-            className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-medium transition-all ${
-              activeTab === 'pricing'
-                ? 'text-emerald-800 bg-white border border-emerald-300 shadow-xs font-semibold'
-                : 'text-slate-600 hover:text-emerald-700 hover:bg-white/60'
-            }`}
-          >
-            <Sparkles className="w-3.5 h-3.5 text-amber-500" />
-            <span>Masterclass Pricing</span>
-            <span className="text-[9px] px-1.5 py-0.2 rounded-full bg-amber-100 text-amber-800 font-mono font-bold uppercase">
-              From {formatPrice(159)}
-            </span>
-          </button>
+          {showPricingButton && (
+            <button
+              onClick={() => onNavigate('academy-pricing')}
+              className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-medium transition-all ${
+                activeTab === 'pricing'
+                  ? 'text-emerald-800 bg-white border border-emerald-300 shadow-xs font-semibold'
+                  : 'text-slate-600 hover:text-emerald-700 hover:bg-white/60'
+              }`}
+            >
+              <Sparkles className="w-3.5 h-3.5 text-amber-500" />
+              <span>Masterclass Pricing</span>
+              <span className="text-[9px] px-1.5 py-0.2 rounded-full bg-amber-100 text-amber-800 font-mono font-bold uppercase">
+                From {formatPrice(159)}
+              </span>
+            </button>
+          )}
 
           <button
             onClick={() => onNavigate('prompt-architect')}

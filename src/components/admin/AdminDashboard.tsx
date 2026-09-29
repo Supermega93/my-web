@@ -1,7 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { AdminStats, Product, Order, User, ProductType, License, AdminUserRecord } from '../../types.ts';
 import { api, StrategySubmission, getStoredToken, setStoredToken } from '../../services/api.ts';
-import { auth } from '../../lib/firebase.ts';
+import { auth, db } from '../../lib/firebase.ts';
+import { doc, updateDoc } from 'firebase/firestore';
+import { EFT_BANKING_DETAILS } from '../../constants/eftBankingDetails.ts';
 import { useAuth } from '../../context/AuthContext.tsx';
 import { Button } from '../common/Button.tsx';
 import { StatusBadge } from '../common/StatusBadge.tsx';
@@ -39,7 +41,10 @@ import {
   X,
   CheckCircle,
   Search,
-  Key
+  Key,
+  Building2,
+  Clock,
+  CreditCard
 } from 'lucide-react';
 import { checkSupabaseLessonsSync, syncLessonsToSupabase } from '../../services/academy.ts';
 import { 
@@ -82,6 +87,17 @@ export function AdminDashboard({ onBackToHome }: AdminDashboardProps) {
   const [retryFeedback, setRetryFeedback] = useState<{ id: string; success: boolean; message: string } | null>(null);
   const [copiedPrompt, setCopiedPrompt] = useState(false);
   const [submissionSearch, setSubmissionSearch] = useState('');
+
+  // EFT Order Management State
+  const [orderFilter, setOrderFilter] = useState<'all' | 'pending' | 'paid' | 'failed'>('all');
+  const [orderSearchTerm, setOrderSearchTerm] = useState('');
+  const [approvingOrder, setApprovingOrder] = useState<Order | null>(null);
+  const [adminApprovalNotes, setAdminApprovalNotes] = useState('');
+  const [isApprovingEft, setIsApprovingEft] = useState(false);
+  const [rejectingOrder, setRejectingOrder] = useState<Order | null>(null);
+  const [rejectionReason, setRejectionReason] = useState('');
+  const [isRejectingEft, setIsRejectingEft] = useState(false);
+  const [orderFeedback, setOrderFeedback] = useState<{ success: boolean; message: string } | null>(null);
 
   // Supabase sync states
   const [syncStatus, setSyncStatus] = useState<{
@@ -318,6 +334,82 @@ export function AdminDashboard({ onBackToHome }: AdminDashboardProps) {
     }
   };
 
+  const handleApproveEftOrder = async () => {
+    if (!approvingOrder) return;
+    setIsApprovingEft(true);
+    setOrderFeedback(null);
+    try {
+      const res = await api.approveAdminEftOrder(approvingOrder.id, adminApprovalNotes.trim());
+      if (res.success) {
+        // Dual Persistence to Firestore: update order doc if present
+        try {
+          const orderRef = doc(db, 'orders', approvingOrder.id);
+          await updateDoc(orderRef, {
+            paymentStatus: 'paid',
+            updatedAt: new Date().toISOString()
+          });
+        } catch {
+          // Non-blocking fallback
+        }
+
+        setOrderFeedback({
+          success: true,
+          message: `Order ${approvingOrder.id} successfully approved! Payment status set to PAID and product access/licenses granted.`
+        });
+        setApprovingOrder(null);
+        setAdminApprovalNotes('');
+        await loadAdminData();
+      } else {
+        setOrderFeedback({
+          success: false,
+          message: 'Failed to approve EFT order.'
+        });
+      }
+    } catch (err: any) {
+      setOrderFeedback({
+        success: false,
+        message: err.message || 'Error executing order approval.'
+      });
+    } finally {
+      setIsApprovingEft(false);
+    }
+  };
+
+  const handleRejectEftOrder = async () => {
+    if (!rejectingOrder) return;
+    setIsRejectingEft(true);
+    setOrderFeedback(null);
+    try {
+      const res = await api.rejectAdminEftOrder(rejectingOrder.id, rejectionReason.trim());
+      if (res.success) {
+        try {
+          const orderRef = doc(db, 'orders', rejectingOrder.id);
+          await updateDoc(orderRef, {
+            paymentStatus: 'failed',
+            updatedAt: new Date().toISOString()
+          });
+        } catch {
+          // Non-blocking fallback
+        }
+
+        setOrderFeedback({
+          success: true,
+          message: `Order ${rejectingOrder.id} has been marked as failed/rejected.`
+        });
+        setRejectingOrder(null);
+        setRejectionReason('');
+        await loadAdminData();
+      }
+    } catch (err: any) {
+      setOrderFeedback({
+        success: false,
+        message: err.message || 'Error rejecting order.'
+      });
+    } finally {
+      setIsRejectingEft(false);
+    }
+  };
+
   useEffect(() => {
     if (isAdmin) {
       loadAdminData();
@@ -500,13 +592,18 @@ export function AdminDashboard({ onBackToHome }: AdminDashboardProps) {
           </button>
           <button
             onClick={() => setActiveTab('orders')}
-            className={`px-4 py-2 text-xs font-semibold rounded-t-lg transition-colors border-b-2 ${
+            className={`px-4 py-2 text-xs font-semibold rounded-t-lg transition-colors border-b-2 flex items-center gap-1.5 ${
               activeTab === 'orders'
                 ? 'border-purple-400 text-purple-300 bg-slate-900/50'
                 : 'border-transparent text-slate-400 hover:text-slate-200'
             }`}
           >
-            Order Management ({orders.length})
+            <span>Order Management ({orders.length})</span>
+            {orders.filter(o => o.payment_status === 'pending').length > 0 && (
+              <span className="px-1.5 py-0.5 rounded-full bg-amber-500/20 border border-amber-500/40 text-amber-300 font-mono text-[9px] font-bold animate-pulse">
+                {orders.filter(o => o.payment_status === 'pending').length} Pending EFT
+              </span>
+            )}
           </button>
           <button
             onClick={() => setActiveTab('licenses')}
@@ -647,50 +744,312 @@ export function AdminDashboard({ onBackToHome }: AdminDashboardProps) {
 
         {/* TAB 2: ORDER MANAGEMENT */}
         {activeTab === 'orders' && (
-          <div className="bg-[#111827] border border-slate-800 rounded-xl overflow-hidden shadow-lg">
-            <div className="px-6 py-4 border-b border-slate-800">
-              <h2 className="text-sm font-bold text-slate-100">Customer Transactions</h2>
-              <p className="text-xs text-slate-400">All completed and pending orders recorded in SQLite.</p>
+          <div className="space-y-4">
+            {/* Top Order Telemetry */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+              <div className="bg-[#111827] border border-slate-800 p-4 rounded-xl space-y-1">
+                <span className="text-[10px] uppercase font-mono text-slate-400 block">Total Orders</span>
+                <span className="text-2xl font-bold font-mono text-slate-100">{orders.length}</span>
+                <span className="text-[10px] text-slate-500 block font-mono">SQLite &amp; Supabase Synced</span>
+              </div>
+
+              <div className={`p-4 rounded-xl space-y-1 border ${
+                orders.filter(o => o.payment_status === 'pending').length > 0
+                  ? 'bg-amber-950/40 border-amber-500/50 shadow-lg shadow-amber-500/5'
+                  : 'bg-[#111827] border-slate-800'
+              }`}>
+                <span className="text-[10px] uppercase font-mono text-amber-400 font-bold block flex items-center justify-between">
+                  <span>Pending EFT Orders</span>
+                  {orders.filter(o => o.payment_status === 'pending').length > 0 && (
+                    <span className="w-2 h-2 rounded-full bg-amber-400 animate-ping" />
+                  )}
+                </span>
+                <span className="text-2xl font-bold font-mono text-amber-300">
+                  {orders.filter(o => o.payment_status === 'pending').length}
+                </span>
+                <span className="text-[10px] text-amber-400/80 block font-mono">
+                  {orders.filter(o => o.payment_status === 'pending').length > 0 
+                    ? '⚠️ Requires Manual Bank Verification' 
+                    : 'All transfers up to date'}
+                </span>
+              </div>
+
+              <div className="bg-[#111827] border border-emerald-950/60 p-4 rounded-xl space-y-1">
+                <span className="text-[10px] uppercase font-mono text-slate-400 block">Paid Orders</span>
+                <span className="text-2xl font-bold font-mono text-emerald-400">
+                  {orders.filter(o => o.payment_status === 'paid').length}
+                </span>
+                <span className="text-[10px] text-emerald-500/80 block font-mono">Active Licenses &amp; Entitlements</span>
+              </div>
+
+              <div className="bg-[#111827] border border-slate-800 p-4 rounded-xl space-y-1">
+                <span className="text-[10px] uppercase font-mono text-slate-400 block">Manual EFT Share</span>
+                <span className="text-2xl font-bold font-mono text-sky-400">
+                  {orders.filter(o => o.payment_method === 'manual_eft').length}
+                </span>
+                <span className="text-[10px] text-slate-500 block font-mono">Standard Bank Transfers</span>
+              </div>
             </div>
 
-            <div className="overflow-x-auto">
-              <table className="w-full text-left text-xs">
-                <thead className="bg-slate-900/60 text-slate-400 border-b border-slate-800 font-mono uppercase text-[10px]">
-                  <tr>
-                    <th className="px-6 py-3">Order ID</th>
-                    <th className="px-6 py-3">Customer Email</th>
-                    <th className="px-6 py-3">Product</th>
-                    <th className="px-6 py-3">Amount</th>
-                    <th className="px-6 py-3">Status</th>
-                    <th className="px-6 py-3">Transaction ID</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-800/80 text-slate-300">
-                  {orders.map((ord) => (
-                    <tr key={ord.id} className="hover:bg-slate-900/40 transition-colors">
-                      <td className="px-6 py-4 font-mono font-semibold text-slate-200">
-                        {ord.id}
-                      </td>
-                      <td className="px-6 py-4 text-slate-300">
-                        <div>{ord.user_name || 'Customer'}</div>
-                        <div className="font-mono text-[11px] text-slate-500">{ord.user_email}</div>
-                      </td>
-                      <td className="px-6 py-4 font-medium text-slate-200">
-                        {ord.product_name || ord.product_id}
-                      </td>
-                      <td className="px-6 py-4 font-mono font-bold text-emerald-400">
-                        ${ord.amount.toFixed(2)} {ord.currency}
-                      </td>
-                      <td className="px-6 py-4">
-                        <StatusBadge status={ord.payment_status} size="sm" />
-                      </td>
-                      <td className="px-6 py-4 font-mono text-slate-400 text-[11px]">
-                        {ord.transaction_id}
-                      </td>
+            {/* Order Feedback Alert */}
+            {orderFeedback && (
+              <div
+                className={`p-4 rounded-xl border text-xs flex items-center justify-between gap-3 ${
+                  orderFeedback.success
+                    ? 'bg-emerald-950/50 border-emerald-800 text-emerald-300'
+                    : 'bg-rose-950/50 border-rose-800 text-rose-300'
+                }`}
+              >
+                <div className="flex items-center gap-2">
+                  {orderFeedback.success ? (
+                    <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
+                  ) : (
+                    <AlertCircle className="w-4 h-4 text-rose-400 shrink-0" />
+                  )}
+                  <span>{orderFeedback.message}</span>
+                </div>
+                <button
+                  onClick={() => setOrderFeedback(null)}
+                  className="text-slate-400 hover:text-white"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+            )}
+
+            {/* Filter and Search Controls */}
+            <div className="bg-[#111827] border border-slate-800 rounded-xl p-4 flex flex-col sm:flex-row items-center justify-between gap-3">
+              <div className="flex items-center gap-2 w-full sm:w-auto overflow-x-auto pb-1 sm:pb-0">
+                <button
+                  type="button"
+                  onClick={() => setOrderFilter('all')}
+                  className={`px-3 py-1.5 rounded-lg text-xs font-mono font-medium transition-colors whitespace-nowrap cursor-pointer ${
+                    orderFilter === 'all'
+                      ? 'bg-purple-600 text-white'
+                      : 'bg-slate-900 border border-slate-800 text-slate-400 hover:text-slate-200'
+                  }`}
+                >
+                  All ({orders.length})
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setOrderFilter('pending')}
+                  className={`px-3 py-1.5 rounded-lg text-xs font-mono font-bold transition-colors whitespace-nowrap flex items-center gap-1.5 cursor-pointer ${
+                    orderFilter === 'pending'
+                      ? 'bg-amber-500 text-slate-950'
+                      : 'bg-slate-900 border border-slate-800 text-amber-300 hover:border-amber-500/40'
+                  }`}
+                >
+                  <Clock className="w-3 h-3" />
+                  <span>Pending EFT ({orders.filter(o => o.payment_status === 'pending').length})</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setOrderFilter('paid')}
+                  className={`px-3 py-1.5 rounded-lg text-xs font-mono font-medium transition-colors whitespace-nowrap cursor-pointer ${
+                    orderFilter === 'paid'
+                      ? 'bg-emerald-600 text-white'
+                      : 'bg-slate-900 border border-slate-800 text-slate-400 hover:text-slate-200'
+                  }`}
+                >
+                  Paid ({orders.filter(o => o.payment_status === 'paid').length})
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setOrderFilter('failed')}
+                  className={`px-3 py-1.5 rounded-lg text-xs font-mono font-medium transition-colors whitespace-nowrap cursor-pointer ${
+                    orderFilter === 'failed'
+                      ? 'bg-rose-600 text-white'
+                      : 'bg-slate-900 border border-slate-800 text-slate-400 hover:text-slate-200'
+                  }`}
+                >
+                  Failed ({orders.filter(o => o.payment_status === 'failed' || o.payment_status === 'refunded').length})
+                </button>
+              </div>
+
+              <div className="relative w-full sm:w-64">
+                <Search className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                <input
+                  type="text"
+                  placeholder="Search orders, emails, ref..."
+                  value={orderSearchTerm}
+                  onChange={(e) => setOrderSearchTerm(e.target.value)}
+                  className="w-full pl-8 pr-3 py-1.5 bg-slate-950 border border-slate-800 rounded-lg text-xs text-slate-200 focus:outline-none focus:border-purple-500 font-mono"
+                />
+              </div>
+            </div>
+
+            {/* Orders Table */}
+            <div className="bg-[#111827] border border-slate-800 rounded-xl overflow-hidden shadow-lg">
+              <div className="px-6 py-4 border-b border-slate-800 flex items-center justify-between">
+                <div>
+                  <h2 className="text-sm font-bold text-slate-100">Customer Transactions &amp; Verification</h2>
+                  <p className="text-xs text-slate-400">All completed, online, and pending manual bank transfer records.</p>
+                </div>
+                <button
+                  type="button"
+                  onClick={loadAdminData}
+                  className="text-xs font-mono text-purple-400 hover:text-purple-300 flex items-center gap-1 cursor-pointer"
+                >
+                  <RefreshCw className="w-3.5 h-3.5" />
+                  <span>Refresh Orders</span>
+                </button>
+              </div>
+
+              <div className="overflow-x-auto">
+                <table className="w-full text-left text-xs">
+                  <thead className="bg-slate-900/60 text-slate-400 border-b border-slate-800 font-mono uppercase text-[10px]">
+                    <tr>
+                      <th className="px-5 py-3">Order ID &amp; Reference</th>
+                      <th className="px-5 py-3">Customer Email</th>
+                      <th className="px-5 py-3">Product</th>
+                      <th className="px-5 py-3">Amount</th>
+                      <th className="px-5 py-3">Payment Method</th>
+                      <th className="px-5 py-3">Status</th>
+                      <th className="px-5 py-3 text-right">Verification Action</th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
+                  </thead>
+                  <tbody className="divide-y divide-slate-800/80 text-slate-300">
+                    {orders
+                      .filter((ord) => {
+                        if (orderFilter === 'pending') return ord.payment_status === 'pending';
+                        if (orderFilter === 'paid') return ord.payment_status === 'paid';
+                        if (orderFilter === 'failed') return ord.payment_status === 'failed' || ord.payment_status === 'refunded';
+                        return true;
+                      })
+                      .filter((ord) => {
+                        if (!orderSearchTerm.trim()) return true;
+                        const term = orderSearchTerm.toLowerCase();
+                        return (
+                          ord.id?.toLowerCase().includes(term) ||
+                          ord.user_email?.toLowerCase().includes(term) ||
+                          ord.customer_email?.toLowerCase().includes(term) ||
+                          ord.user_name?.toLowerCase().includes(term) ||
+                          ord.product_name?.toLowerCase().includes(term) ||
+                          ord.transaction_id?.toLowerCase().includes(term) ||
+                          ord.eft_reference?.toLowerCase().includes(term)
+                        );
+                      })
+                      .map((ord) => {
+                        const isPending = ord.payment_status === 'pending';
+                        const isManualEft = ord.payment_method === 'manual_eft' || ord.id.startsWith('ord_eft_') || (ord.transaction_id && ord.transaction_id.startsWith('EFT-'));
+                        const displayRef = ord.eft_reference || ord.transaction_id || '—';
+
+                        return (
+                          <tr key={ord.id} className={`hover:bg-slate-900/40 transition-colors ${
+                            isPending ? 'bg-amber-950/10' : ''
+                          }`}>
+                            <td className="px-5 py-3.5">
+                              <div className="font-mono font-semibold text-slate-200">{ord.id}</div>
+                              {displayRef && displayRef !== '—' && (
+                                <div className="text-[10px] font-mono text-amber-400 font-bold mt-0.5">
+                                  Ref: {displayRef}
+                                </div>
+                              )}
+                              <div className="text-[10px] text-slate-500 font-mono mt-0.5">
+                                {new Date(ord.created_at).toLocaleString('en-ZA', { dateStyle: 'short', timeStyle: 'short' })}
+                              </div>
+                            </td>
+
+                            <td className="px-5 py-3.5 text-slate-300">
+                              <div className="font-semibold text-slate-200">{ord.user_name || ord.customer_name || 'Customer'}</div>
+                              <div className="font-mono text-[11px] text-slate-400">{ord.user_email || ord.customer_email}</div>
+                            </td>
+
+                            <td className="px-5 py-3.5 font-medium text-slate-200">
+                              <div>{ord.product_name || ord.product_id}</div>
+                              <span className="text-[10px] font-mono text-slate-500 uppercase">{ord.product_type || 'Digital Asset'}</span>
+                            </td>
+
+                            <td className="px-5 py-3.5 font-mono font-bold text-slate-100">
+                              <div className={ord.payment_status === 'paid' ? 'text-emerald-400' : 'text-amber-300'}>
+                                {ord.currency === 'ZAR' ? `R ${Number(ord.amount).toLocaleString('en-ZA', { minimumFractionDigits: 2 })}` : `$${Number(ord.amount).toFixed(2)} ${ord.currency}`}
+                              </div>
+                            </td>
+
+                            <td className="px-5 py-3.5">
+                              {isManualEft ? (
+                                <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-amber-500/15 border border-amber-500/30 text-amber-300 font-mono text-[10px] font-bold">
+                                  <Building2 className="w-3 h-3 text-amber-400" />
+                                  <span>Standard Bank EFT</span>
+                                </span>
+                              ) : ord.payment_method === 'paypal' ? (
+                                <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-blue-500/15 border border-blue-500/30 text-blue-300 font-mono text-[10px] font-semibold">
+                                  <CreditCard className="w-3 h-3 text-blue-400" />
+                                  <span>PayPal Online</span>
+                                </span>
+                              ) : (
+                                <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-sky-500/15 border border-sky-500/30 text-sky-300 font-mono text-[10px] font-semibold">
+                                  <CreditCard className="w-3 h-3 text-sky-400" />
+                                  <span>{ord.payment_method || 'Online'}</span>
+                                </span>
+                              )}
+                            </td>
+
+                            <td className="px-5 py-3.5">
+                              <StatusBadge status={ord.payment_status} size="sm" />
+                              {ord.notes && (
+                                <div className="text-[10px] text-slate-400 mt-1 max-w-xs truncate" title={ord.notes}>
+                                  {ord.notes}
+                                </div>
+                              )}
+                            </td>
+
+                            <td className="px-5 py-3.5 text-right space-x-2">
+                              {isPending ? (
+                                <div className="flex items-center justify-end gap-1.5">
+                                  <button
+                                    type="button"
+                                    onClick={() => {
+                                      setApprovingOrder(ord);
+                                      setAdminApprovalNotes('');
+                                    }}
+                                    className="px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-slate-950 font-bold text-[11px] font-mono flex items-center gap-1 transition-all shadow-md shadow-emerald-600/20 cursor-pointer active:scale-95"
+                                  >
+                                    <Check className="w-3.5 h-3.5" />
+                                    <span>Approve Payment</span>
+                                  </button>
+
+                                  <button
+                                    type="button"
+                                    onClick={() => {
+                                      setRejectingOrder(ord);
+                                      setRejectionReason('');
+                                    }}
+                                    className="px-2.5 py-1.5 rounded-lg bg-rose-950/60 hover:bg-rose-900/60 border border-rose-800 text-rose-300 text-[11px] font-mono flex items-center gap-1 transition-colors cursor-pointer"
+                                  >
+                                    <X className="w-3.5 h-3.5" />
+                                    <span>Reject</span>
+                                  </button>
+                                </div>
+                              ) : ord.payment_status === 'paid' ? (
+                                <div className="flex flex-col items-end text-[10px] font-mono text-emerald-400">
+                                  <span className="flex items-center gap-1 font-bold">
+                                    <CheckCircle2 className="w-3.5 h-3.5" />
+                                    <span>Verified &amp; Active</span>
+                                  </span>
+                                  {ord.verified_by && (
+                                    <span className="text-[9px] text-slate-500">By {ord.verified_by.split('@')[0]}</span>
+                                  )}
+                                </div>
+                              ) : (
+                                <span className="text-[10px] font-mono text-rose-400">Cancelled</span>
+                              )}
+                            </td>
+                          </tr>
+                        );
+                      })}
+
+                    {orders.length === 0 && (
+                      <tr>
+                        <td colSpan={7} className="px-6 py-8 text-center text-slate-500 font-mono">
+                          No transactions found in database.
+                        </td>
+                      </tr>
+                    )}
+                  </tbody>
+                </table>
+              </div>
             </div>
           </div>
         )}
@@ -1573,6 +1932,199 @@ export function AdminDashboard({ onBackToHome }: AdminDashboardProps) {
               await loadAdminData();
             }}
           />
+        )}
+
+        {/* Modal: Approve Manual EFT Order */}
+        {approvingOrder && (
+          <Modal
+            isOpen={Boolean(approvingOrder)}
+            onClose={() => {
+              if (!isApprovingEft) {
+                setApprovingOrder(null);
+                setAdminApprovalNotes('');
+              }
+            }}
+            maxWidth="md"
+            title="Verify & Approve Manual EFT Payment"
+            subtitle="Grant product access and terminal licenses after confirming bank transfer"
+          >
+            <div className="space-y-4 p-1">
+              {/* Order Summary Pill */}
+              <div className="p-4 rounded-xl bg-slate-950 border border-slate-800 space-y-2">
+                <div className="flex justify-between items-start">
+                  <div>
+                    <span className="text-[10px] font-mono text-slate-400 uppercase font-bold block">
+                      Order &amp; Beneficiary Reference
+                    </span>
+                    <span className="font-mono text-sm font-bold text-white">
+                      {approvingOrder.id}
+                    </span>
+                    {approvingOrder.eft_reference && (
+                      <span className="text-xs font-mono text-amber-400 font-bold block mt-0.5">
+                        Ref: {approvingOrder.eft_reference}
+                      </span>
+                    )}
+                  </div>
+                  <div className="text-right">
+                    <span className="text-[10px] font-mono text-slate-400 uppercase font-bold block">
+                      Transfer Amount
+                    </span>
+                    <span className="font-mono text-base font-extrabold text-emerald-400">
+                      {approvingOrder.currency === 'ZAR' 
+                        ? `R ${Number(approvingOrder.amount).toLocaleString('en-ZA', { minimumFractionDigits: 2 })} ZAR` 
+                        : `$${Number(approvingOrder.amount).toFixed(2)} ${approvingOrder.currency}`}
+                    </span>
+                  </div>
+                </div>
+
+                <div className="border-t border-slate-800/80 pt-2 grid grid-cols-2 gap-2 text-xs">
+                  <div>
+                    <span className="text-[10px] text-slate-500 font-mono block">Customer Name &amp; Email</span>
+                    <span className="font-semibold text-slate-200 block">
+                      {approvingOrder.user_name || approvingOrder.customer_name || 'Customer'}
+                    </span>
+                    <span className="font-mono text-[11px] text-slate-400 block truncate">
+                      {approvingOrder.user_email || approvingOrder.customer_email}
+                    </span>
+                  </div>
+
+                  <div>
+                    <span className="text-[10px] text-slate-500 font-mono block">Target Product</span>
+                    <span className="font-semibold text-slate-200 block">
+                      {approvingOrder.product_name || approvingOrder.product_id}
+                    </span>
+                    <span className="font-mono text-[10px] text-slate-500 uppercase">
+                      {approvingOrder.product_type || 'Digital Asset'}
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Standard Bank Account Details Cross-Reference */}
+              <div className="p-3 rounded-xl bg-slate-900 border border-slate-800 text-xs space-y-1">
+                <div className="flex items-center gap-1.5 text-sky-400 font-mono font-bold text-[11px] uppercase">
+                  <Building2 className="w-3.5 h-3.5" />
+                  <span>Standard Bank Target Account:</span>
+                </div>
+                <div className="text-slate-300 text-[11px] space-y-0.5">
+                  <div>Account Holder: <strong>Megonza Digital</strong></div>
+                  <div>Account Number: <strong className="font-mono text-sky-300">10 23 601 346 5</strong> (Cheque / Current)</div>
+                  <div>Branch Code: <span className="font-mono text-slate-400">{EFT_BANKING_DETAILS.branchCode}</span></div>
+                </div>
+              </div>
+
+              {/* Verification Notes */}
+              <div>
+                <label className="block text-xs font-mono text-slate-300 mb-1.5 font-bold">
+                  Administrative Verification Notes (Optional)
+                </label>
+                <input
+                  type="text"
+                  value={adminApprovalNotes}
+                  onChange={(e) => setAdminApprovalNotes(e.target.value)}
+                  placeholder="e.g. Confirmed funds cleared in Standard Bank; POP received on WhatsApp"
+                  className="w-full px-3.5 py-2.5 bg-slate-950 border border-slate-800 rounded-xl text-slate-200 text-xs focus:outline-none focus:border-emerald-500 font-sans"
+                />
+              </div>
+
+              {/* Impact Notice */}
+              <div className="p-3 rounded-xl bg-emerald-950/30 border border-emerald-500/30 text-xs text-emerald-200/90 leading-relaxed">
+                ℹ️ <strong>System Automation:</strong> Upon approval, the order status becomes <strong className="text-white">PAID</strong>. The platform will automatically provision terminal license keys, unlock downloads/masterclass access, and notify the customer via email.
+              </div>
+
+              {/* Action Buttons */}
+              <div className="pt-2 flex items-center justify-end gap-2.5 border-t border-slate-800">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    setApprovingOrder(null);
+                    setAdminApprovalNotes('');
+                  }}
+                  disabled={isApprovingEft}
+                >
+                  Cancel
+                </Button>
+
+                <button
+                  type="button"
+                  onClick={handleApproveEftOrder}
+                  disabled={isApprovingEft}
+                  className="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-slate-950 font-bold text-xs flex items-center gap-1.5 transition-all shadow-lg shadow-emerald-600/20 cursor-pointer active:scale-95 disabled:opacity-50"
+                >
+                  {isApprovingEft ? (
+                    <>
+                      <div className="w-3.5 h-3.5 border-2 border-slate-950 border-t-transparent rounded-full animate-spin" />
+                      <span>Verifying &amp; Granting Access...</span>
+                    </>
+                  ) : (
+                    <>
+                      <Check className="w-3.5 h-3.5" />
+                      <span>Confirm Verification &amp; Grant Access</span>
+                    </>
+                  )}
+                </button>
+              </div>
+            </div>
+          </Modal>
+        )}
+
+        {/* Modal: Reject Manual EFT Order */}
+        {rejectingOrder && (
+          <Modal
+            isOpen={Boolean(rejectingOrder)}
+            onClose={() => {
+              if (!isRejectingEft) {
+                setRejectingOrder(null);
+                setRejectionReason('');
+              }
+            }}
+            maxWidth="sm"
+            title="Reject Manual EFT Order"
+            subtitle="Mark this transfer as failed or invalid"
+          >
+            <div className="space-y-4 p-1">
+              <div className="p-3 rounded-xl bg-rose-950/40 border border-rose-500/40 text-xs text-rose-200">
+                Are you sure you want to reject Order <strong>{rejectingOrder.id}</strong> for <strong>{rejectingOrder.user_email || rejectingOrder.customer_email}</strong>?
+              </div>
+
+              <div>
+                <label className="block text-xs font-mono text-slate-300 mb-1.5 font-bold">
+                  Rejection Reason
+                </label>
+                <textarea
+                  rows={3}
+                  value={rejectionReason}
+                  onChange={(e) => setRejectionReason(e.target.value)}
+                  placeholder="e.g. Proof of payment was not received or transfer could not be verified in Standard Bank."
+                  className="w-full px-3 py-2 bg-slate-950 border border-slate-800 rounded-xl text-slate-200 text-xs focus:outline-none focus:border-rose-500"
+                />
+              </div>
+
+              <div className="pt-2 flex items-center justify-end gap-2 border-t border-slate-800">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    setRejectingOrder(null);
+                    setRejectionReason('');
+                  }}
+                  disabled={isRejectingEft}
+                >
+                  Cancel
+                </Button>
+
+                <button
+                  type="button"
+                  onClick={handleRejectEftOrder}
+                  disabled={isRejectingEft}
+                  className="px-4 py-2 rounded-xl bg-rose-600 hover:bg-rose-500 text-white font-bold text-xs flex items-center gap-1.5 transition-colors cursor-pointer disabled:opacity-50"
+                >
+                  {isRejectingEft ? 'Rejecting...' : 'Reject Order'}
+                </button>
+              </div>
+            </div>
+          </Modal>
         )}
       </div>
     </div>

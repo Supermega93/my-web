@@ -127,6 +127,16 @@
           "description": "External transaction ID or reference.",
           "maxLength": 128
         },
+        "paymentMethod": {
+          "type": "string",
+          "description": "Payment gateway or method e.g. manual_eft or yoco.",
+          "maxLength": 50
+        },
+        "notes": {
+          "type": "string",
+          "description": "Additional order or administrative verification notes.",
+          "maxLength": 500
+        },
         "createdAt": {
           "type": "string",
           "description": "ISO timestamp of order creation.",

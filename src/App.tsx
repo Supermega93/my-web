@@ -67,15 +67,15 @@ function AppContent() {
   const [isCustomEaModalOpen, setIsCustomEaModalOpen] = useState(false);
   const [customEaPrefill, setCustomEaPrefill] = useState<any>(null);
 
-  // Yoco Return & Verification State
-  const [yocoVerifying, setYocoVerifying] = useState(false);
-  const [yocoVerifiedResult, setYocoVerifiedResult] = useState<any>(null);
-  const [yocoBanner, setYocoBanner] = useState<{
+  // Payment Return & Verification State
+  const [paymentVerifying, setPaymentVerifying] = useState(false);
+  const [paymentVerifiedResult, setPaymentVerifiedResult] = useState<any>(null);
+  const [paymentBanner, setPaymentBanner] = useState<{
     type: 'success' | 'cancelled' | 'failed';
     message: string;
   } | null>(null);
 
-  // Check URL search params for Yoco return (e.g. ?payment_status=success&checkout_id=chk_...)
+  // Check URL search params for payment return (e.g. ?payment_status=success&checkout_id=chk_...)
   useEffect(() => {
     if (typeof window === 'undefined') return;
     const searchParams = new URLSearchParams(window.location.search);
@@ -83,14 +83,13 @@ function AppContent() {
     const checkoutId = searchParams.get('checkout_id');
 
     if (paymentStatus === 'success' && checkoutId) {
-      setYocoVerifying(true);
-      // Clean query params from URL without refreshing
+      setPaymentVerifying(true);
       window.history.replaceState(null, '', window.location.pathname);
 
       api.verifyYocoCheckout(checkoutId)
         .then((res) => {
           if (res.success && res.verified) {
-            setYocoVerifiedResult(res);
+            setPaymentVerifiedResult(res);
             if (res.product) {
               setPurchaseProduct(res.product);
             }
@@ -98,36 +97,36 @@ function AppContent() {
               setActiveStudentTier(res.studentTier as any);
             }
             setIsPurchaseOpen(true);
-            setYocoBanner({
+            setPaymentBanner({
               type: 'success',
               message: 'Payment verified successfully! Your digital asset has been unlocked.'
             });
           } else {
-            setYocoBanner({
+            setPaymentBanner({
               type: 'failed',
               message: res.error || 'Payment authorization was not completed. You were not charged.'
             });
           }
         })
         .catch((err) => {
-          console.error('[Yoco Verification Notice]:', err);
-          setYocoBanner({
+          console.error('[Payment Verification Notice]:', err);
+          setPaymentBanner({
             type: 'failed',
-            message: 'Unable to verify payment with Yoco. If you were charged, please contact support.'
+            message: 'Unable to verify payment. If you were charged, please contact support.'
           });
         })
         .finally(() => {
-          setYocoVerifying(false);
+          setPaymentVerifying(false);
         });
     } else if (paymentStatus === 'cancelled') {
       window.history.replaceState(null, '', window.location.pathname);
-      setYocoBanner({
+      setPaymentBanner({
         type: 'cancelled',
-        message: 'Yoco checkout was cancelled. No charges were made to your account.'
+        message: 'Checkout was cancelled. No charges were made to your account.'
       });
     } else if (paymentStatus === 'failed') {
       window.history.replaceState(null, '', window.location.pathname);
-      setYocoBanner({
+      setPaymentBanner({
         type: 'failed',
         message: 'Payment was declined by the cardholder bank. Please try another card.'
       });
@@ -303,27 +302,27 @@ function AppContent() {
         />
       )}
 
-      {/* Yoco Payment Status Notification */}
-      {yocoBanner && (
+      {/* Payment Status Notification */}
+      {paymentBanner && (
         <div className={`py-3 px-4 z-40 transition-all ${
-          yocoBanner.type === 'success'
+          paymentBanner.type === 'success'
             ? 'bg-emerald-950 text-emerald-300 border-b border-emerald-500/30'
-            : yocoBanner.type === 'cancelled'
+            : paymentBanner.type === 'cancelled'
             ? 'bg-slate-900 text-slate-300 border-b border-slate-700'
             : 'bg-rose-950 text-rose-300 border-b border-rose-500/30'
         }`}>
           <div className="max-w-7xl mx-auto w-full flex items-center justify-between gap-4 text-xs font-medium">
             <div className="flex items-center gap-2">
-              {yocoBanner.type === 'success' ? (
+              {paymentBanner.type === 'success' ? (
                 <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
               ) : (
                 <AlertCircle className="w-4 h-4 text-rose-400 shrink-0" />
               )}
-              <span>{yocoBanner.message}</span>
+              <span>{paymentBanner.message}</span>
             </div>
             <button
               type="button"
-              onClick={() => setYocoBanner(null)}
+              onClick={() => setPaymentBanner(null)}
               className="p-1 hover:bg-white/10 rounded-md cursor-pointer transition-colors"
               aria-label="Dismiss banner"
             >
@@ -333,8 +332,8 @@ function AppContent() {
         </div>
       )}
 
-      {/* Yoco Verifying Overlay */}
-      {yocoVerifying && (
+      {/* Payment Verifying Overlay */}
+      {paymentVerifying && (
         <div className="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-xs flex items-center justify-center p-4">
           <div className="bg-slate-900 border border-slate-800 p-6 rounded-2xl max-w-sm w-full text-center space-y-4 shadow-2xl">
             <div className="w-12 h-12 rounded-full bg-sky-500/20 text-sky-400 flex items-center justify-center mx-auto">
@@ -343,7 +342,7 @@ function AppContent() {
             <div>
               <h4 className="text-base font-bold text-slate-100">Verifying Payment</h4>
               <p className="text-xs text-slate-400 mt-1">
-                Confirming authorization with Yoco South Africa...
+                Confirming authorization with payment gateway...
               </p>
             </div>
           </div>
@@ -557,11 +556,11 @@ function AppContent() {
         onClose={() => {
           setIsPurchaseOpen(false);
           setSelectedTier(null);
-          setYocoVerifiedResult(null);
+          setPaymentVerifiedResult(null);
         }}
         product={purchaseProduct}
         tier={selectedTier}
-        verifiedResult={yocoVerifiedResult}
+        verifiedResult={paymentVerifiedResult}
         onPurchaseSuccess={handlePurchaseSuccess}
       />
 

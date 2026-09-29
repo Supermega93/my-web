@@ -84,6 +84,14 @@ export interface Order {
   currency: string;
   payment_status: 'paid' | 'pending' | 'refunded' | 'failed';
   transaction_id: string;
+  payment_method?: 'manual_eft' | 'paypal' | 'card' | 'yoco' | 'stripe' | string;
+  payment_provider?: string;
+  customer_email?: string;
+  customer_name?: string;
+  eft_reference?: string;
+  notes?: string;
+  verified_by?: string;
+  verified_at?: string;
   created_at: string;
   updated_at: string;
   product_name?: string;
