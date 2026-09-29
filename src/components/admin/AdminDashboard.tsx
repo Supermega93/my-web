@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { AdminStats, Product, Order, User, ProductType, License, AdminUserRecord } from '../../types.ts';
 import { api, StrategySubmission, getStoredToken, setStoredToken } from '../../services/api.ts';
 import { auth, db } from '../../lib/firebase.ts';
-import { doc, updateDoc } from 'firebase/firestore';
+import { doc, updateDoc, collection, getDocs } from 'firebase/firestore';
 import { EFT_BANKING_DETAILS } from '../../constants/eftBankingDetails.ts';
 import { useAuth } from '../../context/AuthContext.tsx';
 import { Button } from '../common/Button.tsx';
@@ -255,9 +255,54 @@ export function AdminDashboard({ onBackToHome }: AdminDashboardProps) {
         api.getStrategySubmissions().catch(() => []),
         api.getAdminLicenses().catch(() => []),
       ]);
+      // Fetch Firestore orders directly so client-side submitted orders appear seamlessly
+      let firestoreOrders: Order[] = [];
+      try {
+        const ordersSnap = await getDocs(collection(db, 'orders'));
+        firestoreOrders = ordersSnap.docs.map(d => {
+          const data = d.data();
+          return {
+            id: d.id,
+            user_id: data.userId || '',
+            user_email: data.email || data.user_email || '',
+            user_name: data.name || data.user_name || '',
+            customer_name: data.name || data.customer_name || '',
+            customer_email: data.email || data.customer_email || '',
+            customer_phone: data.phone || data.customer_phone || '',
+            name: data.name,
+            email: data.email,
+            phone: data.phone,
+            product: data.product,
+            product_id: data.productId || '',
+            product_name: data.product || data.productName || 'Adaptive Liquidity Pro',
+            amount: data.amount || 0,
+            currency: data.currency || 'ZAR',
+            payment_status: data.status || data.paymentStatus || 'pending',
+            status: data.status || data.paymentStatus || 'pending',
+            payment_method: data.paymentMethod || 'manual_eft',
+            transaction_id: data.transactionId || data.reference || '',
+            reference: data.reference || '',
+            eft_reference: data.reference || '',
+            notes: data.notes || '',
+            created_at: data.createdAt || new Date().toISOString(),
+            updated_at: data.updatedAt || new Date().toISOString()
+          } as Order;
+        });
+      } catch (fsErr) {
+        console.warn('Firestore orders fetch notice:', fsErr);
+      }
+
+      // Merge backend orders and Firestore orders, deduplicating by id
+      const orderMap = new Map<string, Order>();
+      firestoreOrders.forEach(o => orderMap.set(o.id, o));
+      (ordersRes || []).forEach(o => orderMap.set(o.id, { ...orderMap.get(o.id), ...o }));
+      const mergedOrders = Array.from(orderMap.values()).sort(
+        (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+      );
+
       setStats(statsRes);
       setProducts(productsRes);
-      setOrders(ordersRes);
+      setOrders(mergedOrders);
       setUsersList(usersRes);
       setSubmissions(submissionsRes);
       setLicenses(licensesRes);

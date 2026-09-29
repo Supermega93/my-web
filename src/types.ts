@@ -88,6 +88,12 @@ export interface Order {
   payment_provider?: string;
   customer_email?: string;
   customer_name?: string;
+  name?: string;
+  email?: string;
+  phone?: string;
+  product?: string;
+  status?: string;
+  reference?: string;
   eft_reference?: string;
   notes?: string;
   verified_by?: string;

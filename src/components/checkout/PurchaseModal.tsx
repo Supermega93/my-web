@@ -11,7 +11,7 @@ import {
   generateEftReference 
 } from '../../constants/eftBankingDetails.ts';
 import { auth, db } from '../../lib/firebase.ts';
-import { doc, setDoc } from 'firebase/firestore';
+import { doc, setDoc, getDoc } from 'firebase/firestore';
 import { 
   CheckCircle2, 
   Download, 
@@ -66,6 +66,17 @@ export function PurchaseModal({
   const { currentCurrency, formatPrice: formatCurrencyPrice } = useCurrency();
   const [customerName, setCustomerName] = useState('');
   const [customerEmail, setCustomerEmail] = useState('');
+  const [customerPhone, setCustomerPhone] = useState('');
+
+  // Generates official order payment reference e.g. MAL-7K4Q9X
+  const generateMalReference = (): string => {
+    const chars = '23456789ABCDEFGHJKLMNPQRSTUVWXYZ';
+    let rand = '';
+    for (let i = 0; i < 6; i++) {
+      rand += chars.charAt(Math.floor(Math.random() * chars.length));
+    }
+    return 'MAL-' + rand;
+  };
   const [agreedToTerms, setAgreedToTerms] = useState(false);
   const [loading, setLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
@@ -95,6 +106,7 @@ export function PurchaseModal({
     if (isOpen) {
       if (user?.name && !customerName) setCustomerName(user.name);
       if (user?.email && !customerEmail) setCustomerEmail(user.email);
+      if ((user as any)?.phone && !customerPhone) setCustomerPhone((user as any).phone);
       setErrorMessage(null);
       setLoading(false);
       setPendingRedirectUrl(null);
@@ -219,7 +231,7 @@ export function PurchaseModal({
   };
 
   // 2. Submit Manual EFT / Bank Transfer Order
-  // Creates a PENDING order in SQLite & Supabase, displays Standard Bank details, and prepares WhatsApp proof link
+  // Direct write to Firestore orders collection using Firebase client SDK (no /api route called)
   const handleCreateManualEftOrder = async () => {
     if (!customerEmail || !customerEmail.includes('@')) {
       setErrorMessage('Please enter a valid email address so the administrator can link your transfer.');
@@ -234,81 +246,81 @@ export function PurchaseModal({
       setLoading(true);
       setErrorMessage(null);
 
-      const res = await api.createManualEftOrder({
-        productId: activeProduct!.id,
-        customerEmail: customerEmail.trim(),
-        customerName: customerName.trim() || 'Trader Customer',
-        tierName: tier?.name || activeProduct!.name,
+      const reference = generateMalReference();
+      const orderId = 'ord_' + Date.now() + '_' + Math.random().toString(36).substring(2, 8).toUpperCase();
+      const nowIso = new Date().toISOString();
+
+      // Save directly to Firestore orders collection using Firebase client SDK
+      const orderDocRef = doc(db, 'orders', orderId);
+      const orderData = {
+        id: orderId,
+        name: customerName.trim() || 'Trader Customer',
+        email: customerEmail.trim().toLowerCase(),
+        phone: customerPhone.trim() || '',
+        product: displayProductName,
+        amount: zarAmount,
+        currency: 'ZAR',
+        status: 'pending',
+        paymentStatus: 'pending',
+        paymentMethod: 'manual_eft',
+        reference: reference,
+        transactionId: reference,
+        productId: activeProduct?.id || 'prod_custom',
+        productName: displayProductName,
+        userId: auth.currentUser?.uid || 'guest',
+        notes: 'Manual EFT order for ' + displayProductName + '. Awaiting WhatsApp proof of payment.',
+        createdAt: nowIso,
+        updatedAt: nowIso
+      };
+
+      await setDoc(orderDocRef, orderData);
+
+      setEftPendingOrder({
+        orderId: orderId,
+        reference: reference,
         amountZar: zarAmount,
-        notes: `Manual EFT order for ${displayProductName}. Awaiting WhatsApp proof of payment.`
+        productName: displayProductName,
+        bankingDetails: EFT_BANKING_DETAILS
       });
-
-      if (res.success) {
-        // Dual Persistence to Firestore if user is currently authenticated in Firebase Auth
-        if (auth.currentUser) {
-          try {
-            const orderRef = doc(db, 'orders', res.orderId);
-            await setDoc(orderRef, {
-              id: res.orderId,
-              userId: auth.currentUser.uid,
-              productId: activeProduct!.id,
-              productName: displayProductName,
-              amount: zarAmount,
-              currency: 'ZAR',
-              paymentStatus: 'pending',
-              transactionId: res.reference,
-              paymentMethod: 'manual_eft',
-              notes: 'Pending manual EFT bank transfer verification',
-              createdAt: new Date().toISOString(),
-              updatedAt: new Date().toISOString()
-            });
-          } catch (fbErr) {
-            console.warn('[Firestore Pending Order Sync Notice]:', fbErr);
-          }
-        }
-
-        setEftPendingOrder({
-          orderId: res.orderId,
-          reference: res.reference,
-          amountZar: zarAmount,
-          productName: displayProductName,
-          bankingDetails: res.bankingDetails as any || EFT_BANKING_DETAILS
-        });
-      } else {
-        setErrorMessage('Failed to register EFT order. Please try again or contact support.');
-      }
     } catch (err: any) {
-      console.error('[Create EFT Order Error]:', err);
-      setErrorMessage(err.message || 'Failed to initiate Manual EFT order.');
+      console.error('[Create EFT Order Firestore Error]:', err);
+      setErrorMessage(err.message || 'Failed to save order to database. Please check your network connection.');
     } finally {
       setLoading(false);
     }
   };
 
-  // 3. Customer Check Status Button (Polls backend to see if admin approved)
+  // 3. Customer Check Status Button (Polls Firestore directly - no /api route)
   const handleCheckEftStatus = async () => {
     if (!eftPendingOrder) return;
     setCheckingStatus(true);
     setStatusMessage(null);
     try {
-      const res = await api.getEftOrderStatus(eftPendingOrder.orderId);
-      if (res.isPaid) {
-        setStatusMessage('Payment verified! Granting access now...');
-        setActiveVerifiedResult({
-          order: res.order,
-          product: activeProduct,
-          license: res.license,
-          downloadUrl: isEa ? null : (activeProduct?.download_url || '/downloads/the-school-of-ai-trading-architecture-vol1.pdf'),
-          studentTier: isMasterclass ? 'paid' : null
-        });
-        onPurchaseSuccess?.();
-      } else if (res.status === 'failed') {
-        setStatusMessage('Your EFT payment verification was rejected or cancelled by administrator. Please contact support on WhatsApp.');
+      const orderSnap = await getDoc(doc(db, 'orders', eftPendingOrder.orderId));
+      if (orderSnap.exists()) {
+        const orderData = orderSnap.data();
+        const isPaid = orderData.status === 'paid' || orderData.paymentStatus === 'paid';
+        if (isPaid) {
+          setStatusMessage('Payment verified! Granting access now...');
+          setActiveVerifiedResult({
+            order: orderData,
+            product: activeProduct,
+            license: orderData.license || null,
+            downloadUrl: isEa ? null : (activeProduct?.download_url || '/downloads/the-school-of-ai-trading-architecture-vol1.pdf'),
+            studentTier: isMasterclass ? 'paid' : null
+          });
+          onPurchaseSuccess?.();
+        } else if (orderData.status === 'failed' || orderData.status === 'rejected') {
+          setStatusMessage('Your EFT payment verification was rejected or cancelled by administrator. Please contact support on WhatsApp.');
+        } else {
+          setStatusMessage('Status: PENDING VERIFICATION. Our administrator has not confirmed receipt in Standard Bank yet. Please ensure you sent your POP via WhatsApp.');
+        }
       } else {
-        setStatusMessage('Status: PENDING VERIFICATION. Our administrator has not confirmed receipt in Standard Bank yet. Please ensure you sent your POP via WhatsApp.');
+        setStatusMessage('Status: PENDING VERIFICATION. Order is recorded. Awaiting admin review.');
       }
     } catch (err: any) {
-      setStatusMessage('Unable to verify order status at this time. Please try again.');
+      console.warn('[EFT Order Status Read Notice]:', err);
+      setStatusMessage('Order is awaiting verification. Please send your proof on WhatsApp.');
     } finally {
       setCheckingStatus(false);
     }
@@ -473,15 +485,9 @@ export function PurchaseModal({
   // VIEW 2: EFT Pending Order Details & Proof Submission
   // =========================================================
   if (eftPendingOrder) {
-    const whatsAppUrl = buildEftWhatsAppUrl({
-      orderId: eftPendingOrder.orderId,
-      reference: eftPendingOrder.reference,
-      productName: eftPendingOrder.productName,
-      amountZar: eftPendingOrder.amountZar,
-      customerName: customerName.trim(),
-      customerEmail: customerEmail.trim()
-    });
-
+    // Pre-filled message on existing WhatsApp link
+    const whatsAppMessage = 'Hi, I\'ve paid for ' + eftPendingOrder.productName + '. Reference: ' + eftPendingOrder.reference + '. Name: ' + (customerName.trim() || 'Customer') + '. Proof attached.';
+    const whatsAppUrl = 'https://wa.me/' + EFT_BANKING_DETAILS.whatsAppNumber + '?text=' + encodeURIComponent(whatsAppMessage);
     return (
       <Modal
         isOpen={isOpen}
@@ -896,6 +902,19 @@ export function PurchaseModal({
               value={customerEmail}
               onChange={(e) => setCustomerEmail(e.target.value)}
               placeholder="trader@example.com"
+              className="w-full px-3.5 py-2.5 bg-slate-950 border border-slate-800 rounded-xl text-slate-100 text-sm focus:outline-none focus:border-sky-500 transition-colors font-sans"
+            />
+          </div>
+
+          <div>
+            <label className="block text-xs font-mono text-slate-300 mb-1.5">
+              Phone / WhatsApp Number <span className="text-slate-500 font-sans">(For payment confirmation &amp; WhatsApp proof)</span>
+            </label>
+            <input
+              type="tel"
+              value={customerPhone}
+              onChange={(e) => setCustomerPhone(e.target.value)}
+              placeholder="e.g. +27 64 461 1412"
               className="w-full px-3.5 py-2.5 bg-slate-950 border border-slate-800 rounded-xl text-slate-100 text-sm focus:outline-none focus:border-sky-500 transition-colors font-sans"
             />
           </div>

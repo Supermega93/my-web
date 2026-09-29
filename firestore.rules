@@ -58,19 +58,24 @@ service cloud.firestore {
     }
 
     function isValidOrder(data) {
-      return data.keys().hasAll(['id', 'userId', 'productId', 'amount', 'paymentStatus']) &&
-             data.keys().hasOnly(['id', 'userId', 'productId', 'productName', 'amount', 'currency', 'paymentStatus', 'transactionId', 'paymentMethod', 'notes', 'createdAt', 'updatedAt']) &&
-             data.id is string && data.id.size() <= 128 &&
-             data.userId is string && data.userId == request.auth.uid &&
-             data.productId is string && data.productId.size() <= 100 &&
+      return data.keys().hasAll(['name', 'email', 'product', 'amount', 'status', 'createdAt']) &&
+             data.name is string && data.name.size() > 0 && data.name.size() <= 100 &&
+             data.email is string && data.email.size() > 0 && data.email.size() <= 120 &&
+             data.product is string && data.product.size() > 0 && data.product.size() <= 150 &&
              data.amount is number &&
-             data.paymentStatus in ['paid', 'pending', 'refunded', 'failed'] &&
+             data.status == 'pending' &&
+             data.createdAt is string && data.createdAt.size() <= 50 &&
+             (!('phone' in data) || data.phone == null || (data.phone is string && data.phone.size() <= 50)) &&
+             (!('id' in data) || (data.id is string && data.id.size() <= 128)) &&
+             (!('reference' in data) || (data.reference is string && data.reference.size() <= 100)) &&
+             (!('productId' in data) || (data.productId is string && data.productId.size() <= 100)) &&
              (!('productName' in data) || (data.productName is string && data.productName.size() <= 150)) &&
              (!('currency' in data) || (data.currency is string && data.currency.size() <= 10)) &&
+             (!('paymentStatus' in data) || data.paymentStatus == 'pending') &&
              (!('transactionId' in data) || (data.transactionId is string && data.transactionId.size() <= 128)) &&
              (!('paymentMethod' in data) || (data.paymentMethod is string && data.paymentMethod.size() <= 50)) &&
+             (!('userId' in data) || (data.userId is string && data.userId.size() <= 128)) &&
              (!('notes' in data) || (data.notes is string && data.notes.size() <= 500)) &&
-             (!('createdAt' in data) || (data.createdAt is string && data.createdAt.size() <= 50)) &&
              (!('updatedAt' in data) || (data.updatedAt is string && data.updatedAt.size() <= 50));
     }
 
@@ -151,9 +156,9 @@ service cloud.firestore {
 
     // Orders Collection
     match /orders/{orderId} {
-      allow get: if isSignedIn() && (existing().userId == request.auth.uid || isAdmin());
-      allow list: if isSignedIn() && (existing().userId == request.auth.uid || isAdmin());
-      allow create: if isSignedIn() && incoming().userId == request.auth.uid && isValidId(orderId) && isValidOrder(incoming());
+      allow get: if true;
+      allow list: if isAdmin() || (isSignedIn() && existing().userId == request.auth.uid);
+      allow create: if isValidId(orderId) && isValidOrder(incoming());
       allow update, delete: if isAdmin();
     }
 

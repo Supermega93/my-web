@@ -23,12 +23,20 @@
         "role": {
           "type": "string",
           "description": "User platform role.",
-          "enum": ["customer", "admin", "developer"]
+          "enum": [
+            "customer",
+            "admin",
+            "developer"
+          ]
         },
         "access_status": {
           "type": "string",
           "description": "Access tier for the academy masterclass.",
-          "enum": ["free", "paid", "complimentary"]
+          "enum": [
+            "free",
+            "paid",
+            "complimentary"
+          ]
         },
         "can_access_masterclass": {
           "type": "boolean",
@@ -50,7 +58,11 @@
           "maxLength": 50
         }
       },
-      "required": ["id", "email", "role"]
+      "required": [
+        "id",
+        "email",
+        "role"
+      ]
     },
     "UserProgress": {
       "title": "UserProgress",
@@ -81,7 +93,11 @@
           "maxLength": 50
         }
       },
-      "required": ["userId", "lessonId", "completed"]
+      "required": [
+        "userId",
+        "lessonId",
+        "completed"
+      ]
     },
     "Order": {
       "title": "Order",
@@ -93,10 +109,25 @@
           "description": "Unique transaction or order identifier.",
           "maxLength": 128
         },
-        "userId": {
+        "name": {
           "type": "string",
-          "description": "UID of the buyer.",
-          "maxLength": 128
+          "description": "Customer full name.",
+          "maxLength": 100
+        },
+        "email": {
+          "type": "string",
+          "description": "Customer contact email address.",
+          "maxLength": 120
+        },
+        "phone": {
+          "type": "string",
+          "description": "Customer contact or WhatsApp phone number.",
+          "maxLength": 50
+        },
+        "product": {
+          "type": "string",
+          "description": "Name or title of the purchased item.",
+          "maxLength": 150
         },
         "productId": {
           "type": "string",
@@ -110,17 +141,37 @@
         },
         "amount": {
           "type": "number",
-          "description": "Purchase total in currency units."
+          "description": "Purchase total in currency units (ZAR)."
         },
         "currency": {
           "type": "string",
-          "description": "Currency code such as USD or EUR.",
+          "description": "Currency code such as ZAR or USD.",
           "maxLength": 10
+        },
+        "status": {
+          "type": "string",
+          "description": "Order fulfillment status.",
+          "enum": [
+            "pending",
+            "paid",
+            "refunded",
+            "failed"
+          ]
         },
         "paymentStatus": {
           "type": "string",
           "description": "Payment resolution state.",
-          "enum": ["paid", "pending", "refunded", "failed"]
+          "enum": [
+            "pending",
+            "paid",
+            "refunded",
+            "failed"
+          ]
+        },
+        "reference": {
+          "type": "string",
+          "description": "Beneficiary payment reference like MAL-7K4Q9X.",
+          "maxLength": 100
         },
         "transactionId": {
           "type": "string",
@@ -129,8 +180,13 @@
         },
         "paymentMethod": {
           "type": "string",
-          "description": "Payment gateway or method e.g. manual_eft or yoco.",
+          "description": "Payment gateway or method e.g. manual_eft or paypal.",
           "maxLength": 50
+        },
+        "userId": {
+          "type": "string",
+          "description": "UID of the buyer or guest.",
+          "maxLength": 128
         },
         "notes": {
           "type": "string",
@@ -148,7 +204,14 @@
           "maxLength": 50
         }
       },
-      "required": ["id", "userId", "productId", "amount", "paymentStatus"]
+      "required": [
+        "name",
+        "email",
+        "product",
+        "amount",
+        "status",
+        "createdAt"
+      ]
     },
     "EAProject": {
       "title": "EAProject",
@@ -178,7 +241,16 @@
         "status": {
           "type": "string",
           "description": "Lifecycle status of the build request.",
-          "enum": ["draft", "review", "quote_ready", "in_development", "testing", "completed", "delivered", "cancelled"]
+          "enum": [
+            "draft",
+            "review",
+            "quote_ready",
+            "in_development",
+            "testing",
+            "completed",
+            "delivered",
+            "cancelled"
+          ]
         },
         "strategyDescription": {
           "type": "string",
@@ -196,7 +268,13 @@
           "maxLength": 50
         }
       },
-      "required": ["id", "userId", "projectName", "platform", "status"]
+      "required": [
+        "id",
+        "userId",
+        "projectName",
+        "platform",
+        "status"
+      ]
     },
     "Admin": {
       "title": "Admin",
@@ -219,7 +297,10 @@
           "maxLength": 50
         }
       },
-      "required": ["email", "role"]
+      "required": [
+        "email",
+        "role"
+      ]
     },
     "TradingAccount": {
       "title": "TradingAccount",
@@ -244,12 +325,21 @@
         "accountType": {
           "type": "string",
           "description": "Account environment type.",
-          "enum": ["live", "demo"]
+          "enum": [
+            "live",
+            "demo"
+          ]
         },
         "platform": {
           "type": "string",
           "description": "Trading platform e.g. MT5, MT4, cTrader, TradingView.",
-          "enum": ["MT5", "MT4", "cTrader", "TradingView", "Other"]
+          "enum": [
+            "MT5",
+            "MT4",
+            "cTrader",
+            "TradingView",
+            "Other"
+          ]
         },
         "broker": {
           "type": "string",
@@ -330,7 +420,11 @@
         "status": {
           "type": "string",
           "description": "Real-time EA execution status.",
-          "enum": ["active", "paused", "disconnected"]
+          "enum": [
+            "active",
+            "paused",
+            "disconnected"
+          ]
         },
         "lastSyncAt": {
           "type": "string",
@@ -348,7 +442,15 @@
           "maxLength": 50
         }
       },
-      "required": ["id", "userId", "accountId", "accountType", "platform", "broker", "eaName"]
+      "required": [
+        "id",
+        "userId",
+        "accountId",
+        "accountType",
+        "platform",
+        "broker",
+        "eaName"
+      ]
     }
   },
   "firestore": {
