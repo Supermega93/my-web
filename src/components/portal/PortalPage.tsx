@@ -33,19 +33,15 @@ export function PortalPage({ onNavigate, onTriggerBuildMyEa }: PortalPageProps) 
   const [activeTab, setActiveTab] = useState<'downloads' | 'licenses' | 'projects' | 'session'>('downloads');
   const [downloadingFreeEbook, setDownloadingFreeEbook] = useState(false);
 
-  const handleDownloadFreeEbook = async () => {
-    if (!user?.email) return;
+  const handleDownloadFreeEbook = () => {
     setDownloadingFreeEbook(true);
     try {
-      const res = await requestFreeEbookDownload(user.email, user.name);
-      if (res.success && res.downloadUrl) {
-        const link = document.createElement('a');
-        link.href = res.downloadUrl;
-        link.setAttribute('download', 'The-Traders-Guide-to-Understanding-Strategy-Automation.pdf');
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-      }
+      const link = document.createElement('a');
+      link.href = '/api/ebooks/download';
+      link.setAttribute('download', 'The-Traders-Guide-to-Understanding-Strategy-Automation.pdf');
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
     } catch (e) {
       console.error(e);
     } finally {

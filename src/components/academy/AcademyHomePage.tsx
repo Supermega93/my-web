@@ -40,9 +40,10 @@ import { MasterclassPricingSection } from './MasterclassPricingSection.tsx';
 interface AcademyHomePageProps {
   onNavigate: (view: ActiveView, extraId?: string) => void;
   onOpenEbookDownload?: () => void;
+  onBuyNow?: (product: any, tier?: any) => void;
 }
 
-export function AcademyHomePage({ onNavigate, onOpenEbookDownload }: AcademyHomePageProps) {
+export function AcademyHomePage({ onNavigate, onOpenEbookDownload, onBuyNow }: AcademyHomePageProps) {
   const { user, isLoggedIn, isAdmin } = useAuth();
   const [lessons, setLessons] = useState<Lesson[]>([]);
   const [loading, setLoading] = useState(true);
@@ -548,7 +549,11 @@ export function AcademyHomePage({ onNavigate, onOpenEbookDownload }: AcademyHome
 
       {/* Distinct Masterclass Section Right Below Academy Curriculum */}
       <div className="relative mt-20 border-t border-slate-200 bg-slate-50/50">
-        <MasterclassPricingSection onNavigate={onNavigate} onOpenAuth={() => setAuthModalOpen(true)} />
+        <MasterclassPricingSection 
+          onNavigate={onNavigate} 
+          onOpenAuth={() => setAuthModalOpen(true)} 
+          onBuyNow={onBuyNow}
+        />
       </div>
 
       {/* In-page Academy Auth Modal */}

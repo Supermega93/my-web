@@ -354,6 +354,7 @@ function AppContent() {
         {currentView === 'academy' && (
           <AcademyHomePage
             onNavigate={handleNavigate}
+            onBuyNow={handleBuyNow}
           />
         )}
 

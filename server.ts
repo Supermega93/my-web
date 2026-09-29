@@ -951,9 +951,10 @@ app.post('/api/orders', (req, res) => {
     let product = dbQueries.getProductById(productId) as any;
     if (!product) {
       const masterclassCatalog: Record<string, any> = {
-        'masterclass': { id: 'masterclass', name: 'Masterclass Core Curriculum', type: 'service', price: 159.0, currency: 'USD' },
-        'masterclass-ea': { id: 'masterclass-ea', name: 'Masterclass + Adaptive Liquidity Pro', type: 'service', price: 199.0, currency: 'USD' },
-        'premium': { id: 'premium', name: 'Premium VIP Masterclass', type: 'service', price: 299.0, currency: 'USD' }
+        'masterclass': { id: 'masterclass', name: 'Masterclass', type: 'service', price: 99.0, currency: 'USD' },
+        'masterclass-ea': { id: 'masterclass-ea', name: 'Masterclass + Adaptive Liquidity Pro', type: 'service', price: 169.0, currency: 'USD' },
+        'premium': { id: 'premium', name: 'Premium VIP Masterclass', type: 'service', price: 299.0, currency: 'USD' },
+        'masterclass-vip': { id: 'masterclass-vip', name: 'Premium VIP Masterclass', type: 'service', price: 299.0, currency: 'USD' }
       };
       if (masterclassCatalog[productId]) {
         product = masterclassCatalog[productId];
@@ -1421,29 +1422,29 @@ function resolveCheckoutProduct(productId: string) {
     if (pid === 'masterclass') {
       product = {
         id: 'masterclass',
-        name: 'Academy Masterclass (Core Curriculum)',
+        name: 'Masterclass',
         type: 'service',
-        price: 159,
+        price: 99,
         currency: 'USD',
-        description: 'Complete mastery of Levels 4 through 8, advanced AI prompt engineering & certification.'
+        description: 'Learn to build professional trading systems with AI. Master the architecture behind AI-powered trading systems, from strategy specification to EA development.'
       };
     } else if (pid === 'masterclass-ea' || pid === 'bundle') {
       product = {
         id: 'masterclass-ea',
-        name: 'Masterclass + Adaptive EA Bundle',
+        name: 'Masterclass + Adaptive Liquidity Pro',
         type: 'service',
-        price: 199,
+        price: 169,
         currency: 'USD',
-        description: 'Masterclass Curriculum + Full Adaptive Liquidity Pro EA Terminal License.'
+        description: 'Learn the architecture. Then put it into practice. Everything in Masterclass, plus access to Adaptive Liquidity Pro and a practical breakdown of how a professional automated trading system is structured.'
       };
     } else if (pid === 'masterclass-vip' || pid === 'premium' || pid === 'vip') {
       product = {
-        id: 'masterclass-vip',
-        name: 'Masterclass VIP Strategy Architect',
+        id: 'premium',
+        name: 'Premium VIP Masterclass',
         type: 'service',
         price: 299,
         currency: 'USD',
-        description: '1-on-1 strategy architecture reviews, private Discord master tier & custom EA compilation.'
+        description: 'Build, review and refine your own trading systems. Everything in Masterclass + Adaptive Liquidity Pro, plus personalized strategy architecture, EA code review and direct VIP support.'
       };
     } else if (pid === 'prod_ebook_mql5_guide' || pid === 'prod_ebook_school_ai' || pid === 'school-of-ai' || pid === 'ebook-mql5') {
       product = {
@@ -3546,22 +3547,15 @@ app.get('/api/ebooks/download', async (req, res) => {
       }
     }
 
-    // Direct fallback verification: valid email provided
+    // Direct fallback verification: valid email provided (optional for lead tracking)
     if (!recipientEmail && emailParam && isValidEmail(emailParam)) {
       recipientEmail = emailParam.trim().toLowerCase();
       
-      // Asynchronously trigger background lead processing & email dispatch
+      // Asynchronously trigger background lead processing & email dispatch if email is provided
       const appUrl = (process.env.APP_URL || `${req.protocol}://${req.get('host')}`).replace(/\/$/, '');
       const downloadUrl = `/api/ebooks/download?email=${encodeURIComponent(recipientEmail)}`;
       processEmailLead(recipientEmail, nameParam || null, `${appUrl}${downloadUrl}`).catch((leadErr) => {
         console.warn('[EbookDownload] Direct access lead processing note:', leadErr);
-      });
-    }
-
-    if (!recipientEmail) {
-      return res.status(403).json({
-        error: 'Access denied: Valid email or download token is required. Please submit your email to receive authorized access.',
-        code: 'TOKEN_OR_EMAIL_REQUIRED',
       });
     }
 
@@ -3578,8 +3572,10 @@ app.get('/api/ebooks/download', async (req, res) => {
       });
     }
 
-    // Track download occurrence in database
-    dbQueries.incrementEmailLeadDownload(recipientEmail);
+    // Track download occurrence in database if email is associated
+    if (recipientEmail) {
+      dbQueries.incrementEmailLeadDownload(recipientEmail);
+    }
 
     // Stream PDF with attachment and strict anti-caching headers
     res.setHeader('Content-Type', 'application/pdf');

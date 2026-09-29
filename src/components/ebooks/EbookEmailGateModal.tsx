@@ -40,53 +40,39 @@ export function EbookEmailGateModal({
     }
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setErrorMessage('');
-
-    const cleanEmail = email.trim();
-    if (!cleanEmail || !cleanEmail.includes('@') || !cleanEmail.includes('.')) {
-      setErrorMessage('Please enter a valid email address.');
-      return;
-    }
-
+  const handleDirectDownload = () => {
     setIsSubmitting(true);
+    setErrorMessage('');
     try {
-      const response = await requestFreeEbookDownload(cleanEmail, name);
-      if (response.success && response.downloadUrl) {
-        setSignedDownloadUrl(response.downloadUrl);
-        setEmailStatusInfo({
-          dispatched: !!response.emailDispatched,
-          provider: response.emailDelivery?.provider,
-          message: response.message,
+      const downloadUrl = '/api/ebooks/download';
+      setSignedDownloadUrl(downloadUrl);
+      setEmailStatusInfo({
+        dispatched: false,
+        message: 'Direct download initiated.',
+      });
+
+      // Fire celebration confetti
+      try {
+        confetti({
+          particleCount: 50,
+          spread: 60,
+          origin: { y: 0.6 },
         });
+      } catch (_) {}
 
-        // Fire celebration confetti
-        try {
-          confetti({
-            particleCount: 50,
-            spread: 60,
-            origin: { y: 0.6 },
-          });
-        } catch (_) {}
-
-        // Notify parent callback if provided
-        if (onSuccessDownload) {
-          onSuccessDownload(response.downloadUrl);
-        }
-
-        // Automatically initiate browser download via temporary anchor
-        const tempLink = document.createElement('a');
-        tempLink.href = response.downloadUrl;
-        tempLink.setAttribute('download', 'The-Traders-Guide-to-Understanding-Strategy-Automation.pdf');
-        document.body.appendChild(tempLink);
-        tempLink.click();
-        document.body.removeChild(tempLink);
-      } else {
-        setErrorMessage(response.error || 'Failed to process request. Please check your email address and try again.');
+      if (onSuccessDownload) {
+        onSuccessDownload(downloadUrl);
       }
+
+      // Automatically initiate browser download
+      const tempLink = document.createElement('a');
+      tempLink.href = downloadUrl;
+      tempLink.setAttribute('download', 'The-Traders-Guide-to-Understanding-Strategy-Automation.pdf');
+      document.body.appendChild(tempLink);
+      tempLink.click();
+      document.body.removeChild(tempLink);
     } catch (err: any) {
-      setErrorMessage(err?.message || 'An unexpected error occurred while communicating with the server. Please try again.');
+      setErrorMessage(err?.message || 'Download failed.');
     } finally {
       setIsSubmitting(false);
     }
@@ -164,54 +150,22 @@ export function EbookEmailGateModal({
                   </div>
                 )}
 
-                <form onSubmit={handleSubmit} className="space-y-4">
-                  <div>
-                    <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1.5 font-mono">
-                      Your First Name (Optional)
-                    </label>
-                    <input
-                      type="text"
-                      value={name}
-                      onChange={(e) => setName(e.target.value)}
-                      placeholder="e.g. Alex"
-                      className="w-full px-4 py-3 rounded-xl border border-slate-300 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-600 focus:border-transparent transition-all placeholder:text-slate-400"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1.5 font-mono">
-                      Email Address <span className="text-emerald-600">*</span>
-                    </label>
-                    <div className="relative">
-                      <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
-                        <Mail className="w-4 h-4" />
-                      </div>
-                      <input
-                        type="email"
-                        required
-                        autoFocus
-                        value={email}
-                        onChange={(e) => setEmail(e.target.value)}
-                        placeholder="you@domain.com"
-                        className="w-full pl-10 pr-4 py-3 rounded-xl border border-slate-300 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-600 focus:border-transparent transition-all placeholder:text-slate-400"
-                      />
-                    </div>
-                  </div>
-
+                <div className="space-y-4 pt-2">
                   <button
-                    type="submit"
+                    type="button"
+                    onClick={handleDirectDownload}
                     disabled={isSubmitting}
                     className="w-full py-3.5 px-6 rounded-xl bg-gradient-to-r from-emerald-800 via-emerald-700 to-teal-700 hover:from-emerald-700 hover:to-teal-600 text-white font-bold text-sm shadow-md shadow-emerald-900/20 hover:shadow-lg transition-all flex items-center justify-center gap-2 cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed group"
                   >
                     {isSubmitting ? (
                       <>
                         <Loader2 className="w-4 h-4 animate-spin" />
-                        <span>Verifying & Generating Access...</span>
+                        <span>Preparing Download...</span>
                       </>
                     ) : (
                       <>
                         <Download className="w-4 h-4 group-hover:scale-110 transition-transform" />
-                        <span>Get Instant eBook Download</span>
+                        <span>Download Free E-Book</span>
                         <ArrowRight className="w-4 h-4" />
                       </>
                     )}
@@ -219,9 +173,9 @@ export function EbookEmailGateModal({
 
                   <div className="flex items-center justify-center gap-2 text-[11px] text-slate-500 font-sans pt-1">
                     <ShieldCheck className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
-                    <span>Zero spam. Direct digital delivery. No password required.</span>
+                    <span>Instant direct download • No email required</span>
                   </div>
-                </form>
+                </div>
               </div>
             ) : (
               /* Phase 2: Authorized Access & Instant Download Granted */

@@ -924,11 +924,11 @@ function seedInitialData() {
     } catch (lessonErr) {
       console.warn('[Database] Academy lessons seed notice:', lessonErr);
     }
-    // Seed masterclass pricing packages into products table
+    // Seed & sync masterclass pricing packages into products table
     const masterclasses = [
-      { id: 'masterclass', name: 'Masterclass Core Curriculum', type: 'service', price: 159.0, desc: 'Complete mastery of Levels 4 through 8, advanced AI prompt engineering & certification.' },
-      { id: 'masterclass-ea', name: 'Masterclass + Adaptive Liquidity Pro', type: 'service', price: 199.0, desc: 'The complete Masterclass combined with our flagship institutional trading robot.' },
-      { id: 'premium', name: 'Premium VIP Masterclass', type: 'service', price: 299.0, desc: 'The ultimate professional trading architecture mentorship with extended EA license.' }
+      { id: 'masterclass', name: 'Masterclass', type: 'service', price: 99.0, desc: 'Learn to build professional trading systems with AI. Master the architecture behind AI-powered trading systems, from strategy specification to EA development.' },
+      { id: 'masterclass-ea', name: 'Masterclass + Adaptive Liquidity Pro', type: 'service', price: 169.0, desc: 'Learn the architecture. Then put it into practice. Everything in Masterclass, plus access to Adaptive Liquidity Pro and a practical breakdown of how a professional automated trading system is structured.' },
+      { id: 'premium', name: 'Premium VIP Masterclass', type: 'service', price: 299.0, desc: 'Build, review and refine your own trading systems. Everything in Masterclass + Adaptive Liquidity Pro, plus personalized strategy architecture, EA code review and direct VIP support.' }
     ];
     for (const mc of masterclasses) {
       const existing = db.prepare('SELECT id FROM products WHERE id = ?').get(mc.id);
@@ -937,6 +937,12 @@ function seedInitialData() {
           INSERT INTO products (id, name, type, description, short_description, price, currency, platform, active, created_at, updated_at)
           VALUES (?, ?, ?, ?, ?, ?, 'USD', 'Academy Web & Discord', 1, ?, ?)
         `).run(mc.id, mc.name, mc.type, mc.desc, mc.desc, mc.price, now, now);
+      } else {
+        db.prepare(`
+          UPDATE products
+          SET name = ?, price = ?, description = ?, short_description = ?, updated_at = ?
+          WHERE id = ?
+        `).run(mc.name, mc.price, mc.desc, mc.desc, now, mc.id);
       }
     }
   } catch (err) {
@@ -1272,17 +1278,43 @@ export const dbQueries = {
       now
     );
 
-    // If product is an EA and order is paid, create a license key
+    // If product is an EA or an EA-inclusive bundle and order is paid, create a license key
     // NOTE: Pending orders (e.g. Manual EFT) do NOT receive a license until admin approval!
+    // $99 Masterclass (pid === 'masterclass') is strictly education-only and never receives an EA or license.
     const product = this.getProductById(order.product_id) as { type: string; download_url?: string } | undefined;
+    const pid = String(order.product_id || '').toLowerCase().trim();
+    const isEa = product && product.type === 'ea';
+    const isMasterclassEa = pid === 'masterclass-ea' || pid === 'bundle';
+    const isVipMasterclass = pid === 'premium' || pid === 'masterclass-vip' || pid === 'vip';
+
     let license = null;
-    if (product && product.type === 'ea' && paymentStatus === 'paid') {
+    if ((isEa || isMasterclassEa || isVipMasterclass) && paymentStatus === 'paid') {
       const licenseKey = `EAH-${Math.random().toString(36).substring(2, 6).toUpperCase()}-${Math.random().toString(36).substring(2, 6).toUpperCase()}-${Math.random().toString(36).substring(2, 6).toUpperCase()}`;
       const licId = `lic_${Date.now()}_${Math.random().toString(36).substring(2, 5)}`;
       const startsAt = now;
-      const oneYearMs = 365 * 24 * 60 * 60 * 1000;
-      const expiresAt = new Date(Date.now() + oneYearMs).toISOString();
-      const defaultNotes = 'Order confirmed. EA binary files are compiled securely and provisioned manually by administrators.';
+      
+      // Tier-specific license expiration:
+      // - Tier 2 (masterclass-ea): 2-month live MT5 license
+      // - Tier 3 (premium): 4-month live MT5 license
+      // - Standalone EA: 1-year (365 days) license
+      let durationMs = 365 * 24 * 60 * 60 * 1000;
+      let licType = 'Terminal License';
+      let defaultNotes = 'Order confirmed. EA binary files are compiled securely and provisioned manually by administrators.';
+      let targetLicProductId = order.product_id;
+
+      if (isMasterclassEa) {
+        durationMs = 60 * 24 * 60 * 60 * 1000; // 2 months
+        licType = 'Adaptive Liquidity Pro (2-Month License)';
+        defaultNotes = 'Masterclass + EA package: 2-month live MT5 license for Adaptive Liquidity Pro with proprietary presets.';
+        targetLicProductId = 'prod_ea_adaptive_liquidity';
+      } else if (isVipMasterclass) {
+        durationMs = 120 * 24 * 60 * 60 * 1000; // 4 months
+        licType = 'Adaptive Liquidity Pro (4-Month VIP License)';
+        defaultNotes = 'Premium VIP Masterclass package: 4-month live MT5 license for Adaptive Liquidity Pro + 1-on-1 strategy architecture review & custom EA code review.';
+        targetLicProductId = 'prod_ea_adaptive_liquidity';
+      }
+
+      const expiresAt = new Date(Date.now() + durationMs).toISOString();
 
       db.prepare(`
         INSERT INTO licenses (id, user_id, product_id, order_id, license_key, license_type, status, delivery_status, delivery_notes, starts_at, expires_at, created_at, updated_at)
@@ -1290,10 +1322,10 @@ export const dbQueries = {
       `).run(
         licId,
         order.user_id,
-        order.product_id,
+        targetLicProductId,
         order.id,
         licenseKey,
-        'Terminal License',
+        licType,
         'active',
         'pending',
         defaultNotes,
@@ -1306,10 +1338,10 @@ export const dbQueries = {
       license = {
         id: licId,
         user_id: order.user_id,
-        product_id: order.product_id,
+        product_id: targetLicProductId,
         order_id: order.id,
         license_key: licenseKey,
-        license_type: 'Terminal License',
+        license_type: licType,
         status: 'active',
         delivery_status: 'pending',
         delivery_notes: defaultNotes,
@@ -1408,7 +1440,12 @@ export const dbQueries = {
     const product = this.getProductById(order.product_id) as any;
     let license = null;
 
-    if (product && product.type === 'ea') {
+    const pid = String(order.product_id || '').toLowerCase().trim();
+    const isEa = product && product.type === 'ea';
+    const isMasterclassEa = pid === 'masterclass-ea' || pid === 'bundle';
+    const isVipMasterclass = pid === 'premium' || pid === 'masterclass-vip' || pid === 'vip';
+
+    if (isEa || isMasterclassEa || isVipMasterclass) {
       // Check if license already exists for this order
       const existingLicense = db.prepare('SELECT * FROM licenses WHERE order_id = ?').get(orderId) as any;
       if (existingLicense) {
@@ -1417,9 +1454,25 @@ export const dbQueries = {
         const licenseKey = `EAH-${Math.random().toString(36).substring(2, 6).toUpperCase()}-${Math.random().toString(36).substring(2, 6).toUpperCase()}-${Math.random().toString(36).substring(2, 6).toUpperCase()}`;
         const licId = `lic_${Date.now()}_${Math.random().toString(36).substring(2, 5)}`;
         const startsAt = now;
-        const oneYearMs = 365 * 24 * 60 * 60 * 1000;
-        const expiresAt = new Date(Date.now() + oneYearMs).toISOString();
-        const licNotes = `Manual EFT verified by ${adminEmail}. Ready for terminal configuration.`;
+        
+        let durationMs = 365 * 24 * 60 * 60 * 1000;
+        let licType = 'Terminal License';
+        let licNotes = `Manual EFT verified by ${adminEmail}. Ready for terminal configuration.`;
+        let targetLicProductId = order.product_id;
+
+        if (isMasterclassEa) {
+          durationMs = 60 * 24 * 60 * 60 * 1000; // 2 months
+          licType = 'Adaptive Liquidity Pro (2-Month License)';
+          licNotes = `Manual EFT verified by ${adminEmail}. Masterclass + EA 2-Month Live MT5 License.`;
+          targetLicProductId = 'prod_ea_adaptive_liquidity';
+        } else if (isVipMasterclass) {
+          durationMs = 120 * 24 * 60 * 60 * 1000; // 4 months
+          licType = 'Adaptive Liquidity Pro (4-Month VIP License)';
+          licNotes = `Manual EFT verified by ${adminEmail}. VIP Architect 4-Month Live MT5 License + 1-on-1 Review.`;
+          targetLicProductId = 'prod_ea_adaptive_liquidity';
+        }
+
+        const expiresAt = new Date(Date.now() + durationMs).toISOString();
 
         db.prepare(`
           INSERT INTO licenses (id, user_id, product_id, order_id, license_key, license_type, status, delivery_status, delivery_notes, starts_at, expires_at, created_at, updated_at)
@@ -1427,10 +1480,10 @@ export const dbQueries = {
         `).run(
           licId,
           order.user_id,
-          order.product_id,
+          targetLicProductId,
           order.id,
           licenseKey,
-          'Terminal License',
+          licType,
           'active',
           'pending',
           licNotes,
@@ -1443,10 +1496,10 @@ export const dbQueries = {
         license = {
           id: licId,
           user_id: order.user_id,
-          product_id: order.product_id,
+          product_id: targetLicProductId,
           order_id: order.id,
           license_key: licenseKey,
-          license_type: 'Terminal License',
+          license_type: licType,
           status: 'active',
           delivery_status: 'pending',
           delivery_notes: licNotes,
@@ -1587,9 +1640,12 @@ export const dbQueries = {
              o.amount as order_amount,
              o.currency as order_currency
       FROM orders o
-      JOIN products p ON o.product_id = p.id
+      JOIN products p ON (
+        o.product_id = p.id OR 
+        (o.product_id IN ('masterclass-ea', 'premium', 'masterclass-vip', 'bundle') AND p.id = 'prod_ea_adaptive_liquidity')
+      )
       LEFT JOIN licenses l ON (l.order_id = o.id OR (l.product_id = p.id AND l.user_id = ?))
-      WHERE o.user_id = ? AND p.type = 'ea' AND o.payment_status = 'paid'
+      WHERE o.user_id = ? AND (p.type = 'ea' OR o.product_id IN ('masterclass-ea', 'premium', 'masterclass-vip', 'bundle')) AND o.payment_status = 'paid'
       GROUP BY p.id
       ORDER BY o.created_at DESC
     `).all(userId, userId);

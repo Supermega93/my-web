@@ -90,47 +90,33 @@ export function FreeEbookPage({ onNavigate, onTriggerBuildMyEa }: FreeEbookPageP
   const answeredCount = Object.values(checklistAnswers).filter(v => v !== null).length;
   const yesCount = Object.values(checklistAnswers).filter(v => v === true).length;
 
-  const handleGetDownload = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleGetDownload = (e?: React.MouseEvent | React.FormEvent) => {
+    if (e && e.preventDefault) e.preventDefault();
     setErrorMessage('');
-    const cleanEmail = email.trim();
-    if (!cleanEmail || !cleanEmail.includes('@') || !cleanEmail.includes('.')) {
-      setErrorMessage('Please enter a valid email address.');
-      return;
-    }
-
     setLoading(true);
+
     try {
-      const res = await requestFreeEbookDownload(cleanEmail, firstName);
-      if (res.success && res.downloadUrl) {
-        setSignedDownloadUrl(res.downloadUrl);
-        setDownloadReady(true);
+      const downloadUrl = '/api/ebooks/download';
+      setSignedDownloadUrl(downloadUrl);
+      setDownloadReady(true);
 
-        try {
-          confetti({
-            particleCount: 50,
-            spread: 60,
-            origin: { y: 0.6 },
-          });
-        } catch (_) {}
+      try {
+        confetti({
+          particleCount: 50,
+          spread: 60,
+          origin: { y: 0.6 },
+        });
+      } catch (_) {}
 
-        // Automatically trigger browser download
-        const tempLink = document.createElement('a');
-        tempLink.href = res.downloadUrl;
-        tempLink.setAttribute('download', 'The-Traders-Guide-to-Understanding-Strategy-Automation.pdf');
-        document.body.appendChild(tempLink);
-        tempLink.click();
-        document.body.removeChild(tempLink);
-      } else {
-        setErrorMessage(res.error || 'Failed to authorize download. Please try again.');
-      }
+      // Automatically trigger browser download
+      const tempLink = document.createElement('a');
+      tempLink.href = downloadUrl;
+      tempLink.setAttribute('download', 'The-Traders-Guide-to-Understanding-Strategy-Automation.pdf');
+      document.body.appendChild(tempLink);
+      tempLink.click();
+      document.body.removeChild(tempLink);
     } catch (err: any) {
-      const msg = err?.message || '';
-      if (msg.includes('JSON') || msg.includes('json') || msg.includes('Response') || msg.includes('SyntaxError')) {
-        setErrorMessage('Download service is preparing your link. Please click download once more.');
-      } else {
-        setErrorMessage(msg || 'An error occurred while authorizing your download.');
-      }
+      setErrorMessage(err?.message || 'An error occurred while downloading.');
     } finally {
       setLoading(false);
     }
@@ -243,45 +229,17 @@ export function FreeEbookPage({ onNavigate, onTriggerBuildMyEa }: FreeEbookPageP
               <span>&ldquo;Automation begins when ideas become rules.&rdquo;</span>
             </div>
 
-            {/* Download Form / Success State */}
+            {/* Download Area / Direct Download */}
             <div className="pt-2">
               {!downloadReady ? (
-                <form onSubmit={handleGetDownload} className="space-y-4 bg-white border border-slate-200/90 p-6 rounded-3xl max-w-lg shadow-sm">
+                <div className="space-y-4 bg-white border border-slate-200/90 p-6 rounded-3xl max-w-lg shadow-sm">
                   <div className="space-y-1">
                     <div className="text-xs font-mono uppercase tracking-wider text-slate-900 font-semibold">
                       Instant Free Download (PDF &amp; Blueprint)
                     </div>
                     <p className="text-xs text-slate-500">
-                      No credit card required. Receive immediate download access.
+                      No email or credit card required. Receive direct immediate access.
                     </p>
-                  </div>
-
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                    <div>
-                      <label className="block text-[11px] font-mono text-slate-500 uppercase mb-1 font-semibold">
-                        First Name
-                      </label>
-                      <input
-                        type="text"
-                        value={firstName}
-                        onChange={(e) => setFirstName(e.target.value)}
-                        placeholder="Alexander"
-                        className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-900 placeholder-slate-400 focus:outline-none focus:border-emerald-500 focus:bg-white transition-colors"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-[11px] font-mono text-slate-500 uppercase mb-1 font-semibold">
-                        Email Address <span className="text-emerald-600">*</span>
-                      </label>
-                      <input
-                        type="email"
-                        required
-                        value={email}
-                        onChange={(e) => setEmail(e.target.value)}
-                        placeholder="trader@quant.com"
-                        className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-900 placeholder-slate-400 focus:outline-none focus:border-emerald-500 focus:bg-white transition-colors"
-                      />
-                    </div>
                   </div>
 
                   {errorMessage && (
@@ -292,19 +250,20 @@ export function FreeEbookPage({ onNavigate, onTriggerBuildMyEa }: FreeEbookPageP
 
                   <div className="pt-2 space-y-3">
                     <button
-                      type="submit"
+                      type="button"
+                      onClick={handleGetDownload}
                       disabled={loading}
                       className="w-full py-4 px-6 rounded-xl bg-gradient-to-r from-emerald-800 via-emerald-700 to-teal-700 hover:from-emerald-700 hover:to-teal-600 text-white font-extrabold text-sm shadow-md shadow-emerald-900/20 transition-all flex items-center justify-center gap-2 cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed group"
                     >
                       {loading ? (
                         <>
                           <Loader2 className="w-4 h-4 animate-spin" />
-                          <span>Verifying & Generating Secure Access...</span>
+                          <span>Preparing Download...</span>
                         </>
                       ) : (
                         <>
                           <Download className="w-4 h-4 group-hover:scale-105 transition-transform" />
-                          <span>Get Free eBook</span>
+                          <span>Download Free E-Book</span>
                           <ArrowRight className="w-4 h-4 ml-1 opacity-70" />
                         </>
                       )}
@@ -312,10 +271,10 @@ export function FreeEbookPage({ onNavigate, onTriggerBuildMyEa }: FreeEbookPageP
 
                     <div className="text-center flex items-center justify-center gap-1.5 text-[11px] text-slate-500 font-mono">
                       <ShieldCheck className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
-                      <span>Authorized server delivery • No password required</span>
+                      <span>Instant direct download • 100% Free • Secure PDF</span>
                     </div>
                   </div>
-                </form>
+                </div>
               ) : (
                 <div className="p-6 rounded-3xl bg-white border border-emerald-300 max-w-lg space-y-4 shadow-sm">
                   <div className="flex items-center gap-3">
@@ -323,39 +282,32 @@ export function FreeEbookPage({ onNavigate, onTriggerBuildMyEa }: FreeEbookPageP
                       <CheckCircle2 className="w-6 h-6" />
                     </div>
                     <div>
-                      <h3 className="text-base font-bold text-slate-900">Your Free Guide Is Ready & Sent!</h3>
+                      <h3 className="text-base font-bold text-slate-900">Your Free Guide Is Downloading!</h3>
                       <p className="text-xs text-slate-600">
-                        Authorized download unlocked for <span className="font-semibold text-slate-800">{email}</span>.
+                        The PDF file download has started directly in your browser.
                       </p>
                     </div>
                   </div>
 
                   <div className="p-3 bg-emerald-50/70 border border-emerald-200/80 rounded-2xl text-xs text-emerald-900 space-y-1.5">
                     <div className="flex items-center gap-2 font-medium">
-                      <Mail className="w-4 h-4 text-emerald-700 shrink-0" />
-                      <span>Copy dispatched to <strong>{email}</strong></span>
+                      <Sparkles className="w-4 h-4 text-emerald-700 shrink-0" />
+                      <span>Direct Download Ready</span>
                     </div>
-                    <p className="text-[11px] text-emerald-800/80 pl-6 leading-relaxed">
-                      Check your inbox (and spam folder) for the permanent guide link and study notes.
+                    <p className="text-[11px] text-emerald-800/80 leading-relaxed">
+                      If your browser did not automatically save the PDF, click the button below to start the download again.
                     </p>
                   </div>
 
-                  <div className="flex items-center gap-1.5 text-xs text-slate-500 font-mono">
-                    <Clock className="w-3.5 h-3.5 text-emerald-600" />
-                    <span>Direct temporary link valid for 15 minutes</span>
-                  </div>
-
                   <div className="flex flex-wrap gap-3 pt-2">
-                    {signedDownloadUrl && (
-                      <a
-                        href={signedDownloadUrl}
-                        download="The-Traders-Guide-to-Understanding-Strategy-Automation.pdf"
-                        className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-gradient-to-r from-emerald-800 to-teal-700 hover:from-emerald-700 hover:to-teal-600 text-white font-bold text-xs shadow-sm transition-all cursor-pointer"
-                      >
-                        <Download className="w-3.5 h-3.5" />
-                        <span>Download PDF Again</span>
-                      </a>
-                    )}
+                    <a
+                      href="/api/ebooks/download"
+                      download="The-Traders-Guide-to-Understanding-Strategy-Automation.pdf"
+                      className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-gradient-to-r from-emerald-800 to-teal-700 hover:from-emerald-700 hover:to-teal-600 text-white font-bold text-xs shadow-sm transition-all cursor-pointer"
+                    >
+                      <Download className="w-3.5 h-3.5" />
+                      <span>Download Free E-Book Again</span>
+                    </a>
                     <Button
                       variant="outline"
                       size="sm"

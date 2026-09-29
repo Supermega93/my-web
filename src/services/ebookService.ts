@@ -3,6 +3,8 @@
  * Enforces email gate authorization before temporary signed download URL generation.
  */
 
+export const FREE_EBOOK_DOWNLOAD_URL = '/api/ebooks/download';
+
 export interface EbookRequestResponse {
   success: boolean;
   message?: string;

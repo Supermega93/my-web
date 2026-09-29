@@ -151,7 +151,7 @@ export function AcademyNav({ onNavigate, activeTab, currentLevel }: AcademyNavPr
               <Sparkles className="w-3.5 h-3.5 text-amber-500" />
               <span>Masterclass Pricing</span>
               <span className="text-[9px] px-1.5 py-0.2 rounded-full bg-amber-100 text-amber-800 font-mono font-bold uppercase">
-                From {formatPrice(159)}
+                From {formatPrice(99)}
               </span>
             </button>
           )}

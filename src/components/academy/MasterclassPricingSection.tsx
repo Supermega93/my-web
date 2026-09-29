@@ -14,16 +14,19 @@ import {
   Award,
   Zap,
   Lock,
-  BookOpen
+  BookOpen,
+  Star,
+  UserCheck
 } from 'lucide-react';
 import { Button } from '../common/Button.tsx';
 
 interface MasterclassPricingSectionProps {
   onNavigate: (view: ActiveView, extraId?: string) => void;
   onOpenAuth?: (initialMode?: 'login' | 'register') => void;
+  onBuyNow?: (product: any, tier?: any) => void;
 }
 
-export function MasterclassPricingSection({ onNavigate, onOpenAuth }: MasterclassPricingSectionProps) {
+export function MasterclassPricingSection({ onNavigate, onOpenAuth, onBuyNow }: MasterclassPricingSectionProps) {
   const { currentCurrency, formatPrice } = useCurrency();
   const { user } = useAuth();
   const [selectedTierId, setSelectedTierId] = useState<string>('masterclass-ea');
@@ -31,66 +34,107 @@ export function MasterclassPricingSection({ onNavigate, onOpenAuth }: Masterclas
   const packages = [
     {
       id: 'masterclass',
-      name: 'Masterclass Core',
-      badge: 'LEVELS 4–8 COMPLETE',
+      name: 'MASTERCLASS',
+      badge: 'EDUCATION',
+      positioning: 'EDUCATION',
       popular: false,
-      usdPrice: 159,
-      displayPrice: formatPrice(159),
-      tagline: 'Complete curriculum mastery of Levels 4 through 8, advanced AI prompt engineering & certification.',
+      usdPrice: 99,
+      displayPrice: formatPrice(99),
+      primaryMessage: 'Learn to build professional trading systems with AI.',
+      supportingDescription: 'Master the architecture behind AI-powered trading systems, from strategy specification to EA development.',
       features: [
-        'Full lifetime access to Levels 4 through 8',
-        'Junior High, High School, Undergraduate, Masters & PhD tiers',
-        'Advanced prompt engineering templates for ChatGPT & Claude',
-        'Direct algorithmic code generation workflows',
-        'Private Discord student community access',
+        'The School of AI Trading Architecture (Complete 71-page course book · $89 value)',
+        'Full access to Masterclass Levels 4–8 (Middle School to PhD)',
+        'Advanced AI Prompt Engineering (Practical frameworks for ChatGPT, Claude & AI development)',
+        'AI Trading Prompt Library (Strategy spec, MQL5, EAs, indicators, debugging, optimization & error fixing)',
+        'Strategy Architecture Templates (Market, session, entry, confirmation, filters, risk & trade management)',
+        '"From Idea → EA" Workflow (Idea → Spec → AI Prompt → MQL5 → Compile → Backtest → Debug → Refine)',
+        'Practical Labs and Capstone Projects',
+        'Advanced prompt engineering templates',
         'Official Strategy Architect Certificate of Completion',
+        'Private student community access',
+        'Future curriculum updates and newly published educational modules',
       ],
-      ctaText: 'Enroll in Masterclass',
+      ctaText: 'START MASTERCLASS',
       buttonVariant: 'secondary' as const,
     },
     {
       id: 'masterclass-ea',
-      name: 'Masterclass + Adaptive Liquidity Pro',
+      name: 'MASTERCLASS + ADAPTIVE LIQUIDITY PRO',
       badge: 'BEST VALUE • MOST POPULAR',
+      positioning: 'EDUCATION + REAL EA',
       popular: true,
-      usdPrice: 199,
-      displayPrice: formatPrice(199),
-      tagline: 'The complete Masterclass curriculum combined with our flagship institutional trading robot.',
+      usdPrice: 169,
+      displayPrice: formatPrice(169),
+      primaryMessage: 'Learn the architecture. Then put it into practice.',
+      supportingDescription: 'Everything in Masterclass, plus access to Adaptive Liquidity Pro and a practical breakdown of how a professional automated trading system is structured.',
       features: [
-        'Everything in Masterclass (Levels 4 through 8)',
+        'Everything in the $99 Masterclass (Course book, Levels 4–8, prompt library & templates)',
         'Adaptive Liquidity Pro EA included',
-        '2-month live MT5 licence for Adaptive Liquidity Pro',
-        'Access to proprietary EA set files & presets',
-        'Live Strategy Implementation Workshop recording',
+        '2-month live MT5 license for Adaptive Liquidity Pro',
+        'Proprietary EA set files and presets',
+        'Adaptive Liquidity Pro Architecture Breakdown (Directional Filter, RSI Trend Filter, Liquidity / watch-areas, ADR / WAR & Profit Recycling)',
+        'EA Implementation Workshop (Real recording: Strategy Idea → Specification → AI Prompt → MQL5 → Testing & Debugging)',
+        'Adaptive Liquidity Pro Setup & Configuration Guide (Installation, presets, risk settings, drawdown, daily loss limits & when NOT to run)',
         'Priority technical & development support',
         'Private Discord student community & EA channels',
         'Official Strategy Architect Certificate of Completion',
       ],
-      ctaText: 'Get Masterclass + EA',
+      ctaText: 'GET MASTERCLASS + EA',
       buttonVariant: 'primary' as const,
     },
     {
       id: 'premium',
-      name: 'Premium VIP Masterclass',
+      name: 'PREMIUM VIP MASTERCLASS',
       badge: 'VIP ARCHITECT TIER',
+      positioning: 'EDUCATION + EA + PERSONAL ARCHITECT',
       popular: false,
       usdPrice: 299,
       displayPrice: formatPrice(299),
-      tagline: 'The ultimate professional trading architecture mentorship with extended EA license.',
+      primaryMessage: 'Build, review and refine your own trading systems.',
+      supportingDescription: 'Everything in Masterclass + Adaptive Liquidity Pro, plus personalized strategy architecture, EA code review and direct VIP support.',
       features: [
-        'Everything in Masterclass + Adaptive Liquidity Pro',
-        '4-month live MT5 licence for Adaptive Liquidity Pro',
-        '1-on-1 strategy architecture review session with creator',
-        'VIP coaching community & private mentorship office hours',
-        'Custom EA code review (audit your automated bots)',
-        'Early access to new EAs, indicators, and AI tools',
-        'Highest priority dedicated developer support',
-        'Lifetime access to all future levels & tool updates',
+        'Everything in Masterclass + Adaptive Liquidity Pro ($169 tier)',
+        '4-month live MT5 license for Adaptive Liquidity Pro',
+        '1-on-1 Strategy Architecture Review (Personalized session to understand, structure & clarify your rules, entry, filters, risk & trade management)',
+        'VIP Coaching Community & Private Mentorship Office Hours',
+        'Custom EA Code Review (Audit your AI-generated or custom EAs to verify logic matches strategy)',
+        'Early access to new EAs, indicators and AI trading tools',
+        'Highest-priority dedicated developer support',
+        'Lifetime access to future educational levels and tool updates',
       ],
-      ctaText: 'Join Premium VIP',
+      ctaText: 'JOIN VIP MASTERCLASS',
       buttonVariant: 'secondary' as const,
     },
   ];
+
+  const handleAction = (pkg: typeof packages[0]) => {
+    setSelectedTierId(pkg.id);
+    if (onBuyNow) {
+      const productObj = {
+        id: pkg.id,
+        name: pkg.name,
+        type: 'service' as const,
+        price: pkg.usdPrice,
+        currency: 'USD',
+        short_description: pkg.primaryMessage,
+        description: pkg.supportingDescription,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+        active: 1
+      };
+      onBuyNow(productObj, {
+        id: pkg.id,
+        name: pkg.name,
+        price: pkg.usdPrice,
+        currency: 'USD',
+        displayPrice: pkg.displayPrice,
+        tagline: pkg.primaryMessage
+      });
+    } else {
+      onNavigate('academy-pricing');
+    }
+  };
 
   return (
     <section id="masterclass-section" className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 pt-12 pb-16 space-y-10">
@@ -106,7 +150,7 @@ export function MasterclassPricingSection({ onNavigate, onOpenAuth }: Masterclas
         </h2>
 
         <p className="text-sm sm:text-base text-slate-600 leading-relaxed font-normal">
-          Unlock institutional trading automation with Levels 4 through 8. Jump directly into advanced prompt architecture, algorithmic order flow, and production-grade MQL5 deployment.
+          Master the architecture behind AI-powered trading systems, from strategy specification to production-ready MQL5 deployment.
         </p>
 
         {/* Currency Switcher Notice */}
@@ -116,8 +160,66 @@ export function MasterclassPricingSection({ onNavigate, onOpenAuth }: Masterclas
         </div>
       </div>
 
+      {/* 3-Tier Value Ladder Overview Bar */}
+      <div className="p-4 sm:p-5 rounded-2xl bg-white border border-slate-200/90 shadow-xs space-y-3">
+        <div className="flex items-center justify-between">
+          <span className="text-[11px] font-mono font-bold text-slate-500 uppercase tracking-wider">
+            Value Ladder Quick Guide
+          </span>
+          <span className="text-[11px] font-mono text-emerald-700 font-semibold hidden sm:inline">
+            Clear 3-Tier Progression
+          </span>
+        </div>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+          <div className="p-3 rounded-xl bg-slate-50 border border-slate-200/80 flex items-start gap-3">
+            <span className="w-6 h-6 rounded-lg bg-slate-200 text-slate-800 font-mono font-bold text-xs flex items-center justify-center shrink-0">
+              01
+            </span>
+            <div>
+              <div className="flex items-baseline gap-1.5">
+                <span className="text-xs font-black text-slate-900 font-mono">$99</span>
+                <span className="text-[11px] font-mono font-bold text-slate-600">EDUCATION</span>
+              </div>
+              <p className="text-[11px] text-slate-500 mt-0.5 leading-snug">
+                Learn the architecture · AI prompts · Strategy specs · Complete 71-page course book.
+              </p>
+            </div>
+          </div>
+
+          <div className="p-3 rounded-xl bg-emerald-50/80 border border-emerald-200 flex items-start gap-3">
+            <span className="w-6 h-6 rounded-lg bg-emerald-600 text-white font-mono font-bold text-xs flex items-center justify-center shrink-0 shadow-xs">
+              02
+            </span>
+            <div>
+              <div className="flex items-baseline gap-1.5">
+                <span className="text-xs font-black text-emerald-950 font-mono">$169</span>
+                <span className="text-[11px] font-mono font-bold text-emerald-800">EDUCATION + REAL EA</span>
+              </div>
+              <p className="text-[11px] text-emerald-700 mt-0.5 leading-snug">
+                Learn the architecture + Adaptive Liquidity Pro EA (2-Mo License) + Implementation Workshop.
+              </p>
+            </div>
+          </div>
+
+          <div className="p-3 rounded-xl bg-slate-900 text-white flex items-start gap-3">
+            <span className="w-6 h-6 rounded-lg bg-amber-400 text-slate-950 font-mono font-bold text-xs flex items-center justify-center shrink-0 shadow-xs">
+              03
+            </span>
+            <div>
+              <div className="flex items-baseline gap-1.5">
+                <span className="text-xs font-black text-white font-mono">$299</span>
+                <span className="text-[11px] font-mono font-bold text-amber-400">EDUCATION + EA + PERSONAL ARCHITECT</span>
+              </div>
+              <p className="text-[11px] text-slate-300 mt-0.5 leading-snug">
+                Everything above + 4-Mo EA License + 1-on-1 Strategy Architecture Review + Code Audits.
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+
       {/* 3 Masterclass Pricing Cards */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-stretch pt-4">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-stretch pt-2">
         {packages.map((pkg) => {
           const isSelected = selectedTierId === pkg.id;
 
@@ -131,25 +233,30 @@ export function MasterclassPricingSection({ onNavigate, onOpenAuth }: Masterclas
                   : 'bg-white border border-slate-200/90 hover:border-slate-300 text-slate-900 shadow-sm hover:shadow-md'
               }`}
             >
-              {/* Popular Badge */}
-              {pkg.popular && (
+              {/* Popular / VIP Badge */}
+              {pkg.popular ? (
                 <div className="absolute -top-3.5 left-1/2 -translate-x-1/2 px-4 py-1 rounded-full bg-emerald-500 text-slate-950 text-[10px] font-mono font-black uppercase tracking-wider shadow-md">
+                  {pkg.badge}
+                </div>
+              ) : (
+                <div className="absolute -top-3.5 left-1/2 -translate-x-1/2 px-3.5 py-0.5 rounded-full bg-slate-100 border border-slate-300 text-slate-700 text-[10px] font-mono font-bold uppercase tracking-wider shadow-xs">
                   {pkg.badge}
                 </div>
               )}
 
               <div className="space-y-6">
                 <div>
-                  {!pkg.popular && (
-                    <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-slate-600 bg-slate-100 px-2.5 py-0.5 rounded-full border border-slate-200">
-                      {pkg.badge}
-                    </span>
-                  )}
-                  <h3 className={`text-xl font-extrabold ${pkg.popular ? 'text-white mt-1' : 'text-slate-900 mt-2'}`}>
+                  <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full font-mono text-[10px] font-bold uppercase tracking-wider mb-2 bg-slate-100/90 text-slate-800 border border-slate-200">
+                    <span>{pkg.positioning}</span>
+                  </div>
+                  <h3 className={`text-xl font-extrabold ${pkg.popular ? 'text-white mt-1' : 'text-slate-900 mt-1'}`}>
                     {pkg.name}
                   </h3>
-                  <p className={`text-xs mt-2 leading-relaxed font-normal ${pkg.popular ? 'text-slate-300' : 'text-slate-500'}`}>
-                    {pkg.tagline}
+                  <p className={`text-sm font-bold mt-2 leading-snug ${pkg.popular ? 'text-emerald-300' : 'text-slate-900'}`}>
+                    {pkg.primaryMessage}
+                  </p>
+                  <p className={`text-xs mt-1.5 leading-relaxed font-normal ${pkg.popular ? 'text-slate-300' : 'text-slate-600'}`}>
+                    {pkg.supportingDescription}
                   </p>
                 </div>
 
@@ -169,7 +276,10 @@ export function MasterclassPricingSection({ onNavigate, onOpenAuth }: Masterclas
                       / one-time
                     </span>
                   </div>
-                  <div className={`text-[11px] font-mono flex items-center gap-1.5 ${
+                  <div className="text-[11px] font-mono text-slate-500">
+                    {currentCurrency.code} • Base USD ${pkg.usdPrice}
+                  </div>
+                  <div className={`text-[11px] font-mono flex items-center gap-1.5 pt-1 ${
                     pkg.popular ? 'text-emerald-400' : 'text-emerald-700'
                   }`}>
                     <ShieldCheck className="w-3.5 h-3.5" />
@@ -207,12 +317,14 @@ export function MasterclassPricingSection({ onNavigate, onOpenAuth }: Masterclas
                   type="button"
                   onClick={(e) => {
                     e.stopPropagation();
-                    onNavigate('academy-pricing');
+                    handleAction(pkg);
                   }}
                   className={`w-full py-3.5 px-6 rounded-2xl font-bold text-sm tracking-wide transition-all flex items-center justify-center gap-2 cursor-pointer shadow-sm ${
                     pkg.popular
                       ? 'bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-black shadow-emerald-500/25'
-                      : 'bg-slate-900 hover:bg-slate-800 text-white'
+                      : pkg.id === 'premium'
+                      ? 'bg-slate-900 hover:bg-slate-800 text-white font-bold'
+                      : 'bg-emerald-700 hover:bg-emerald-600 text-white font-bold'
                   }`}
                 >
                   <span>{pkg.ctaText}</span>
