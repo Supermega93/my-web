@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { RISK_TIERS, SAMPLE_AUDIT_TRADES } from './auditData.ts';
+import { RISK_TIERS } from './auditData.ts';
 import { 
   TrendingUp, 
   Award, 
@@ -249,66 +249,6 @@ export function EaPositiveStats() {
             <span>Profit Factor: <strong className="text-slate-900">{activeTier.profitFactor}</strong></span>
             <span>Max DD: <strong className="text-emerald-700">{activeTier.maxEquityDD}</strong></span>
           </div>
-        </div>
-      </div>
-
-      {/* Verified Execution Highlights */}
-      <div className="space-y-4">
-        <div className="flex items-center justify-between">
-          <div>
-            <span className="text-xs font-mono uppercase tracking-widest text-emerald-800 font-bold">
-              Execution Precision
-            </span>
-            <h3 className="text-xl sm:text-2xl font-black text-slate-950 tracking-tight">
-              Sample Audited Winning Executions
-            </h3>
-          </div>
-          <span className="text-xs font-mono text-slate-500">
-            XAUUSD H1 Real Ticks
-          </span>
-        </div>
-
-        <div className="overflow-x-auto rounded-2xl border border-slate-200 bg-white shadow-xs">
-          <table className="w-full text-left text-xs font-mono">
-            <thead className="bg-slate-50 border-b border-slate-200 text-slate-600 font-semibold uppercase text-[10px]">
-              <tr>
-                <th className="p-3">Trade #</th>
-                <th className="p-3">Date</th>
-                <th className="p-3">Type</th>
-                <th className="p-3">Entry & Exit</th>
-                <th className="p-3">System Trigger</th>
-                <th className="p-3">Holding Time</th>
-                <th className="p-3 text-right">Preservation (+126%)</th>
-                <th className="p-3 text-right">Balanced (+398%)</th>
-                <th className="p-3 text-right">High Growth (+1,836%)</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-100">
-              {SAMPLE_AUDIT_TRADES.slice(0, 6).map((trade) => (
-                <tr key={trade.tradeNo} className="hover:bg-slate-50/70 transition-colors">
-                  <td className="p-3 font-bold text-slate-900">#{trade.tradeNo}</td>
-                  <td className="p-3 text-slate-600">{trade.date}</td>
-                  <td className="p-3">
-                    <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${
-                      trade.type === 'BUY' ? 'bg-emerald-100 text-emerald-800' : 'bg-rose-100 text-rose-800'
-                    }`}>
-                      {trade.type}
-                    </span>
-                  </td>
-                  <td className="p-3 text-slate-700">
-                    {trade.entryPrice} → {trade.exitPrice}
-                  </td>
-                  <td className="p-3 text-slate-600 truncate max-w-[200px]">
-                    {trade.systemTrigger}
-                  </td>
-                  <td className="p-3 text-slate-500">{trade.duration}</td>
-                  <td className="p-3 text-right font-bold text-emerald-700">{trade.pnlTier1}</td>
-                  <td className="p-3 text-right font-bold text-cyan-700">{trade.pnlTier2}</td>
-                  <td className="p-3 text-right font-bold text-amber-600">{trade.pnlTier3}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
         </div>
       </div>
     </div>

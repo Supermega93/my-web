@@ -15,12 +15,7 @@ export const FuturisticRobotHero: React.FC<FuturisticRobotHeroProps> = ({
   onTriggerBuildMyEa,
 }) => {
   const handleStartFreeLessons = () => {
-    const el = document.getElementById('free-academy');
-    if (el) {
-      el.scrollIntoView({ behavior: 'smooth' });
-    } else {
-      onNavigate('academy');
-    }
+    onNavigate('academy');
   };
 
   return (

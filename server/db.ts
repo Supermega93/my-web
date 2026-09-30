@@ -1352,13 +1352,27 @@ export const dbQueries = {
       };
     }
 
-    // Create download record ONLY for non-EAs when paid
-    if (product && product.type !== 'ea' && product.download_url && paymentStatus === 'paid') {
-      const dlId = `dl_${Date.now()}_${Math.random().toString(36).substring(2, 5)}`;
-      db.prepare(`
-        INSERT INTO downloads (id, user_id, product_id, order_id, download_url, download_count, created_at)
-        VALUES (?, ?, ?, ?, ?, ?, ?)
-      `).run(dlId, order.user_id, order.product_id, order.id, product.download_url, 0, now);
+    // Create download record for digital assets when paid
+    // Note: Masterclass packages (masterclass, masterclass-ea, premium) include 'The School of AI Trading Architecture' (prod_ebook_mql5_guide)
+    const isMasterclassTier = pid === 'masterclass' || pid === 'masterclass-ea' || pid === 'premium' || pid === 'masterclass-vip' || pid === 'bundle';
+    if (paymentStatus === 'paid') {
+      if (product && product.type !== 'ea' && product.download_url) {
+        const dlId = `dl_${Date.now()}_${Math.random().toString(36).substring(2, 5)}`;
+        db.prepare(`
+          INSERT INTO downloads (id, user_id, product_id, order_id, download_url, download_count, created_at)
+          VALUES (?, ?, ?, ?, ?, ?, ?)
+        `).run(dlId, order.user_id, order.product_id, order.id, product.download_url, 0, now);
+      }
+      
+      if (isMasterclassTier) {
+        const courseBook = this.getProductById('prod_ebook_mql5_guide') as any;
+        const dlUrl = courseBook?.download_url || '/downloads/the-school-of-ai-trading-architecture-vol1.pdf';
+        const dlId = `dl_${Date.now()}_mc_${Math.random().toString(36).substring(2, 5)}`;
+        db.prepare(`
+          INSERT OR IGNORE INTO downloads (id, user_id, product_id, order_id, download_url, download_count, created_at)
+          VALUES (?, ?, ?, ?, ?, ?, ?)
+        `).run(dlId, order.user_id, 'prod_ebook_mql5_guide', order.id, dlUrl, 0, now);
+      }
     }
 
     return { orderId: order.id, license };
@@ -1511,7 +1525,7 @@ export const dbQueries = {
       }
     }
 
-    // If eBook, ensure download record exists
+    // If eBook or Masterclass package, ensure download record exists
     if (product && product.type !== 'ea' && product.download_url) {
       const existingDl = db.prepare('SELECT * FROM downloads WHERE order_id = ?').get(orderId);
       if (!existingDl) {
@@ -1520,6 +1534,21 @@ export const dbQueries = {
           INSERT INTO downloads (id, user_id, product_id, order_id, download_url, download_count, created_at)
           VALUES (?, ?, ?, ?, ?, ?, ?)
         `).run(dlId, order.user_id, order.product_id, order.id, product.download_url, 0, now);
+      }
+    }
+    
+    // Masterclass tiers also get 'The School of AI Trading Architecture' (prod_ebook_mql5_guide)
+    const isMasterclassTier = pid === 'masterclass' || pid === 'masterclass-ea' || pid === 'premium' || pid === 'masterclass-vip' || pid === 'bundle';
+    if (isMasterclassTier) {
+      const courseBook = this.getProductById('prod_ebook_mql5_guide') as any;
+      const dlUrl = courseBook?.download_url || '/downloads/the-school-of-ai-trading-architecture-vol1.pdf';
+      const existingDl = db.prepare('SELECT * FROM downloads WHERE order_id = ? AND product_id = ?').get(orderId, 'prod_ebook_mql5_guide');
+      if (!existingDl) {
+        const dlId = `dl_${Date.now()}_mc_${Math.random().toString(36).substring(2, 5)}`;
+        db.prepare(`
+          INSERT INTO downloads (id, user_id, product_id, order_id, download_url, download_count, created_at)
+          VALUES (?, ?, ?, ?, ?, ?, ?)
+        `).run(dlId, order.user_id, 'prod_ebook_mql5_guide', order.id, dlUrl, 0, now);
       }
     }
 
@@ -1654,9 +1683,12 @@ export const dbQueries = {
     return db.prepare(`
       SELECT p.*, d.download_url, d.download_count, o.created_at as purchased_at
       FROM orders o
-      JOIN products p ON o.product_id = p.id
+      JOIN products p ON (
+        o.product_id = p.id OR
+        (o.product_id IN ('masterclass', 'masterclass-ea', 'premium', 'masterclass-vip', 'bundle') AND p.id = 'prod_ebook_mql5_guide')
+      )
       LEFT JOIN downloads d ON d.product_id = p.id AND d.user_id = ?
-      WHERE o.user_id = ? AND p.type = 'ebook' AND o.payment_status = 'paid'
+      WHERE o.user_id = ? AND (p.type = 'ebook' OR o.product_id IN ('masterclass', 'masterclass-ea', 'premium', 'masterclass-vip', 'bundle')) AND o.payment_status = 'paid'
       GROUP BY p.id
     `).all(userId, userId);
   },

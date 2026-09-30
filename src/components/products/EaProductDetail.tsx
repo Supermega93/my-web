@@ -8,7 +8,6 @@ import { EaHeroMetrics } from './institutional-ea/EaHeroMetrics.tsx';
 import { EaPricingAndLicensing } from './institutional-ea/EaPricingAndLicensing.tsx';
 import { EaFiveSystems } from './institutional-ea/EaFiveSystems.tsx';
 import { EaPositiveStats } from './institutional-ea/EaPositiveStats.tsx';
-import { EaCapitalAllocationGuide } from './institutional-ea/EaCapitalAllocationGuide.tsx';
 import { EaFaq } from './institutional-ea/EaFaq.tsx';
 
 interface EaProductDetailProps {
@@ -80,10 +79,7 @@ export function EaProductDetail({
           <EaPositiveStats />
         </div>
 
-        {/* 5. CAPITAL ALLOCATION GUIDE BY DEPLOYMENT OBJECTIVE */}
-        <EaCapitalAllocationGuide />
-
-        {/* 6. FAQS — STRATEGY LOGIC, SETUP REQUIREMENTS & INSTALLATION SUPPORT */}
+        {/* 5. FAQS — STRATEGY LOGIC, SETUP REQUIREMENTS & INSTALLATION SUPPORT */}
         <EaFaq />
 
         {/* 7. MANDATORY BOTTOM DISCLAIMER (PAST PERFORMANCE DOES NOT DETERMINE FUTURE PROFITS) */}
