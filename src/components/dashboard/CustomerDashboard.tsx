@@ -26,7 +26,9 @@ import {
   Clock,
   AlertCircle,
   Activity,
-  TrendingUp
+  TrendingUp,
+  Camera,
+  Upload
 } from 'lucide-react';
 
 interface CustomerDashboardProps {
@@ -52,6 +54,44 @@ export function CustomerDashboard({
   const [copiedKey, setCopiedKey] = useState<string | null>(null);
   const [passwordSuccess, setPasswordSuccess] = useState('');
   const [newPassword, setNewPassword] = useState('');
+  const [avatarUrl, setAvatarUrl] = useState<string>(user?.avatar_url || user?.photoURL || '');
+  const [uploadingAvatar, setUploadingAvatar] = useState(false);
+  const [avatarSuccess, setAvatarSuccess] = useState('');
+
+  useEffect(() => {
+    if (user?.avatar_url || user?.photoURL) {
+      setAvatarUrl(user.avatar_url || user.photoURL || '');
+    }
+  }, [user]);
+
+  const handleAvatarFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    try {
+      setUploadingAvatar(true);
+      setAvatarSuccess('');
+      const reader = new FileReader();
+      reader.onload = async (ev) => {
+        try {
+          const base64Data = ev.target?.result as string;
+          if (!base64Data) return;
+          const res = await api.uploadAvatar(base64Data, file.name);
+          if (res.success && res.avatarUrl) {
+            setAvatarUrl(res.avatarUrl);
+            setAvatarSuccess('Profile photo uploaded to Supabase Storage!');
+            setTimeout(() => setAvatarSuccess(''), 4000);
+          }
+        } catch (err: any) {
+          alert(err.message || 'Failed to upload profile photo');
+        } finally {
+          setUploadingAvatar(false);
+        }
+      };
+      reader.readAsDataURL(file);
+    } catch {
+      setUploadingAvatar(false);
+    }
+  };
 
   const loadData = async () => {
     try {
@@ -108,19 +148,32 @@ export function CustomerDashboard({
       <div className="max-w-6xl mx-auto space-y-8">
         {/* Welcome Header */}
         <div className="bg-[#111827] border border-slate-800 rounded-2xl p-6 sm:p-8 flex flex-col md:flex-row md:items-center justify-between gap-6 shadow-xl">
-          <div className="space-y-2">
-            <div className="flex items-center gap-2">
-              <span className="px-2.5 py-0.5 rounded-full text-xs font-mono uppercase tracking-wider bg-emerald-500/10 text-emerald-400 border border-emerald-500/30">
-                Customer Portal
-              </span>
-              <StatusBadge status={user?.role || 'customer'} type="role" size="sm" />
+          <div className="flex items-center gap-4">
+            {avatarUrl ? (
+              <img
+                src={avatarUrl}
+                alt={user?.name || 'User Avatar'}
+                className="w-14 h-14 rounded-full object-cover border-2 border-emerald-500/40 shrink-0 shadow-lg"
+              />
+            ) : (
+              <div className="w-14 h-14 rounded-full bg-slate-800 border border-slate-700 flex items-center justify-center font-bold text-xl text-emerald-400 shrink-0">
+                {user?.name ? user.name.charAt(0).toUpperCase() : user?.email?.charAt(0).toUpperCase() || 'U'}
+              </div>
+            )}
+            <div className="space-y-1.5">
+              <div className="flex items-center gap-2">
+                <span className="px-2.5 py-0.5 rounded-full text-xs font-mono uppercase tracking-wider bg-emerald-500/10 text-emerald-400 border border-emerald-500/30">
+                  Customer Portal
+                </span>
+                <StatusBadge status={user?.role || 'customer'} type="role" size="sm" />
+              </div>
+              <h1 className="text-2xl sm:text-3xl font-extrabold text-white">
+                Welcome back, {user?.name || 'Trader'}
+              </h1>
+              <p className="text-xs sm:text-sm text-slate-400 font-mono">
+                Account: {user?.email} • ID: {user?.id}
+              </p>
             </div>
-            <h1 className="text-2xl sm:text-3xl font-extrabold text-white">
-              Welcome back, {user?.name || 'Trader'}
-            </h1>
-            <p className="text-xs sm:text-sm text-slate-400 font-mono">
-              Account: {user?.email} • ID: {user?.id}
-            </p>
           </div>
 
           <div className="flex flex-wrap items-center gap-3">
@@ -529,6 +582,66 @@ export function CustomerDashboard({
                 <User className="w-4 h-4 text-emerald-400" />
                 <span>Account Profile</span>
               </h2>
+
+              {/* Avatar Profile Photo Upload (Supabase Storage avatars bucket) */}
+              <div className="p-4 rounded-xl bg-slate-900/60 border border-slate-800/80 flex items-center gap-4">
+                <div className="relative group">
+                  {avatarUrl ? (
+                    <img
+                      src={avatarUrl}
+                      alt={user?.name || 'User Avatar'}
+                      className="w-14 h-14 rounded-full object-cover border-2 border-emerald-500/50 shadow-md"
+                    />
+                  ) : (
+                    <div className="w-14 h-14 rounded-full bg-slate-800 border border-slate-700 flex items-center justify-center font-bold text-lg text-emerald-400">
+                      {user?.name ? user.name.charAt(0).toUpperCase() : user?.email?.charAt(0).toUpperCase() || 'U'}
+                    </div>
+                  )}
+                  <label
+                    htmlFor="avatar-file-input"
+                    className="absolute inset-0 bg-black/60 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer text-white"
+                    title="Upload profile photo to Supabase"
+                  >
+                    <Camera className="w-4 h-4" />
+                  </label>
+                  <input
+                    id="avatar-file-input"
+                    type="file"
+                    accept="image/png,image/jpeg,image/webp"
+                    className="hidden"
+                    onChange={handleAvatarFileChange}
+                    disabled={uploadingAvatar}
+                  />
+                </div>
+
+                <div className="space-y-1">
+                  <span className="text-xs font-semibold text-slate-200 block">Profile Photo</span>
+                  <p className="text-[11px] text-slate-400 font-mono">
+                    Stored in Supabase Storage (`avatars` bucket)
+                  </p>
+                  <label
+                    htmlFor="avatar-file-input"
+                    className="inline-flex items-center gap-1.5 text-xs text-emerald-400 hover:text-emerald-300 font-medium cursor-pointer"
+                  >
+                    {uploadingAvatar ? (
+                      <>
+                        <RefreshCw className="w-3 h-3 animate-spin" />
+                        <span>Uploading...</span>
+                      </>
+                    ) : (
+                      <>
+                        <Upload className="w-3 h-3" />
+                        <span>Change Photo</span>
+                      </>
+                    )}
+                  </label>
+                  {avatarSuccess && (
+                    <span className="text-[11px] text-emerald-400 font-mono block animate-pulse">
+                      {avatarSuccess}
+                    </span>
+                  )}
+                </div>
+              </div>
 
               <div className="space-y-3 text-xs">
                 <div>

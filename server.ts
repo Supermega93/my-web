@@ -928,6 +928,80 @@ app.post('/api/upload-cover', (req, res) => {
   }
 });
 
+// User: Upload Avatar (Supabase Storage avatars bucket with reliable fallback)
+app.post('/api/user/avatar', async (req, res) => {
+  try {
+    const authUser = await resolveAuthUser(req);
+    const userId = authUser?.userId || 'usr_' + Date.now();
+    const { base64Data, fileName } = req.body;
+    if (!base64Data) {
+      return res.status(400).json({ error: 'base64Data is required.' });
+    }
+
+    const cleanBase64 = base64Data.replace(/^data:image\/[a-zA-Z0-9+.-]+;base64,/, '');
+    const buffer = Buffer.from(cleanBase64, 'base64');
+
+    let ext = path.extname(fileName || '').toLowerCase();
+    if (!ext || ext === '') {
+      if (base64Data.includes('data:image/png')) ext = '.png';
+      else if (base64Data.includes('data:image/webp')) ext = '.webp';
+      else ext = '.jpg';
+    }
+
+    const avatarFileName = `${userId}_avatar${ext}`;
+    let avatarUrl = '';
+
+    // 1. Try uploading to Supabase Storage in 'avatars' bucket
+    try {
+      const { data: uploadData, error: uploadErr } = await supabaseServer.storage
+        .from('avatars')
+        .upload(avatarFileName, buffer, {
+          contentType: ext === '.png' ? 'image/png' : (ext === '.webp' ? 'image/webp' : 'image/jpeg'),
+          upsert: true,
+        });
+
+      if (!uploadErr && uploadData) {
+        const { data: publicUrlData } = supabaseServer.storage.from('avatars').getPublicUrl(avatarFileName);
+        if (publicUrlData?.publicUrl) {
+          avatarUrl = publicUrlData.publicUrl;
+        }
+      }
+    } catch (supaErr: any) {
+      console.warn('[Avatar Upload] Supabase storage upload notice:', supaErr?.message || supaErr);
+    }
+
+    // 2. Also save to local static assets as backup
+    const publicAvatarsDir = path.join(process.cwd(), 'public', 'assets', 'avatars');
+    const distAvatarsDir = path.join(process.cwd(), 'dist', 'assets', 'avatars');
+    if (!fs.existsSync(publicAvatarsDir)) fs.mkdirSync(publicAvatarsDir, { recursive: true });
+    if (!fs.existsSync(distAvatarsDir)) fs.mkdirSync(distAvatarsDir, { recursive: true });
+
+    fs.writeFileSync(path.join(publicAvatarsDir, avatarFileName), buffer);
+    try { fs.writeFileSync(path.join(distAvatarsDir, avatarFileName), buffer); } catch (_) {}
+
+    if (!avatarUrl) {
+      avatarUrl = `/assets/avatars/${avatarFileName}?t=${Date.now()}`;
+    }
+
+    // 3. Update Supabase profiles table if userId exists
+    if (authUser?.userId) {
+      try {
+        await supabaseServer.from('profiles').update({
+          avatar_url: avatarUrl,
+          updated_at: new Date().toISOString(),
+        }).eq('id', authUser.userId);
+      } catch (profileErr: any) {
+        console.warn('[Avatar Upload] Profile update note:', profileErr?.message || profileErr);
+      }
+    }
+
+    res.json({ success: true, avatarUrl });
+  } catch (error: any) {
+    console.error('Error uploading avatar:', error);
+    res.status(500).json({ error: error.message || 'Failed to upload avatar.' });
+  }
+});
+
 // Orders: Place Order
 app.post('/api/orders', (req, res) => {
   try {

@@ -317,12 +317,12 @@ export function LessonViewerPage({ lessonId, onNavigate, onOpenCheckout }: Lesso
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col">
+      <div className="min-h-screen bg-[#0B0E14] text-slate-100 flex flex-col font-sans">
         <AcademyNav onNavigate={onNavigate} />
         <div className="flex-1 flex items-center justify-center">
           <div className="flex flex-col items-center gap-3">
-            <div className="w-10 h-10 border-2 border-emerald-500 border-t-transparent rounded-full animate-spin" />
-            <span className="text-xs font-mono text-slate-400">Loading lesson from Supabase...</span>
+            <div className="w-8 h-8 border-2 border-emerald-500 border-t-transparent rounded-full animate-spin" />
+            <span className="text-xs text-slate-400 font-medium">Loading lesson...</span>
           </div>
         </div>
       </div>
@@ -331,12 +331,12 @@ export function LessonViewerPage({ lessonId, onNavigate, onOpenCheckout }: Lesso
 
   if (!lesson) {
     return (
-      <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col">
+      <div className="min-h-screen bg-[#0B0E14] text-slate-100 flex flex-col font-sans">
         <AcademyNav onNavigate={onNavigate} />
-        <div className="flex-1 max-w-3xl mx-auto px-4 py-20 text-center space-y-4">
-          <h2 className="text-2xl font-bold text-white">Lesson Not Found</h2>
-          <p className="text-sm text-slate-400">The requested lesson could not be retrieved from the database.</p>
-          <Button onClick={() => onNavigate('academy')} className="bg-emerald-500 text-slate-950">
+        <div className="flex-1 max-w-xl mx-auto px-4 py-20 text-center space-y-4">
+          <h2 className="text-xl font-bold text-slate-100">Lesson Not Found</h2>
+          <p className="text-sm text-slate-400 leading-relaxed">The requested lesson could not be retrieved from the database.</p>
+          <Button onClick={() => onNavigate('academy')} className="bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-medium px-5 py-2.5 rounded-lg">
             Return to Academy Curriculum
           </Button>
         </div>
@@ -349,19 +349,19 @@ export function LessonViewerPage({ lessonId, onNavigate, onOpenCheckout }: Lesso
     : undefined;
 
   return (
-    <div className="min-h-screen bg-slate-950 text-slate-100 font-sans selection:bg-emerald-500/20 selection:text-emerald-300">
+    <div className="min-h-screen bg-[#0B0E14] text-slate-100 font-sans selection:bg-emerald-500/20 selection:text-emerald-300">
       {/* Academy Navigation */}
       <AcademyNav onNavigate={onNavigate} activeTab="curriculum" currentLevel={currentLevelNumber} />
 
       {/* Main Container */}
-      <main className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
+      <main className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-10 space-y-6">
         
-          {/* Breadcrumb Bar */}
-        <div className="flex flex-wrap items-center justify-between gap-4 pb-6 border-b border-slate-800/80 text-xs text-slate-400">
+        {/* Breadcrumb Bar */}
+        <div className="flex flex-wrap items-center justify-between gap-4 pb-4 border-b border-[#1A2234] text-xs text-slate-400">
           <div className="flex items-center gap-2 overflow-hidden text-ellipsis whitespace-nowrap">
             <button
               onClick={() => onNavigate('academy')}
-              className="hover:text-emerald-400 transition-colors flex items-center gap-1.5"
+              className="hover:text-slate-200 transition-colors flex items-center gap-1.5 font-medium"
             >
               <GraduationCap className="w-4 h-4 text-emerald-400" />
               <span>Academy</span>
@@ -373,42 +373,42 @@ export function LessonViewerPage({ lessonId, onNavigate, onOpenCheckout }: Lesso
                 const lvlNum = match ? match[1] : '1';
                 onNavigate('level-hub', lvlNum);
               }}
-              className="hover:text-emerald-400 transition-colors text-slate-300 line-clamp-1 font-medium cursor-pointer"
+              className="hover:text-slate-200 transition-colors text-slate-300 line-clamp-1 font-medium cursor-pointer"
               title="View Level Course Outline"
             >
               {lesson.level_name}
             </button>
             <ChevronRight className="w-3.5 h-3.5 text-slate-600 shrink-0" />
-            <span className="text-emerald-400 font-mono font-medium">
+            <span className="text-emerald-400 font-medium">
               {lesson.id === 'lesson-3-bonus' ? 'Fundamentals Bonus' : lesson.id === 'lesson-8-bonus' ? 'Advanced Bonus' : `Lesson ${lesson.lesson_number}`}
             </span>
           </div>
 
           <div className="flex items-center gap-2.5 shrink-0">
-            {/* Active Student Tier Mode Badge & Quick-Switcher */}
-            <div className="flex items-center gap-1.5 bg-slate-900 border border-slate-800 rounded-lg px-2.5 py-1 text-[11px] font-mono">
+            {/* Active Student Tier Mode Badge */}
+            <div className="flex items-center gap-1.5 bg-[#101623] border border-[#1E293B] rounded-lg px-2.5 py-1 text-xs">
               <span className="text-slate-500 hidden sm:inline">Tier:</span>
               <span
-                className={`px-2 py-0.5 rounded font-bold uppercase text-[10px] tracking-wider ${
+                className={`px-2 py-0.5 rounded font-semibold text-[11px] ${
                   studentTier === 'paid' || studentTier === 'complimentary'
-                    ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/30'
-                    : 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30'
+                    ? 'bg-cyan-500/10 text-cyan-400 border border-cyan-500/20'
+                    : 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20'
                 }`}
               >
                 {studentTier === 'paid' ? 'Paid Tier' : studentTier === 'complimentary' ? 'Complimentary' : 'Free Tier'}
               </span>
               {isAdmin && (
-                <div className="flex items-center gap-1 ml-1 border-l border-slate-700 pl-1.5">
-                  <span className="text-[9px] text-amber-400 font-bold">ADMIN:</span>
+                <div className="flex items-center gap-1 ml-1 border-l border-[#1E293B] pl-1.5">
+                  <span className="text-[10px] text-amber-400 font-semibold">ADMIN:</span>
                   <button
                     onClick={() => setActiveStudentTier('free')}
-                    className={`px-1.5 py-0.5 rounded text-[10px] ${studentTier === 'free' ? 'bg-amber-500 text-black font-bold' : 'text-slate-400 hover:text-white'}`}
+                    className={`px-1.5 py-0.5 rounded text-[10px] ${studentTier === 'free' ? 'bg-amber-500 text-slate-950 font-bold' : 'text-slate-400 hover:text-white'}`}
                   >
                     Free
                   </button>
                   <button
                     onClick={() => setActiveStudentTier('paid')}
-                    className={`px-1.5 py-0.5 rounded text-[10px] ${studentTier === 'paid' ? 'bg-cyan-500 text-black font-bold' : 'text-slate-400 hover:text-white'}`}
+                    className={`px-1.5 py-0.5 rounded text-[10px] ${studentTier === 'paid' ? 'bg-cyan-500 text-slate-950 font-bold' : 'text-slate-400 hover:text-white'}`}
                   >
                     Paid
                   </button>
@@ -418,7 +418,7 @@ export function LessonViewerPage({ lessonId, onNavigate, onOpenCheckout }: Lesso
 
             <button
               onClick={handleCopyShare}
-              className="p-1.5 rounded-lg bg-slate-900 hover:bg-slate-800 border border-slate-800 text-slate-400 hover:text-slate-200 text-xs flex items-center gap-1.5 transition-all"
+              className="p-1.5 rounded-lg bg-[#101623] hover:bg-[#161F30] border border-[#1E293B] text-slate-400 hover:text-slate-200 text-xs flex items-center gap-1.5 transition-colors"
               title="Share Lesson"
             >
               <Share2 className="w-3.5 h-3.5" />
@@ -428,53 +428,53 @@ export function LessonViewerPage({ lessonId, onNavigate, onOpenCheckout }: Lesso
         </div>
 
         {/* Lesson Header Card */}
-        <div className="py-8 space-y-4">
-          <div className="flex flex-wrap items-center gap-2.5">
-            <span className="text-xs font-mono font-bold uppercase px-3 py-1 rounded-full bg-slate-900 border border-slate-800 text-slate-300">
+        <div className="rounded-xl bg-[#101623] border border-[#1E293B] p-6 sm:p-8 space-y-4">
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="text-xs font-semibold px-2.5 py-1 rounded-md bg-[#161F30] border border-[#1E293B] text-slate-300">
               {lesson.level_name}
             </span>
 
             {isBreakoutWorkshop ? (
               isPracticalUnlocked ? (
-                <span className="text-xs font-mono font-bold uppercase px-3 py-1 rounded-full bg-emerald-500/15 border border-emerald-500/40 text-emerald-300 flex items-center gap-1.5 shadow-[0_0_12px_rgba(16,185,129,0.2)]">
+                <span className="text-xs font-semibold px-2.5 py-1 rounded-md bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 flex items-center gap-1.5">
                   <Award className="w-3.5 h-3.5 text-emerald-400" />
-                  <span>Free Tier Capstone • Breakout EA Unlocked 🎉</span>
+                  <span>Capstone • Breakout EA Unlocked</span>
                 </span>
               ) : (
-                <span className="text-xs font-mono font-bold uppercase px-3 py-1 rounded-full bg-amber-500/15 border border-amber-500/40 text-amber-300 flex items-center gap-1.5 shadow-[0_0_12px_rgba(245,158,11,0.2)]">
+                <span className="text-xs font-semibold px-2.5 py-1 rounded-md bg-amber-500/10 border border-amber-500/20 text-amber-400 flex items-center gap-1.5">
                   <Lock className="w-3.5 h-3.5 text-amber-400" />
-                  <span>Free Tier Capstone • Locked ({practicalProgress.completedCount}/14 Completed)</span>
+                  <span>Capstone • Locked ({practicalProgress.completedCount}/14 Completed)</span>
                 </span>
               )
             ) : isIndicatorWorkshop ? (
               isPracticalUnlocked ? (
-                <span className="text-xs font-mono font-bold uppercase px-3 py-1 rounded-full bg-emerald-500/15 border border-emerald-500/40 text-emerald-300 flex items-center gap-1.5 shadow-[0_0_12px_rgba(16,185,129,0.2)]">
+                <span className="text-xs font-semibold px-2.5 py-1 rounded-md bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 flex items-center gap-1.5">
                   <Award className="w-3.5 h-3.5 text-emerald-400" />
-                  <span>Final Workshop • MT5 Indicator Unlocked 🎉</span>
+                  <span>Final Workshop • MT5 Indicator Unlocked</span>
                 </span>
               ) : (
-                <span className="text-xs font-mono font-bold uppercase px-3 py-1 rounded-full bg-amber-500/15 border border-amber-500/40 text-amber-300 flex items-center gap-1.5 shadow-[0_0_12px_rgba(245,158,11,0.2)]">
+                <span className="text-xs font-semibold px-2.5 py-1 rounded-md bg-amber-500/10 border border-amber-500/20 text-amber-400 flex items-center gap-1.5">
                   <Lock className="w-3.5 h-3.5 text-amber-400" />
                   <span>Final Workshop • Locked ({practicalProgress.completedCount}/14 Completed)</span>
                 </span>
               )
             ) : lesson.id === 'lesson-3-bonus' ? (
-              <span className="text-xs font-mono font-bold uppercase px-3 py-1 rounded-full bg-emerald-500/15 border border-emerald-500/40 text-emerald-300 flex items-center gap-1.5 shadow-[0_0_12px_rgba(16,185,129,0.2)]">
+              <span className="text-xs font-semibold px-2.5 py-1 rounded-md bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 flex items-center gap-1.5">
                 <Award className="w-3.5 h-3.5 text-emerald-400" />
                 <span>Fundamentals Bonus & Master Exam</span>
               </span>
             ) : lesson.id === 'lesson-8-bonus' ? (
-              <span className="text-xs font-mono font-bold uppercase px-3 py-1 rounded-full bg-cyan-500/15 border border-cyan-500/40 text-cyan-300 flex items-center gap-1.5 shadow-[0_0_12px_rgba(6,182,212,0.2)]">
+              <span className="text-xs font-semibold px-2.5 py-1 rounded-md bg-cyan-500/10 border border-cyan-500/20 text-cyan-400 flex items-center gap-1.5">
                 <Sparkles className="w-3.5 h-3.5 text-cyan-400" />
-                <span>Paid Tier • Advanced Bonus Chapter</span>
+                <span>Paid Tier • Advanced Bonus</span>
               </span>
             ) : isLessonFree ? (
-              <span className="text-xs font-mono font-bold uppercase px-3 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 flex items-center gap-1.5">
+              <span className="text-xs font-semibold px-2.5 py-1 rounded-md bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 flex items-center gap-1.5">
                 <Unlock className="w-3 h-3" />
                 <span>Free Tier</span>
               </span>
             ) : (
-              <span className="text-xs font-mono font-bold uppercase px-3 py-1 rounded-full bg-cyan-500/10 border border-cyan-500/30 text-cyan-300 flex items-center gap-1.5">
+              <span className="text-xs font-semibold px-2.5 py-1 rounded-md bg-cyan-500/10 border border-cyan-500/20 text-cyan-400 flex items-center gap-1.5">
                 <Lock className="w-3 h-3" />
                 <span>Masterclass Pro</span>
               </span>
@@ -485,7 +485,7 @@ export function LessonViewerPage({ lessonId, onNavigate, onOpenCheckout }: Lesso
               <button
                 type="button"
                 onClick={() => setEmailModalOpen(true)}
-                className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-950/60 border border-emerald-500/40 text-emerald-300 text-xs font-mono hover:border-emerald-400 transition-colors cursor-pointer"
+                className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 text-xs hover:border-emerald-400 transition-colors cursor-pointer"
                 title="Click to manage or switch tracking email"
               >
                 <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
@@ -495,51 +495,63 @@ export function LessonViewerPage({ lessonId, onNavigate, onOpenCheckout }: Lesso
               <button
                 type="button"
                 onClick={() => setEmailModalOpen(true)}
-                className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-slate-900 border border-slate-700 text-slate-300 text-xs font-mono hover:bg-slate-800 hover:border-emerald-500/40 transition-colors cursor-pointer"
+                className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-[#161F30] border border-[#1E293B] text-slate-300 text-xs hover:bg-[#1E293B] transition-colors cursor-pointer"
                 title="Save your results so you can resume anytime"
               >
                 <Mail className="w-3.5 h-3.5 text-emerald-400" />
-                <span>Want to track your results? Enter email</span>
+                <span>Save progress: Enter email</span>
               </button>
             )}
 
-            <div className="flex items-center gap-1.5 text-xs text-slate-400 font-mono ml-auto">
-              <Clock className="w-3.5 h-3.5" />
-              <span>{lesson.duration_minutes || 15} Min Read</span>
+            <div className="flex items-center gap-1.5 text-xs text-slate-400 ml-auto">
+              <Clock className="w-3.5 h-3.5 text-slate-500" />
+              <span>{lesson.duration_minutes || 15} min read</span>
             </div>
           </div>
 
-          <h1 className="text-2xl sm:text-4xl font-extrabold text-white tracking-tight leading-tight">
+          <h1 className="text-2xl sm:text-3xl font-bold text-slate-100 tracking-tight leading-tight">
             {lesson.title}
           </h1>
 
           {lesson.summary && (
-            <p className="text-base text-slate-300 leading-relaxed font-normal border-l-2 border-emerald-500/40 pl-4 py-1">
+            <p className="text-sm text-slate-300 leading-relaxed font-normal border-l-2 border-emerald-500/50 pl-4 py-1">
               {lesson.summary}
             </p>
           )}
 
-          {/* Complete Checklist button */}
-          <div className="pt-2 flex items-center justify-between">
-            <button
-              onClick={handleToggleComplete}
-              className={`flex items-center gap-2 px-4 py-2 rounded-xl border text-xs font-semibold transition-all cursor-pointer ${
-                isCompleted
-                  ? 'bg-emerald-500/20 border-emerald-500/50 text-emerald-300 shadow-[0_0_15px_rgba(16,185,129,0.2)]'
-                  : 'bg-slate-900 border-slate-800 text-slate-400 hover:text-white hover:border-slate-700'
-              }`}
-            >
-              <CheckCircle2 className={`w-4 h-4 ${isCompleted ? 'text-emerald-400' : 'text-slate-600'}`} />
-              <span>{isCompleted ? 'Completed ✓' : 'Mark as Complete'}</span>
-            </button>
+          {/* Educational Progression Pipeline */}
+          <div className="pt-3 border-t border-[#1A2234] flex flex-wrap items-center justify-between gap-3">
+            <div className="flex items-center gap-2 text-xs text-slate-400">
+              <span className="text-slate-300 font-medium">1. Read Lesson</span>
+              <span className="text-slate-600">→</span>
+              <span className={activeQuiz ? "text-slate-300 font-medium" : "text-slate-500"}>2. Quiz & Exam</span>
+              <span className="text-slate-600">→</span>
+              <span className={isCompleted ? "text-emerald-400 font-semibold" : "text-slate-500"}>
+                {isCompleted ? '✓ 3. Completed' : '3. Mark Done'}
+              </span>
+            </div>
 
-            <button
-              onClick={() => onNavigate('prompt-architect')}
-              className="text-xs text-cyan-400 hover:text-cyan-300 font-mono flex items-center gap-1.5 transition-colors"
-            >
-              <Sparkles className="w-3.5 h-3.5" />
-              <span>Test Strategy in Prompt Architect</span>
-            </button>
+            <div className="flex items-center gap-3">
+              <button
+                onClick={handleToggleComplete}
+                className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg border text-xs font-semibold transition-colors cursor-pointer ${
+                  isCompleted
+                    ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-400 hover:bg-emerald-500/20'
+                    : 'bg-[#161F30] border-[#1E293B] text-slate-300 hover:text-white hover:bg-[#1E293B]'
+                }`}
+              >
+                <CheckCircle2 className={`w-3.5 h-3.5 ${isCompleted ? 'text-emerald-400' : 'text-slate-500'}`} />
+                <span>{isCompleted ? 'Completed ✓' : 'Mark as Complete'}</span>
+              </button>
+
+              <button
+                onClick={() => onNavigate('prompt-architect')}
+                className="text-xs text-cyan-400 hover:text-cyan-300 flex items-center gap-1 transition-colors"
+              >
+                <Sparkles className="w-3.5 h-3.5" />
+                <span className="hidden sm:inline">Prompt Architect</span>
+              </button>
+            </div>
           </div>
         </div>
 

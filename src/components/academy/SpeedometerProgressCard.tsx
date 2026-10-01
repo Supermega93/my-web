@@ -27,7 +27,7 @@ export function SpeedometerProgressCard({
   const needleRotation = -90 + (percentage / 100) * 180;
 
   return (
-    <div className="w-full max-w-4xl mx-auto rounded-3xl bg-white border border-slate-200/90 shadow-sm hover:shadow-md p-6 sm:p-10 transition-all hover:border-slate-300 text-slate-900">
+    <div className="w-full max-w-4xl mx-auto rounded-xl bg-[#101623] border border-[#1E293B] shadow-lg p-6 sm:p-8 transition-colors text-slate-100">
       <div className="grid grid-cols-1 md:grid-cols-12 gap-8 items-center">
         
         {/* Left: Speedometer / Tachometer Gauge (Cols 1-5) */}
@@ -40,14 +40,14 @@ export function SpeedometerProgressCard({
             >
               <defs>
                 <linearGradient id="gaugeGradient" x1="0%" y1="0%" x2="100%" y2="0%">
-                  <stop offset="0%" stopColor="#06B6D4" />
-                  <stop offset="60%" stopColor="#059669" />
-                  <stop offset="100%" stopColor="#10B981" />
+                  <stop offset="0%" stopColor="#059669" />
+                  <stop offset="60%" stopColor="#10B981" />
+                  <stop offset="100%" stopColor="#34D399" />
                 </linearGradient>
 
                 <linearGradient id="gaugeTrack" x1="0%" y1="0%" x2="100%" y2="0%">
-                  <stop offset="0%" stopColor="#E2E8F0" />
-                  <stop offset="100%" stopColor="#CBD5E1" />
+                  <stop offset="0%" stopColor="#1A2234" />
+                  <stop offset="100%" stopColor="#222E44" />
                 </linearGradient>
               </defs>
 
@@ -56,7 +56,7 @@ export function SpeedometerProgressCard({
                 d="M 15 100 A 85 85 0 0 1 185 100"
                 fill="none"
                 stroke="url(#gaugeTrack)"
-                strokeWidth="16"
+                strokeWidth="14"
                 strokeLinecap="round"
               />
 
@@ -66,7 +66,7 @@ export function SpeedometerProgressCard({
                   d="M 15 100 A 85 85 0 0 1 185 100"
                   fill="none"
                   stroke="url(#gaugeGradient)"
-                  strokeWidth="16"
+                  strokeWidth="14"
                   strokeLinecap="round"
                   strokeDasharray="267"
                   strokeDashoffset={267 - (267 * percentage) / 100}
@@ -75,7 +75,7 @@ export function SpeedometerProgressCard({
               )}
 
               {/* Gauge Tick Marks */}
-              <g stroke="#94A3B8" strokeWidth="1.5" opacity="0.7">
+              <g stroke="#334155" strokeWidth="1.5" opacity="0.8">
                 <line x1="22" y1="100" x2="30" y2="100" />
                 <line x1="32" y1="65" x2="39" y2="70" />
                 <line x1="60" y1="36" x2="65" y2="43" />
@@ -89,74 +89,74 @@ export function SpeedometerProgressCard({
               {isLoggedIn ? (
                 <g transform="translate(100, 100)">
                   <g transform={`rotate(${needleRotation})`} className="transition-transform duration-700 ease-out">
-                    <polygon points="-3,0 0,-78 3,0" fill="#0F172A" />
-                    <circle cx="0" cy="-78" r="3" fill="#059669" />
+                    <polygon points="-3,0 0,-78 3,0" fill="#E2E8F0" />
+                    <circle cx="0" cy="-78" r="3" fill="#10B981" />
                   </g>
                   {/* Pivot Center */}
-                  <circle cx="0" cy="0" r="10" fill="#0F172A" stroke="#059669" strokeWidth="3" />
-                  <circle cx="0" cy="0" r="4" fill="#34D399" />
+                  <circle cx="0" cy="0" r="9" fill="#0B0E14" stroke="#10B981" strokeWidth="2.5" />
+                  <circle cx="0" cy="0" r="3.5" fill="#34D399" />
                 </g>
               ) : null}
             </svg>
 
-            {/* If Logged Out: Blue Seal Padlock in the Center (matching BabyPips n.png) */}
+            {/* If Logged Out: Blue Seal Padlock in the Center */}
             {!isLoggedIn && (
               <div 
                 onClick={onSignInClick}
                 className="absolute bottom-2 left-1/2 -translate-x-1/2 flex flex-col items-center justify-center cursor-pointer group"
                 title="Click to sign in and unlock progress tracking"
               >
-                <div className="w-16 h-16 rounded-full bg-gradient-to-br from-sky-500 to-blue-600 border-2 border-white shadow-md flex items-center justify-center text-white group-hover:scale-105 transition-transform">
-                  <Lock className="w-7 h-7 stroke-[2.5]" />
+                <div className="w-12 h-12 rounded-full bg-[#1A2334] border border-[#2B3A54] flex items-center justify-center text-emerald-400 group-hover:scale-105 transition-transform shadow-xs">
+                  <Lock className="w-5 h-5" />
                 </div>
-                <div className="text-[9px] font-mono font-bold tracking-tight text-sky-700 mt-1 uppercase max-w-[120px] text-center leading-tight">
-                  Sign in to unlock progress tracking
+                <div className="text-[10px] font-medium tracking-tight text-slate-400 mt-1 uppercase max-w-[120px] text-center leading-tight">
+                  Sign in to track
                 </div>
               </div>
             )}
           </div>
 
-          {/* Lessons Completed Counter (matching n.png) */}
+          {/* Lessons Completed Counter */}
           <div className="mt-3 space-y-1">
-            <div className="text-2xl sm:text-3xl font-black text-slate-900 font-mono tracking-tight">
-              {completedCount} of {totalCount}
+            <div className="text-2xl sm:text-3xl font-extrabold text-white tracking-tight">
+              {completedCount} <span className="text-slate-500 font-normal text-lg">/ {totalCount}</span>
             </div>
-            <div className="inline-block px-3 py-0.5 rounded-full bg-slate-100 text-slate-700 text-[11px] font-mono tracking-wide border border-slate-200">
+            <div className="inline-block px-2.5 py-0.5 rounded-md bg-[#162030] text-emerald-400 text-xs font-medium border border-[#223048]">
               Lessons Completed {percentage > 0 ? `(${percentage}%)` : ''}
             </div>
           </div>
         </div>
 
-        {/* Right: Copy & CTA Button (Cols 6-12, matching BabyPips n.png) */}
+        {/* Right: Copy & CTA Button (Cols 6-12) */}
         <div className="md:col-span-7 space-y-4 text-left">
-          <h2 className="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight">
-            Track Your Progress!
+          <h2 className="text-xl sm:text-2xl font-bold text-white tracking-tight">
+            Curriculum Progress &amp; Milestones
           </h2>
-          <p className="text-sm sm:text-base text-slate-600 leading-relaxed font-normal">
-            Wish there was a way to keep track of lessons you've completed? <span className="text-emerald-700 italic font-semibold">Wish granted!</span> Just sign in to unlock this feature and we'll display helpful markers &amp; meters along the way showing just how much you've accomplished!
+          <p className="text-sm text-slate-300 leading-relaxed font-normal">
+            Track completed lessons, quizzes passed, and algorithmic capstone unlocks. Sign in with your registered account to automatically sync curriculum progress across all trading terminals.
           </p>
 
           <div className="pt-2">
             {!isLoggedIn ? (
               <button
                 onClick={onSignInClick}
-                className="px-6 py-3.5 rounded-full bg-emerald-600 hover:bg-emerald-500 text-white font-black text-sm tracking-wide transition-all shadow-sm hover:shadow-md hover:scale-[1.01] flex items-center gap-2.5 cursor-pointer"
+                className="px-5 py-2.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white font-medium text-sm transition-colors shadow-xs flex items-center gap-2 cursor-pointer active:scale-[0.98]"
               >
-                <span>Unlock Tracking, Sign In</span>
-                <ArrowRight className="w-4 h-4 stroke-[3]" />
+                <span>Unlock Tracking — Sign In</span>
+                <ArrowRight className="w-4 h-4" />
               </button>
             ) : (
               <div className="flex flex-wrap items-center gap-3">
                 <button
                   onClick={onContinueClick}
-                  className="px-6 py-3.5 rounded-full bg-emerald-600 hover:bg-emerald-500 text-white font-black text-sm tracking-wide transition-all shadow-sm hover:scale-[1.01] flex items-center gap-2 cursor-pointer"
+                  className="px-5 py-2.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white font-medium text-sm transition-colors shadow-xs flex items-center gap-2 cursor-pointer active:scale-[0.98]"
                 >
-                  <span>Continue Curriculum</span>
+                  <span>Continue Learning</span>
                   <ArrowRight className="w-4 h-4" />
                 </button>
-                <div className="flex items-center gap-2 text-xs font-mono text-emerald-800 px-3 py-1.5 rounded-full bg-emerald-50 border border-emerald-200">
-                  <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
-                  <span>Tracking Active for {userName || 'Trader'}</span>
+                <div className="flex items-center gap-1.5 text-xs text-emerald-400 px-3 py-1.5 rounded-md bg-emerald-500/10 border border-emerald-500/20">
+                  <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
+                  <span>Tracking active for {userName || 'Trader'}</span>
                 </div>
               </div>
             )}

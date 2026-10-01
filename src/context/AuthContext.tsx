@@ -20,6 +20,7 @@ import {
   onAuthStateChanged 
 } from '../lib/firebase.ts';
 import { syncUserProfileToFirestore, fetchUserProgressFromFirestore } from '../services/firestoreService.ts';
+import { syncFirebaseUserToSupabase, checkUserSupabaseEntitlement } from '../lib/supabaseAdmin.ts';
 
 // Administrator emails recognised by the platform
 export const ADMIN_EMAILS = [
@@ -140,14 +141,37 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           const token = await fbUser.getIdToken();
           setStoredToken(token);
 
+          // Connect Firebase Auth to Supabase backend
+          void syncFirebaseUserToSupabase({
+            id: fbUser.uid,
+            email,
+            name: fbUser.displayName || firestoreProfile.name || email.split('@')[0],
+            phone: fbUser.phoneNumber || null,
+            role: firestoreProfile.role || determinedRole,
+            emailVerified: fbUser.emailVerified,
+          });
+
+          // Check if Supabase has active entitlements for this user
+          let resolvedAccessStatus = firestoreProfile.access_status || (isAdminDetected ? 'paid' : 'free');
+          let canAccessMasterclass = firestoreProfile.can_access_masterclass ?? isAdminDetected;
+          try {
+            const supaEntitlement = await checkUserSupabaseEntitlement(fbUser.uid, email);
+            if (supaEntitlement.hasMasterclass) {
+              resolvedAccessStatus = 'complimentary';
+              canAccessMasterclass = true;
+            }
+          } catch {
+            // Non-blocking fallback
+          }
+
           const activeUser: User = {
             id: fbUser.uid,
             name: firestoreProfile.name || fbUser.displayName || email.split('@')[0] || 'Trader',
             email,
             phone: fbUser.phoneNumber || null,
             role: firestoreProfile.role || determinedRole,
-            access_status: firestoreProfile.access_status || (isAdminDetected ? 'paid' : 'free'),
-            can_access_masterclass: firestoreProfile.can_access_masterclass ?? isAdminDetected,
+            access_status: resolvedAccessStatus,
+            can_access_masterclass: canAccessMasterclass,
             created_at: fbUser.metadata.creationTime || new Date().toISOString(),
             updated_at: new Date().toISOString(),
           };

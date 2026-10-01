@@ -11,6 +11,8 @@ export interface User {
   updated_at: string;
   access_status?: UserAccessStatus;
   can_access_masterclass?: boolean;
+  photoURL?: string | null;
+  avatar_url?: string | null;
 }
 
 export interface AdminUserRecord extends User {

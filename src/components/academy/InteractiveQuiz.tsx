@@ -170,47 +170,42 @@ export function InteractiveQuiz({ quiz, onCompleteQuiz, onNextLesson }: Interact
     const isMastery = percentage >= 80;
 
     return (
-      <div className="rounded-3xl bg-slate-900 border-2 border-emerald-500/50 p-8 sm:p-12 text-center space-y-6 shadow-2xl relative overflow-hidden animate-in fade-in zoom-in-95 duration-300">
-        {/* Glow effect */}
-        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-64 h-32 bg-emerald-500/15 blur-3xl pointer-events-none" />
-
-        <div className="w-20 h-20 mx-auto rounded-full bg-emerald-500/20 border-2 border-emerald-500 flex items-center justify-center text-emerald-400 shadow-[0_0_30px_rgba(16,185,129,0.35)]">
-          <Award className="w-10 h-10" />
+      <div className="rounded-xl bg-[#101623] border border-[#1E293B] p-6 sm:p-10 text-center space-y-5 shadow-sm relative overflow-hidden animate-in fade-in duration-200">
+        <div className="w-14 h-14 mx-auto rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-400">
+          <Award className="w-7 h-7" />
         </div>
 
         <div className="space-y-2">
-          <span className="text-xs font-mono font-bold uppercase tracking-widest text-emerald-400">
-            {isMastery ? '🎉 Concept Mastered!' : 'Quiz Completed!'}
+          <span className="text-xs font-semibold uppercase tracking-wider text-emerald-400">
+            {isMastery ? 'Concept Mastered' : 'Assessment Completed'}
           </span>
-          <h3 className="text-2xl sm:text-4xl font-extrabold text-white tracking-tight">
-            You scored {score} out of {totalQ} ({percentage}%)
+          <h3 className="text-2xl sm:text-3xl font-bold text-white tracking-tight">
+            Score: {score} / {totalQ} ({percentage}%)
           </h3>
-          <p className="text-sm sm:text-base text-slate-300 max-w-md mx-auto leading-relaxed">
+          <p className="text-sm text-slate-300 max-w-md mx-auto leading-relaxed">
             {isMastery 
-              ? 'Institutional mastery unlocked! You have thoroughly grasped the core logic, formulas, and architecture of this lesson.' 
-              : 'Good effort! Review the takeaways above or retake the questions to lock in an 80%+ mastery score.'}
+              ? 'Institutional concept mastery confirmed. You have demonstrated a clear understanding of the trading logic and risk controls in this lesson.' 
+              : 'Review the educational takeaways above or retake the assessment to achieve an 80%+ mastery score.'}
           </p>
         </div>
 
-        <div className="flex flex-col sm:flex-row items-center justify-center gap-4 pt-4">
-          <Button
-            variant="outline"
-            size="md"
+        <div className="flex flex-col sm:flex-row items-center justify-center gap-3 pt-3">
+          <button
             onClick={handleRetake}
-            className="border-slate-700 hover:border-slate-600 text-slate-200 hover:text-white rounded-full px-6 cursor-pointer"
+            className="px-4 py-2 rounded-lg bg-[#141C2A] hover:bg-[#1A2538] text-slate-300 hover:text-white border border-[#222E42] text-xs font-medium transition-colors flex items-center gap-2 cursor-pointer"
           >
-            <RotateCcw className="w-4 h-4 mr-2" />
-            <span>Retake Quiz</span>
-          </Button>
+            <RotateCcw className="w-3.5 h-3.5" />
+            <span>Retake Assessment</span>
+          </button>
 
           {onNextLesson && (
-            <Button
-              size="md"
+            <button
               onClick={onNextLesson}
-              className="bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-black rounded-full px-8 shadow-[0_0_25px_rgba(16,185,129,0.4)] cursor-pointer"
+              className="px-5 py-2.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white font-medium text-xs tracking-wide transition-colors shadow-xs flex items-center gap-2 cursor-pointer active:scale-[0.98]"
             >
-              <span>Next Lesson ➔</span>
-            </Button>
+              <span>Next Lesson</span>
+              <ArrowRight className="w-3.5 h-3.5" />
+            </button>
           )}
         </div>
       </div>
@@ -218,30 +213,30 @@ export function InteractiveQuiz({ quiz, onCompleteQuiz, onNextLesson }: Interact
   }
 
   return (
-    <div className="rounded-3xl bg-slate-900/90 border border-slate-800 shadow-2xl p-6 sm:p-10 space-y-7">
+    <div className="rounded-xl bg-[#101623] border border-[#1E293B] shadow-sm p-6 sm:p-8 space-y-6">
       {/* Header bar */}
-      <div className="flex flex-wrap items-center justify-between gap-4 pb-5 border-b border-slate-800">
+      <div className="flex flex-wrap items-center justify-between gap-4 pb-4 border-b border-[#1E293B]">
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl bg-emerald-500/10 border border-emerald-500/30 flex items-center justify-center text-emerald-400">
-            <HelpCircle className="w-5 h-5" />
+          <div className="w-8 h-8 rounded-lg bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-400">
+            <HelpCircle className="w-4 h-4" />
           </div>
           <div>
-            <div className="text-[11px] font-mono uppercase tracking-wider text-emerald-400 font-extrabold">
-              Interactive Quiz
+            <div className="text-[10px] uppercase tracking-wider text-emerald-400 font-semibold">
+              Assessment
             </div>
-            <h4 className="text-base sm:text-lg font-extrabold text-white">
+            <h4 className="text-sm sm:text-base font-bold text-white">
               {quiz.title}
             </h4>
           </div>
         </div>
 
-        <div className="flex items-center gap-3">
-          <div className="text-xs sm:text-sm font-mono text-slate-300">
-            Question <span className="text-white font-extrabold">{currentIdx + 1}</span> of {totalQ}
-          </div>
-          <div className="w-24 sm:w-32 h-2.5 bg-slate-800 rounded-full overflow-hidden">
+        <div className="flex items-center gap-3 text-xs">
+          <span className="text-slate-400">
+            Question <strong className="text-white font-semibold">{currentIdx + 1}</strong> of {totalQ}
+          </span>
+          <div className="w-20 sm:w-28 h-1.5 bg-[#162030] rounded-full overflow-hidden">
             <div 
-              className="h-full bg-gradient-to-r from-emerald-500 to-cyan-400 rounded-full transition-all duration-300"
+              className="h-full bg-emerald-500 rounded-full transition-all duration-300"
               style={{ width: `${((currentIdx + 1) / totalQ) * 100}%` }}
             />
           </div>
@@ -249,38 +244,38 @@ export function InteractiveQuiz({ quiz, onCompleteQuiz, onNextLesson }: Interact
       </div>
 
       {/* Question Card */}
-      <div className="space-y-5">
-        <div className="flex items-start gap-3">
-          <span className="px-2.5 py-1 rounded-full bg-emerald-500/15 border border-emerald-500/30 text-emerald-300 text-xs font-mono font-bold shrink-0 mt-0.5">
+      <div className="space-y-4">
+        <div className="flex items-start gap-2.5">
+          <span className="px-2 py-0.5 rounded bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-[10px] font-semibold uppercase tracking-wider shrink-0 mt-0.5">
             {currentQ.conceptTag || 'Concept'}
           </span>
-          <h3 className="text-lg sm:text-xl font-extrabold text-white leading-snug">
+          <h3 className="text-base sm:text-lg font-bold text-white leading-snug">
             {currentQ.question}
           </h3>
         </div>
 
-        {/* Options (A, B, C, D) with distinct hover & instant feedback */}
-        <div className="space-y-3 pt-2">
+        {/* Options (A, B, C, D) */}
+        <div className="space-y-2.5 pt-1">
           {currentQ.options.map((option, idx) => {
             const letter = String.fromCharCode(65 + idx); // A, B, C, D
             const isSelected = selectedOption === idx;
             const isCorrect = idx === currentQ.correctIndex;
 
-            let optionStyle = 'bg-slate-950/80 border-slate-800 hover:border-emerald-500/50 hover:bg-slate-900 text-slate-200';
-            let badgeStyle = 'bg-slate-800 text-slate-300 border-slate-700';
+            let optionStyle = 'bg-[#0C121D] border-[#1E293B] hover:border-[#2A3852] hover:bg-[#141C2A] text-slate-200';
+            let badgeStyle = 'bg-[#162030] text-slate-400 border-[#223048]';
 
             if (isAnswerSubmitted) {
               if (isCorrect) {
-                optionStyle = 'bg-emerald-500/20 border-emerald-500 text-emerald-100 shadow-[0_0_20px_rgba(16,185,129,0.25)] ring-1 ring-emerald-500';
-                badgeStyle = 'bg-emerald-500 text-slate-950 font-black border-emerald-400';
+                optionStyle = 'bg-emerald-500/10 border-emerald-500/50 text-emerald-200';
+                badgeStyle = 'bg-emerald-500 text-slate-950 font-bold border-emerald-400';
               } else if (isSelected && !isCorrect) {
-                optionStyle = 'bg-rose-500/20 border-rose-500 text-rose-100 ring-1 ring-rose-500';
+                optionStyle = 'bg-rose-500/10 border-rose-500/50 text-rose-200';
                 badgeStyle = 'bg-rose-500 text-white font-bold border-rose-400';
               } else {
-                optionStyle = 'bg-slate-950/40 border-slate-800/60 text-slate-500 opacity-50';
+                optionStyle = 'bg-[#0C121D]/50 border-[#1E293B]/40 text-slate-500 opacity-60';
               }
             } else if (isSelected) {
-              optionStyle = 'bg-emerald-500/15 border-emerald-500 text-white ring-1 ring-emerald-500/60';
+              optionStyle = 'bg-emerald-500/10 border-emerald-500/50 text-white';
               badgeStyle = 'bg-emerald-500 text-slate-950 font-bold border-emerald-400';
             }
 
@@ -289,19 +284,19 @@ export function InteractiveQuiz({ quiz, onCompleteQuiz, onNextLesson }: Interact
                 key={idx}
                 disabled={isAnswerSubmitted}
                 onClick={() => handleSelectOption(idx)}
-                className={`w-full text-left p-4 sm:p-5 rounded-2xl border-2 transition-all flex items-start gap-4 cursor-pointer disabled:cursor-default ${optionStyle}`}
+                className={`w-full text-left p-3.5 sm:p-4 rounded-lg border transition-colors flex items-start gap-3 cursor-pointer disabled:cursor-default ${optionStyle}`}
               >
-                <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs sm:text-sm font-extrabold shrink-0 border ${badgeStyle} transition-transform`}>
+                <div className={`w-6 h-6 rounded-md flex items-center justify-center text-xs font-semibold shrink-0 border ${badgeStyle}`}>
                   {isAnswerSubmitted && isCorrect ? (
-                    <Check className="w-4 h-4 stroke-[3]" />
+                    <Check className="w-3.5 h-3.5 stroke-[3]" />
                   ) : isAnswerSubmitted && isSelected && !isCorrect ? (
-                    <XCircle className="w-4 h-4 stroke-[2.5]" />
+                    <XCircle className="w-3.5 h-3.5" />
                   ) : (
                     letter
                   )}
                 </div>
 
-                <span className="text-sm sm:text-base font-semibold leading-relaxed flex-1 mt-0.5">
+                <span className="text-sm font-medium leading-relaxed flex-1 mt-0.5">
                   {option}
                 </span>
               </button>
@@ -310,26 +305,26 @@ export function InteractiveQuiz({ quiz, onCompleteQuiz, onNextLesson }: Interact
         </div>
       </div>
 
-      {/* Explanation Box (Reveals after answering) */}
+      {/* Explanation Box */}
       {isAnswerSubmitted && (
-        <div className="p-5 sm:p-6 rounded-2xl bg-slate-950 border border-slate-800 space-y-4 animate-in fade-in duration-200">
-          <div className="flex items-center gap-2.5">
-            <Lightbulb className="w-5 h-5 text-amber-400" />
-            <span className="text-xs font-bold uppercase tracking-wider font-mono text-amber-300">
-              {selectedOption === currentQ.correctIndex ? '✨ Correct!' : '💡 Key Concept & Explanation'}
+        <div className="p-4 sm:p-5 rounded-lg bg-[#0C121D] border border-[#1E293B] space-y-3 animate-in fade-in duration-150">
+          <div className="flex items-center gap-2">
+            <Lightbulb className="w-4 h-4 text-amber-400" />
+            <span className="text-xs font-semibold uppercase tracking-wider text-amber-400">
+              {selectedOption === currentQ.correctIndex ? 'Correct Analysis' : 'Explanation & Context'}
             </span>
           </div>
-          <p className="text-sm sm:text-base text-slate-300 leading-relaxed font-normal">
+          <p className="text-sm text-slate-300 leading-relaxed font-normal">
             {currentQ.explanation}
           </p>
 
           <div className="pt-2 flex justify-end">
             <button
               onClick={handleNextQuestion}
-              className="px-6 py-3 rounded-full bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-black text-sm tracking-wide transition-all shadow-[0_0_20px_rgba(16,185,129,0.3)] hover:scale-[1.02] flex items-center gap-2 cursor-pointer"
+              className="px-4 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white font-medium text-xs tracking-wide transition-colors shadow-xs flex items-center gap-1.5 cursor-pointer active:scale-[0.98]"
             >
-              <span>{currentIdx < totalQ - 1 ? 'Next Question' : 'View Quiz Results'}</span>
-              <ArrowRight className="w-4 h-4 stroke-[3]" />
+              <span>{currentIdx < totalQ - 1 ? 'Next Question' : 'View Summary'}</span>
+              <ArrowRight className="w-3.5 h-3.5" />
             </button>
           </div>
         </div>

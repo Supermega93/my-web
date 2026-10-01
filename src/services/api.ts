@@ -545,6 +545,14 @@ export const api = {
     });
   },
 
+  // User avatar upload (Supabase Storage avatars bucket)
+  async uploadAvatar(base64Data: string, fileName?: string): Promise<{ success: boolean; avatarUrl: string }> {
+    return request('/api/user/avatar', {
+      method: 'POST',
+      body: JSON.stringify({ base64Data, fileName }),
+    });
+  },
+
   // Strategy & EA Submissions
   async getStrategySubmissions(): Promise<StrategySubmission[]> {
     const res = await request<{ submissions: StrategySubmission[] }>('/api/strategy-submissions');

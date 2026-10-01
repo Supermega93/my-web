@@ -552,153 +552,154 @@ export function AdminDashboard({ onBackToHome }: AdminDashboardProps) {
   };
 
   return (
-    <div className="min-h-screen bg-[#0B0F17] text-slate-100 py-10 px-4 sm:px-6 lg:px-8 space-y-8">
-      <div className="max-w-7xl mx-auto space-y-8">
+    <div className="min-h-screen bg-[#0B0E14] text-slate-100 py-8 px-4 sm:px-6 lg:px-8 space-y-6 font-sans">
+      <div className="max-w-7xl mx-auto space-y-6">
         {/* Top Header */}
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-[#111827] border border-purple-900/40 rounded-2xl p-6 sm:p-8 shadow-xl">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-[#101623] border border-[#1E293B] rounded-xl p-6 sm:p-8 shadow-sm">
           <div className="space-y-1">
             <div className="flex items-center gap-2">
-              <span className="px-2.5 py-0.5 rounded-full text-xs font-mono uppercase tracking-wider bg-purple-500/10 text-purple-300 border border-purple-500/30">
-                Admin Control Center
+              <span className="px-2.5 py-0.5 rounded-md text-xs font-semibold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+                Administration Portal
               </span>
-              <span className="text-xs text-slate-500 font-mono">Verified Session</span>
+              <span className="text-xs text-slate-400">Trading & Operations Hub</span>
             </div>
-            <h1 className="text-2xl sm:text-3xl font-extrabold text-white">
-              Platform Administration
+            <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-slate-100">
+              Platform Overview
             </h1>
             <p className="text-xs text-slate-400">
-              Manage live product inventory, customer orders, and telemetry.
+              Manage live product catalog, orders, user access entitlements, and platform sync.
             </p>
           </div>
 
           <div className="flex items-center gap-3">
             <button
               onClick={loadAdminData}
-              className="p-2.5 rounded-lg bg-slate-900 border border-slate-800 hover:border-slate-700 text-slate-300 transition-colors"
+              className="p-2.5 rounded-lg bg-[#161F30] border border-[#1E293B] hover:bg-[#1E293B] text-slate-300 transition-colors"
               title="Refresh Data"
             >
-              <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
+              <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin text-emerald-400' : ''}`} />
             </button>
             <Button
               variant="primary"
               size="sm"
               onClick={openAddModal}
               icon={<Plus className="w-4 h-4 text-slate-950" />}
+              className="bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-semibold rounded-lg"
             >
-              Add New Product
+              Add Product
             </Button>
           </div>
         </div>
 
         {/* 6 Core Admin Stats Metrics */}
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4">
-          <div className="bg-[#111827] border border-slate-800 p-4 rounded-xl space-y-1">
-            <span className="text-[10px] uppercase font-mono text-slate-400 block">Total Users</span>
-            <span className="text-2xl font-bold font-mono text-slate-100">{stats.totalUsers}</span>
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3.5">
+          <div className="bg-[#101623] border border-[#1E293B] p-4 rounded-xl space-y-1">
+            <span className="text-xs font-medium text-slate-400 block">Total Users</span>
+            <span className="text-xl font-bold text-slate-100">{stats.totalUsers}</span>
           </div>
 
-          <div className="bg-[#111827] border border-slate-800 p-4 rounded-xl space-y-1">
-            <span className="text-[10px] uppercase font-mono text-slate-400 block">Total Orders</span>
-            <span className="text-2xl font-bold font-mono text-slate-100">{stats.totalOrders}</span>
+          <div className="bg-[#101623] border border-[#1E293B] p-4 rounded-xl space-y-1">
+            <span className="text-xs font-medium text-slate-400 block">Total Orders</span>
+            <span className="text-xl font-bold text-slate-100">{stats.totalOrders}</span>
           </div>
 
-          <div className="bg-[#111827] border border-emerald-900/40 p-4 rounded-xl space-y-1">
-            <span className="text-[10px] uppercase font-mono text-slate-400 block">Total Revenue</span>
-            <span className="text-2xl font-bold font-mono text-emerald-400">${stats.totalRevenue.toFixed(2)}</span>
+          <div className="bg-[#101623] border border-emerald-500/20 p-4 rounded-xl space-y-1">
+            <span className="text-xs font-medium text-slate-400 block">Total Revenue</span>
+            <span className="text-xl font-bold text-emerald-400">${stats.totalRevenue.toFixed(2)}</span>
           </div>
 
-          <div className="bg-[#111827] border border-slate-800 p-4 rounded-xl space-y-1">
-            <span className="text-[10px] uppercase font-mono text-slate-400 block">EA Sales</span>
-            <span className="text-2xl font-bold font-mono text-cyan-400">{stats.eaSales}</span>
+          <div className="bg-[#101623] border border-[#1E293B] p-4 rounded-xl space-y-1">
+            <span className="text-xs font-medium text-slate-400 block">EA Sales</span>
+            <span className="text-xl font-bold text-cyan-400">{stats.eaSales}</span>
           </div>
 
-          <div className="bg-[#111827] border border-slate-800 p-4 rounded-xl space-y-1">
-            <span className="text-[10px] uppercase font-mono text-slate-400 block">Ebook Sales</span>
-            <span className="text-2xl font-bold font-mono text-purple-400">{stats.ebookSales}</span>
+          <div className="bg-[#101623] border border-[#1E293B] p-4 rounded-xl space-y-1">
+            <span className="text-xs font-medium text-slate-400 block">Ebook Sales</span>
+            <span className="text-xl font-bold text-slate-100">{stats.ebookSales}</span>
           </div>
 
-          <div className="bg-[#111827] border border-slate-800 p-4 rounded-xl space-y-1">
-            <span className="text-[10px] uppercase font-mono text-slate-400 block">Custom Projects</span>
-            <span className="text-2xl font-bold font-mono text-amber-400">{stats.customProjects}</span>
+          <div className="bg-[#101623] border border-[#1E293B] p-4 rounded-xl space-y-1">
+            <span className="text-xs font-medium text-slate-400 block">Custom Builds</span>
+            <span className="text-xl font-bold text-amber-400">{stats.customProjects}</span>
           </div>
         </div>
 
         {/* Tab Controls */}
-        <div className="flex items-center gap-2 border-b border-slate-800 pb-1">
+        <div className="flex items-center gap-1 border-b border-[#1E293B] pb-1 overflow-x-auto no-scrollbar">
           <button
             onClick={() => setActiveTab('products')}
-            className={`px-4 py-2 text-xs font-semibold rounded-t-lg transition-colors border-b-2 ${
+            className={`px-4 py-2.5 text-xs font-semibold rounded-lg transition-colors flex items-center gap-2 ${
               activeTab === 'products'
-                ? 'border-purple-400 text-purple-300 bg-slate-900/50'
-                : 'border-transparent text-slate-400 hover:text-slate-200'
+                ? 'bg-[#161F30] text-emerald-400 border border-[#1E293B]'
+                : 'text-slate-400 hover:text-slate-200 hover:bg-[#101623]'
             }`}
           >
-            Product Management ({products.length})
+            Product Catalog ({products.length})
           </button>
           <button
             onClick={() => setActiveTab('orders')}
-            className={`px-4 py-2 text-xs font-semibold rounded-t-lg transition-colors border-b-2 flex items-center gap-1.5 ${
+            className={`px-4 py-2.5 text-xs font-semibold rounded-lg transition-colors flex items-center gap-2 ${
               activeTab === 'orders'
-                ? 'border-purple-400 text-purple-300 bg-slate-900/50'
-                : 'border-transparent text-slate-400 hover:text-slate-200'
+                ? 'bg-[#161F30] text-emerald-400 border border-[#1E293B]'
+                : 'text-slate-400 hover:text-slate-200 hover:bg-[#101623]'
             }`}
           >
-            <span>Order Management ({orders.length})</span>
+            <span>Orders ({orders.length})</span>
             {orders.filter(o => o.payment_status === 'pending').length > 0 && (
-              <span className="px-1.5 py-0.5 rounded-full bg-amber-500/20 border border-amber-500/40 text-amber-300 font-mono text-[9px] font-bold animate-pulse">
-                {orders.filter(o => o.payment_status === 'pending').length} Pending EFT
+              <span className="px-1.5 py-0.5 rounded-full bg-amber-500/10 border border-amber-500/30 text-amber-400 text-[10px] font-semibold">
+                {orders.filter(o => o.payment_status === 'pending').length} Pending
               </span>
             )}
           </button>
           <button
             onClick={() => setActiveTab('licenses')}
-            className={`px-4 py-2 text-xs font-semibold rounded-t-lg transition-colors border-b-2 flex items-center gap-1.5 ${
+            className={`px-4 py-2.5 text-xs font-semibold rounded-lg transition-colors flex items-center gap-2 ${
               activeTab === 'licenses'
-                ? 'border-purple-400 text-purple-300 bg-slate-900/50'
-                : 'border-transparent text-slate-400 hover:text-slate-200'
+                ? 'bg-[#161F30] text-emerald-400 border border-[#1E293B]'
+                : 'text-slate-400 hover:text-slate-200 hover:bg-[#101623]'
             }`}
           >
             <Key className="w-3.5 h-3.5 text-emerald-400" />
-            EA License Controls ({licenses.length})
+            EA Licenses ({licenses.length})
           </button>
           <button
             onClick={() => setActiveTab('users')}
-            className={`px-4 py-2 text-xs font-semibold rounded-t-lg transition-colors border-b-2 flex items-center gap-1.5 ${
+            className={`px-4 py-2.5 text-xs font-semibold rounded-lg transition-colors flex items-center gap-2 ${
               activeTab === 'users'
-                ? 'border-purple-400 text-purple-300 bg-slate-900/50'
-                : 'border-transparent text-slate-400 hover:text-slate-200'
+                ? 'bg-[#161F30] text-emerald-400 border border-[#1E293B]'
+                : 'text-slate-400 hover:text-slate-200 hover:bg-[#101623]'
             }`}
           >
-            <ShieldCheck className="w-3.5 h-3.5 text-purple-400" />
-            Users & Access Controls ({usersList.length})
+            <ShieldCheck className="w-3.5 h-3.5 text-emerald-400" />
+            Users & Entitlements ({usersList.length})
           </button>
           <button
             onClick={() => setActiveTab('strategy-submissions')}
-            className={`px-4 py-2 text-xs font-semibold rounded-t-lg transition-colors border-b-2 flex items-center gap-1.5 ${
+            className={`px-4 py-2.5 text-xs font-semibold rounded-lg transition-colors flex items-center gap-2 ${
               activeTab === 'strategy-submissions'
-                ? 'border-purple-400 text-purple-300 bg-slate-900/50'
-                : 'border-transparent text-slate-400 hover:text-slate-200'
+                ? 'bg-[#161F30] text-emerald-400 border border-[#1E293B]'
+                : 'text-slate-400 hover:text-slate-200 hover:bg-[#101623]'
             }`}
           >
             <Cpu className="w-3.5 h-3.5" />
-            Strategy & EA Submissions ({submissions.length})
+            EA Submissions ({submissions.length})
           </button>
           <button
             onClick={() => {
               setActiveTab('supabase-sync');
               checkSync();
             }}
-            className={`px-4 py-2 text-xs font-semibold rounded-t-lg transition-colors border-b-2 flex items-center gap-1.5 ${
+            className={`px-4 py-2.5 text-xs font-semibold rounded-lg transition-colors flex items-center gap-2 ${
               activeTab === 'supabase-sync'
-                ? 'border-emerald-400 text-emerald-300 bg-slate-900/50'
-                : 'border-transparent text-slate-400 hover:text-slate-200'
+                ? 'bg-[#161F30] text-emerald-400 border border-[#1E293B]'
+                : 'text-slate-400 hover:text-slate-200 hover:bg-[#101623]'
             }`}
           >
             <Database className="w-3.5 h-3.5" />
-            Supabase Content Sync
+            Curriculum Database
             {syncStatus && (
-              <span className={`px-1.5 py-0.2 text-[9px] rounded font-mono ${
-                syncStatus.isSynced ? 'bg-emerald-500/20 text-emerald-300' : 'bg-amber-500/20 text-amber-300'
+              <span className={`px-1.5 py-0.5 text-[10px] rounded font-medium ${
+                syncStatus.isSynced ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20' : 'bg-amber-500/10 text-amber-400 border border-amber-500/20'
               }`}>
                 {syncStatus.remoteCount}/{syncStatus.localCount}
               </span>
@@ -708,8 +709,8 @@ export function AdminDashboard({ onBackToHome }: AdminDashboardProps) {
 
         {/* TAB 1: PRODUCT MANAGEMENT */}
         {activeTab === 'products' && (
-          <div className="bg-[#111827] border border-slate-800 rounded-xl overflow-hidden shadow-lg">
-            <div className="px-6 py-4 border-b border-slate-800 flex items-center justify-between">
+          <div className="bg-[#101623] border border-[#1E293B] rounded-xl overflow-hidden shadow-sm">
+            <div className="px-6 py-4 border-b border-[#1E293B] flex items-center justify-between">
               <div>
                 <h2 className="text-sm font-bold text-slate-100">Live Inventory</h2>
                 <p className="text-xs text-slate-400">Manage digital products, pricing, and active status.</p>
@@ -719,6 +720,7 @@ export function AdminDashboard({ onBackToHome }: AdminDashboardProps) {
                 size="sm"
                 onClick={openAddModal}
                 icon={<Plus className="w-3.5 h-3.5 text-slate-950" />}
+                className="bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-semibold rounded-lg"
               >
                 Add Product
               </Button>
@@ -726,36 +728,36 @@ export function AdminDashboard({ onBackToHome }: AdminDashboardProps) {
 
             <div className="overflow-x-auto">
               <table className="w-full text-left text-xs">
-                <thead className="bg-slate-900/60 text-slate-400 border-b border-slate-800 font-mono uppercase text-[10px]">
+                <thead className="bg-[#0E131F] text-slate-400 border-b border-[#1E293B] uppercase text-[10px] tracking-wider font-semibold">
                   <tr>
-                    <th className="px-6 py-3">Product Name</th>
-                    <th className="px-6 py-3">Type</th>
-                    <th className="px-6 py-3">Platform</th>
-                    <th className="px-6 py-3">Price</th>
-                    <th className="px-6 py-3">Status</th>
-                    <th className="px-6 py-3 text-right">Actions</th>
+                    <th className="px-6 py-3.5">Product Name</th>
+                    <th className="px-6 py-3.5">Type</th>
+                    <th className="px-6 py-3.5">Platform</th>
+                    <th className="px-6 py-3.5">Price</th>
+                    <th className="px-6 py-3.5">Status</th>
+                    <th className="px-6 py-3.5 text-right">Actions</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-slate-800/80 text-slate-300">
+                <tbody className="divide-y divide-[#1E293B] text-slate-300">
                   {products.map((prod) => (
-                    <tr key={prod.id} className="hover:bg-slate-900/40 transition-colors">
+                    <tr key={prod.id} className="hover:bg-[#161F30]/50 transition-colors">
                       <td className="px-6 py-4">
                         <div className="font-semibold text-slate-200">{prod.name}</div>
-                        <div className="text-[11px] text-slate-500 font-mono truncate max-w-xs">{prod.id}</div>
+                        <div className="text-[11px] text-slate-500 truncate max-w-xs">{prod.id}</div>
                       </td>
                       <td className="px-6 py-4">
                         <StatusBadge status={prod.type} type="type" size="sm" />
                       </td>
-                      <td className="px-6 py-4 font-mono text-slate-400">
+                      <td className="px-6 py-4 text-slate-400">
                         {prod.platform || 'General'}
                       </td>
-                      <td className="px-6 py-4 font-mono font-bold text-slate-100">
+                      <td className="px-6 py-4 font-semibold text-slate-100">
                         ${prod.price.toFixed(2)}
                       </td>
                       <td className="px-6 py-4">
                         <span
-                          className={`px-2 py-0.5 rounded text-[10px] font-mono uppercase ${
-                            prod.active ? 'bg-emerald-950 text-emerald-300 border border-emerald-800' : 'bg-rose-950 text-rose-300 border border-rose-800'
+                          className={`px-2 py-0.5 rounded text-[11px] font-medium uppercase ${
+                            prod.active ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20' : 'bg-rose-500/10 text-rose-400 border border-rose-500/20'
                           }`}
                         >
                           {prod.active ? 'Active' : 'Inactive'}
@@ -764,7 +766,7 @@ export function AdminDashboard({ onBackToHome }: AdminDashboardProps) {
                       <td className="px-6 py-4 text-right space-x-2">
                         <button
                           onClick={() => openEditModal(prod)}
-                          className="px-2.5 py-1 rounded bg-slate-900 border border-slate-800 text-slate-300 hover:text-white transition-colors"
+                          className="px-2.5 py-1 rounded bg-[#161F30] border border-[#1E293B] text-slate-300 hover:text-white transition-colors"
                         >
                           Edit
                         </button>
@@ -772,8 +774,8 @@ export function AdminDashboard({ onBackToHome }: AdminDashboardProps) {
                           onClick={() => toggleProductActive(prod)}
                           className={`px-2.5 py-1 rounded border transition-colors ${
                             prod.active
-                              ? 'bg-rose-950/40 border-rose-800/60 text-rose-300 hover:bg-rose-900/40'
-                              : 'bg-emerald-950/40 border-emerald-800/60 text-emerald-300 hover:bg-emerald-900/40'
+                              ? 'bg-rose-500/10 border-rose-500/30 text-rose-300 hover:bg-rose-500/20'
+                              : 'bg-emerald-500/10 border-emerald-500/30 text-emerald-300 hover:bg-emerald-500/20'
                           }`}
                         >
                           {prod.active ? 'Deactivate' : 'Activate'}
@@ -791,48 +793,48 @@ export function AdminDashboard({ onBackToHome }: AdminDashboardProps) {
         {activeTab === 'orders' && (
           <div className="space-y-4">
             {/* Top Order Telemetry */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-              <div className="bg-[#111827] border border-slate-800 p-4 rounded-xl space-y-1">
-                <span className="text-[10px] uppercase font-mono text-slate-400 block">Total Orders</span>
-                <span className="text-2xl font-bold font-mono text-slate-100">{orders.length}</span>
-                <span className="text-[10px] text-slate-500 block font-mono">SQLite &amp; Supabase Synced</span>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5">
+              <div className="bg-[#101623] border border-[#1E293B] p-4 rounded-xl space-y-1">
+                <span className="text-xs font-medium text-slate-400 block">Total Orders</span>
+                <span className="text-xl font-bold text-slate-100">{orders.length}</span>
+                <span className="text-[10px] text-slate-500 block">Synced with Supabase</span>
               </div>
 
               <div className={`p-4 rounded-xl space-y-1 border ${
                 orders.filter(o => o.payment_status === 'pending').length > 0
-                  ? 'bg-amber-950/40 border-amber-500/50 shadow-lg shadow-amber-500/5'
-                  : 'bg-[#111827] border-slate-800'
+                  ? 'bg-amber-500/5 border-amber-500/30'
+                  : 'bg-[#101623] border-[#1E293B]'
               }`}>
-                <span className="text-[10px] uppercase font-mono text-amber-400 font-bold block flex items-center justify-between">
+                <span className="text-xs font-medium text-amber-400 block flex items-center justify-between">
                   <span>Pending EFT Orders</span>
                   {orders.filter(o => o.payment_status === 'pending').length > 0 && (
-                    <span className="w-2 h-2 rounded-full bg-amber-400 animate-ping" />
+                    <span className="w-2 h-2 rounded-full bg-amber-400" />
                   )}
                 </span>
-                <span className="text-2xl font-bold font-mono text-amber-300">
+                <span className="text-xl font-bold text-amber-300">
                   {orders.filter(o => o.payment_status === 'pending').length}
                 </span>
-                <span className="text-[10px] text-amber-400/80 block font-mono">
+                <span className="text-[10px] text-amber-400/80 block">
                   {orders.filter(o => o.payment_status === 'pending').length > 0 
-                    ? '⚠️ Requires Manual Bank Verification' 
-                    : 'All transfers up to date'}
+                    ? 'Awaiting Bank Verification' 
+                    : 'All transfers reconciled'}
                 </span>
               </div>
 
-              <div className="bg-[#111827] border border-emerald-950/60 p-4 rounded-xl space-y-1">
-                <span className="text-[10px] uppercase font-mono text-slate-400 block">Paid Orders</span>
-                <span className="text-2xl font-bold font-mono text-emerald-400">
+              <div className="bg-[#101623] border border-emerald-500/20 p-4 rounded-xl space-y-1">
+                <span className="text-xs font-medium text-slate-400 block">Paid Orders</span>
+                <span className="text-xl font-bold text-emerald-400">
                   {orders.filter(o => o.payment_status === 'paid').length}
                 </span>
-                <span className="text-[10px] text-emerald-500/80 block font-mono">Active Licenses &amp; Entitlements</span>
+                <span className="text-[10px] text-emerald-400/80 block">Active Entitlements</span>
               </div>
 
-              <div className="bg-[#111827] border border-slate-800 p-4 rounded-xl space-y-1">
-                <span className="text-[10px] uppercase font-mono text-slate-400 block">Manual EFT Share</span>
-                <span className="text-2xl font-bold font-mono text-sky-400">
+              <div className="bg-[#101623] border border-[#1E293B] p-4 rounded-xl space-y-1">
+                <span className="text-xs font-medium text-slate-400 block">Direct Transfers</span>
+                <span className="text-xl font-bold text-slate-100">
                   {orders.filter(o => o.payment_method === 'manual_eft').length}
                 </span>
-                <span className="text-[10px] text-slate-500 block font-mono">Standard Bank Transfers</span>
+                <span className="text-[10px] text-slate-500 block">Standard Bank EFT</span>
               </div>
             </div>
 
@@ -863,15 +865,15 @@ export function AdminDashboard({ onBackToHome }: AdminDashboardProps) {
             )}
 
             {/* Filter and Search Controls */}
-            <div className="bg-[#111827] border border-slate-800 rounded-xl p-4 flex flex-col sm:flex-row items-center justify-between gap-3">
+            <div className="bg-[#101623] border border-[#1E293B] rounded-xl p-4 flex flex-col sm:flex-row items-center justify-between gap-3 shadow-sm">
               <div className="flex items-center gap-2 w-full sm:w-auto overflow-x-auto pb-1 sm:pb-0">
                 <button
                   type="button"
                   onClick={() => setOrderFilter('all')}
-                  className={`px-3 py-1.5 rounded-lg text-xs font-mono font-medium transition-colors whitespace-nowrap cursor-pointer ${
+                  className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors whitespace-nowrap cursor-pointer ${
                     orderFilter === 'all'
-                      ? 'bg-purple-600 text-white'
-                      : 'bg-slate-900 border border-slate-800 text-slate-400 hover:text-slate-200'
+                      ? 'bg-emerald-500 text-slate-950 font-semibold'
+                      : 'bg-[#161F30] border border-[#1E293B] text-slate-400 hover:text-slate-200'
                   }`}
                 >
                   All ({orders.length})
@@ -879,10 +881,10 @@ export function AdminDashboard({ onBackToHome }: AdminDashboardProps) {
                 <button
                   type="button"
                   onClick={() => setOrderFilter('pending')}
-                  className={`px-3 py-1.5 rounded-lg text-xs font-mono font-bold transition-colors whitespace-nowrap flex items-center gap-1.5 cursor-pointer ${
+                  className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors whitespace-nowrap flex items-center gap-1.5 cursor-pointer ${
                     orderFilter === 'pending'
                       ? 'bg-amber-500 text-slate-950'
-                      : 'bg-slate-900 border border-slate-800 text-amber-300 hover:border-amber-500/40'
+                      : 'bg-[#161F30] border border-[#1E293B] text-amber-400 hover:border-amber-500/40'
                   }`}
                 >
                   <Clock className="w-3 h-3" />
@@ -891,10 +893,10 @@ export function AdminDashboard({ onBackToHome }: AdminDashboardProps) {
                 <button
                   type="button"
                   onClick={() => setOrderFilter('paid')}
-                  className={`px-3 py-1.5 rounded-lg text-xs font-mono font-medium transition-colors whitespace-nowrap cursor-pointer ${
+                  className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors whitespace-nowrap cursor-pointer ${
                     orderFilter === 'paid'
-                      ? 'bg-emerald-600 text-white'
-                      : 'bg-slate-900 border border-slate-800 text-slate-400 hover:text-slate-200'
+                      ? 'bg-emerald-500 text-slate-950 font-semibold'
+                      : 'bg-[#161F30] border border-[#1E293B] text-slate-400 hover:text-slate-200'
                   }`}
                 >
                   Paid ({orders.filter(o => o.payment_status === 'paid').length})
@@ -902,10 +904,10 @@ export function AdminDashboard({ onBackToHome }: AdminDashboardProps) {
                 <button
                   type="button"
                   onClick={() => setOrderFilter('failed')}
-                  className={`px-3 py-1.5 rounded-lg text-xs font-mono font-medium transition-colors whitespace-nowrap cursor-pointer ${
+                  className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors whitespace-nowrap cursor-pointer ${
                     orderFilter === 'failed'
-                      ? 'bg-rose-600 text-white'
-                      : 'bg-slate-900 border border-slate-800 text-slate-400 hover:text-slate-200'
+                      ? 'bg-rose-500 text-white font-semibold'
+                      : 'bg-[#161F30] border border-[#1E293B] text-slate-400 hover:text-slate-200'
                   }`}
                 >
                   Failed ({orders.filter(o => o.payment_status === 'failed' || o.payment_status === 'refunded').length})
@@ -919,22 +921,22 @@ export function AdminDashboard({ onBackToHome }: AdminDashboardProps) {
                   placeholder="Search orders, emails, ref..."
                   value={orderSearchTerm}
                   onChange={(e) => setOrderSearchTerm(e.target.value)}
-                  className="w-full pl-8 pr-3 py-1.5 bg-slate-950 border border-slate-800 rounded-lg text-xs text-slate-200 focus:outline-none focus:border-purple-500 font-mono"
+                  className="w-full pl-8 pr-3 py-1.5 bg-[#0E131F] border border-[#1E293B] rounded-lg text-xs text-slate-200 focus:outline-none focus:border-emerald-500"
                 />
               </div>
             </div>
 
             {/* Orders Table */}
-            <div className="bg-[#111827] border border-slate-800 rounded-xl overflow-hidden shadow-lg">
-              <div className="px-6 py-4 border-b border-slate-800 flex items-center justify-between">
+            <div className="bg-[#101623] border border-[#1E293B] rounded-xl overflow-hidden shadow-sm">
+              <div className="px-6 py-4 border-b border-[#1E293B] flex items-center justify-between">
                 <div>
-                  <h2 className="text-sm font-bold text-slate-100">Customer Transactions &amp; Verification</h2>
+                  <h2 className="text-sm font-bold text-slate-100">Customer Transactions</h2>
                   <p className="text-xs text-slate-400">All completed, online, and pending manual bank transfer records.</p>
                 </div>
                 <button
                   type="button"
                   onClick={loadAdminData}
-                  className="text-xs font-mono text-purple-400 hover:text-purple-300 flex items-center gap-1 cursor-pointer"
+                  className="text-xs text-emerald-400 hover:text-emerald-300 flex items-center gap-1 cursor-pointer font-medium"
                 >
                   <RefreshCw className="w-3.5 h-3.5" />
                   <span>Refresh Orders</span>
@@ -943,18 +945,18 @@ export function AdminDashboard({ onBackToHome }: AdminDashboardProps) {
 
               <div className="overflow-x-auto">
                 <table className="w-full text-left text-xs">
-                  <thead className="bg-slate-900/60 text-slate-400 border-b border-slate-800 font-mono uppercase text-[10px]">
+                  <thead className="bg-[#0E131F] text-slate-400 border-b border-[#1E293B] uppercase text-[10px] tracking-wider font-semibold">
                     <tr>
-                      <th className="px-5 py-3">Order ID &amp; Reference</th>
-                      <th className="px-5 py-3">Customer Email</th>
-                      <th className="px-5 py-3">Product</th>
-                      <th className="px-5 py-3">Amount</th>
-                      <th className="px-5 py-3">Payment Method</th>
-                      <th className="px-5 py-3">Status</th>
-                      <th className="px-5 py-3 text-right">Verification Action</th>
+                      <th className="px-5 py-3.5">Order ID &amp; Reference</th>
+                      <th className="px-5 py-3.5">Customer</th>
+                      <th className="px-5 py-3.5">Product</th>
+                      <th className="px-5 py-3.5">Amount</th>
+                      <th className="px-5 py-3.5">Payment Method</th>
+                      <th className="px-5 py-3.5">Status</th>
+                      <th className="px-5 py-3.5 text-right">Verification Action</th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-slate-800/80 text-slate-300">
+                  <tbody className="divide-y divide-[#1E293B] text-slate-300">
                     {orders
                       .filter((ord) => {
                         if (orderFilter === 'pending') return ord.payment_status === 'pending';
@@ -981,50 +983,50 @@ export function AdminDashboard({ onBackToHome }: AdminDashboardProps) {
                         const displayRef = ord.eft_reference || ord.transaction_id || '—';
 
                         return (
-                          <tr key={ord.id} className={`hover:bg-slate-900/40 transition-colors ${
-                            isPending ? 'bg-amber-950/10' : ''
+                          <tr key={ord.id} className={`hover:bg-[#161F30]/50 transition-colors ${
+                            isPending ? 'bg-amber-500/[0.03]' : ''
                           }`}>
                             <td className="px-5 py-3.5">
-                              <div className="font-mono font-semibold text-slate-200">{ord.id}</div>
+                              <div className="font-semibold text-slate-200">{ord.id}</div>
                               {displayRef && displayRef !== '—' && (
-                                <div className="text-[10px] font-mono text-amber-400 font-bold mt-0.5">
+                                <div className="text-[11px] text-amber-400 font-medium mt-0.5">
                                   Ref: {displayRef}
                                 </div>
                               )}
-                              <div className="text-[10px] text-slate-500 font-mono mt-0.5">
+                              <div className="text-[10px] text-slate-500 mt-0.5">
                                 {new Date(ord.created_at).toLocaleString('en-ZA', { dateStyle: 'short', timeStyle: 'short' })}
                               </div>
                             </td>
 
                             <td className="px-5 py-3.5 text-slate-300">
                               <div className="font-semibold text-slate-200">{ord.user_name || ord.customer_name || 'Customer'}</div>
-                              <div className="font-mono text-[11px] text-slate-400">{ord.user_email || ord.customer_email}</div>
+                              <div className="text-[11px] text-slate-400">{ord.user_email || ord.customer_email}</div>
                             </td>
 
                             <td className="px-5 py-3.5 font-medium text-slate-200">
                               <div>{ord.product_name || ord.product_id}</div>
-                              <span className="text-[10px] font-mono text-slate-500 uppercase">{ord.product_type || 'Digital Asset'}</span>
+                              <span className="text-[10px] text-slate-500 uppercase">{ord.product_type || 'Digital Asset'}</span>
                             </td>
 
-                            <td className="px-5 py-3.5 font-mono font-bold text-slate-100">
-                              <div className={ord.payment_status === 'paid' ? 'text-emerald-400' : 'text-amber-300'}>
+                            <td className="px-5 py-3.5 font-semibold text-slate-100">
+                              <div className={ord.payment_status === 'paid' ? 'text-emerald-400' : 'text-amber-400'}>
                                 {ord.currency === 'ZAR' ? `R ${Number(ord.amount).toLocaleString('en-ZA', { minimumFractionDigits: 2 })}` : `$${Number(ord.amount).toFixed(2)} ${ord.currency}`}
                               </div>
                             </td>
 
                             <td className="px-5 py-3.5">
                               {isManualEft ? (
-                                <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-amber-500/15 border border-amber-500/30 text-amber-300 font-mono text-[10px] font-bold">
+                                <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-amber-500/10 border border-amber-500/20 text-amber-400 text-[11px] font-medium">
                                   <Building2 className="w-3 h-3 text-amber-400" />
                                   <span>Standard Bank EFT</span>
                                 </span>
                               ) : ord.payment_method === 'paypal' ? (
-                                <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-blue-500/15 border border-blue-500/30 text-blue-300 font-mono text-[10px] font-semibold">
+                                <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-blue-500/10 border border-blue-500/20 text-blue-300 text-[11px] font-medium">
                                   <CreditCard className="w-3 h-3 text-blue-400" />
                                   <span>PayPal Online</span>
                                 </span>
                               ) : (
-                                <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-sky-500/15 border border-sky-500/30 text-sky-300 font-mono text-[10px] font-semibold">
+                                <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-sky-500/10 border border-sky-500/20 text-sky-300 text-[11px] font-medium">
                                   <CreditCard className="w-3 h-3 text-sky-400" />
                                   <span>{ord.payment_method || 'Online'}</span>
                                 </span>
@@ -1123,35 +1125,35 @@ export function AdminDashboard({ onBackToHome }: AdminDashboardProps) {
         {activeTab === 'strategy-submissions' && (
           <div className="space-y-6">
             {/* Top Telemetry Cards */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-              <div className="bg-[#111827] border border-slate-800 p-4 rounded-xl space-y-1">
-                <span className="text-[10px] uppercase font-mono text-slate-400 block">Total Submissions</span>
-                <span className="text-2xl font-bold font-mono text-slate-100">{submissions.length}</span>
-                <span className="text-[10px] text-slate-500 block font-mono">Persisted in SQLite & Supabase</span>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5">
+              <div className="bg-[#101623] border border-[#1E293B] p-4 rounded-xl space-y-1">
+                <span className="text-xs font-medium text-slate-400 block">Total Submissions</span>
+                <span className="text-xl font-bold text-slate-100">{submissions.length}</span>
+                <span className="text-[10px] text-slate-500 block">Persisted in Supabase</span>
               </div>
 
-              <div className="bg-[#111827] border border-emerald-900/40 p-4 rounded-xl space-y-1">
-                <span className="text-[10px] uppercase font-mono text-slate-400 block">Phone / WhatsApp Contacts</span>
-                <span className="text-2xl font-bold font-mono text-emerald-400">
+              <div className="bg-[#101623] border border-emerald-500/20 p-4 rounded-xl space-y-1">
+                <span className="text-xs font-medium text-slate-400 block">Verified Contacts</span>
+                <span className="text-xl font-bold text-emerald-400">
                   {submissions.filter(s => s.phone && s.phone.trim().length >= 6).length}
                 </span>
-                <span className="text-[10px] text-emerald-500/80 block font-mono">100% Direct Contact Ready</span>
+                <span className="text-[10px] text-emerald-400/80 block">Direct Follow-up Ready</span>
               </div>
 
-              <div className="bg-[#111827] border border-slate-800 p-4 rounded-xl space-y-1">
-                <span className="text-[10px] uppercase font-mono text-slate-400 block">Email Delivered</span>
-                <span className="text-2xl font-bold font-mono text-cyan-400">
+              <div className="bg-[#101623] border border-[#1E293B] p-4 rounded-xl space-y-1">
+                <span className="text-xs font-medium text-slate-400 block">Email Delivered</span>
+                <span className="text-xl font-bold text-slate-100">
                   {submissions.filter(s => s.email_status === 'delivered').length}
                 </span>
-                <span className="text-[10px] text-slate-500 block font-mono">Sent to supermegafx1@gmail.com</span>
+                <span className="text-[10px] text-slate-500 block">Direct to Operations</span>
               </div>
 
-              <div className="bg-[#111827] border border-amber-900/30 p-4 rounded-xl space-y-1">
-                <span className="text-[10px] uppercase font-mono text-slate-400 block">Delivery Pending / Retry</span>
-                <span className="text-2xl font-bold font-mono text-amber-400">
+              <div className="bg-[#101623] border border-[#1E293B] p-4 rounded-xl space-y-1">
+                <span className="text-xs font-medium text-slate-400 block">Pending Retries</span>
+                <span className="text-xl font-bold text-amber-400">
                   {submissions.filter(s => s.email_status !== 'delivered').length}
                 </span>
-                <span className="text-[10px] text-amber-500/80 block font-mono">One-click re-dispatch enabled</span>
+                <span className="text-[10px] text-amber-400/80 block">Queued for Delivery</span>
               </div>
             </div>
 
@@ -1160,8 +1162,8 @@ export function AdminDashboard({ onBackToHome }: AdminDashboardProps) {
               <div
                 className={`p-4 rounded-xl border text-xs flex items-center justify-between gap-3 ${
                   retryFeedback.success
-                    ? 'bg-emerald-950/50 border-emerald-800 text-emerald-300'
-                    : 'bg-amber-950/50 border-amber-800 text-amber-200'
+                    ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-400'
+                    : 'bg-amber-500/10 border-amber-500/30 text-amber-400'
                 }`}
               >
                 <div className="flex items-center gap-2">
@@ -1182,8 +1184,8 @@ export function AdminDashboard({ onBackToHome }: AdminDashboardProps) {
             )}
 
             {/* Submissions Table Box */}
-            <div className="bg-[#111827] border border-slate-800 rounded-xl overflow-hidden shadow-lg">
-              <div className="px-6 py-4 border-b border-slate-800 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div className="bg-[#101623] border border-[#1E293B] rounded-xl overflow-hidden shadow-sm">
+              <div className="px-6 py-4 border-b border-[#1E293B] flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                 <div>
                   <h2 className="text-sm font-bold text-slate-100">Customer Strategy Intake Records</h2>
                   <p className="text-xs text-slate-400">
@@ -1199,38 +1201,38 @@ export function AdminDashboard({ onBackToHome }: AdminDashboardProps) {
                       type="text"
                       value={submissionSearch}
                       onChange={(e) => setSubmissionSearch(e.target.value)}
-                      placeholder="Filter by name, email, phone, or pair..."
-                      className="w-64 pl-8 pr-3 py-1.5 bg-slate-900 border border-slate-800 rounded-lg text-xs text-slate-200 focus:outline-hidden focus:border-purple-500 font-mono"
+                      placeholder="Filter by name, email, or pair..."
+                      className="w-64 pl-8 pr-3 py-1.5 bg-[#0E131F] border border-[#1E293B] rounded-lg text-xs text-slate-200 focus:outline-none focus:border-emerald-500"
                     />
                   </div>
                   <button
                     onClick={loadAdminData}
-                    className="p-2 rounded-lg bg-slate-900 border border-slate-800 hover:border-slate-700 text-slate-400 hover:text-slate-200 transition-colors"
+                    className="p-2 rounded-lg bg-[#161F30] border border-[#1E293B] hover:bg-[#1E293B] text-slate-400 hover:text-slate-200 transition-colors"
                     title="Reload Submissions"
                   >
-                    <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin' : ''}`} />
+                    <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin text-emerald-400' : ''}`} />
                   </button>
                 </div>
               </div>
 
               {submissions.length === 0 ? (
-                <div className="p-12 text-center text-slate-500 text-xs font-mono">
+                <div className="p-12 text-center text-slate-500 text-xs">
                   No strategy submissions recorded yet. Submissions from the Strategy Builder or Custom EA modal will appear here immediately.
                 </div>
               ) : (
                 <div className="overflow-x-auto">
                   <table className="w-full text-left text-xs">
-                    <thead className="bg-slate-900/60 text-slate-400 border-b border-slate-800 font-mono uppercase text-[10px]">
+                    <thead className="bg-[#0E131F] text-slate-400 border-b border-[#1E293B] uppercase text-[10px] tracking-wider font-semibold">
                       <tr>
-                        <th className="px-6 py-3">ID / Date</th>
-                        <th className="px-6 py-3">Client Contact</th>
-                        <th className="px-6 py-3">Platform & Instrument</th>
-                        <th className="px-6 py-3">Strategy Description</th>
-                        <th className="px-6 py-3">Email Status</th>
-                        <th className="px-6 py-3 text-right">Actions</th>
+                        <th className="px-6 py-3.5">ID / Date</th>
+                        <th className="px-6 py-3.5">Client Contact</th>
+                        <th className="px-6 py-3.5">Platform & Instrument</th>
+                        <th className="px-6 py-3.5">Strategy Description</th>
+                        <th className="px-6 py-3.5">Status</th>
+                        <th className="px-6 py-3.5 text-right">Actions</th>
                       </tr>
                     </thead>
-                    <tbody className="divide-y divide-slate-800/80 text-slate-300">
+                    <tbody className="divide-y divide-[#1E293B] text-slate-300">
                       {submissions
                         .filter((s) => {
                           if (!submissionSearch.trim()) return true;
@@ -1248,26 +1250,26 @@ export function AdminDashboard({ onBackToHome }: AdminDashboardProps) {
                           const cleanDigits = (s.phone || '').replace(/\D/g, '');
                           const isDelivered = s.email_status === 'delivered';
                           return (
-                            <tr key={s.id} className="hover:bg-slate-900/40 transition-colors">
+                            <tr key={s.id} className="hover:bg-[#161F30]/50 transition-colors">
                               <td className="px-6 py-4">
-                                <div className="font-mono font-bold text-slate-200 text-xs">
+                                <div className="font-semibold text-slate-200 text-xs">
                                   {s.submission_id || s.id}
                                 </div>
-                                <div className="text-[11px] font-mono text-slate-500">
+                                <div className="text-[10px] text-slate-500">
                                   {new Date(s.created_at).toLocaleDateString()} {new Date(s.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                                 </div>
                               </td>
 
                               <td className="px-6 py-4">
                                 <div className="font-semibold text-slate-100">{s.full_name}</div>
-                                <div className="text-[11px] font-mono text-slate-400">
-                                  <a href={`mailto:${s.email}`} className="hover:text-purple-300 underline">
+                                <div className="text-[11px] text-slate-400">
+                                  <a href={`mailto:${s.email}`} className="hover:text-emerald-400">
                                     {s.email}
                                   </a>
                                 </div>
                                 {s.phone && (
                                   <div className="flex items-center gap-1.5 mt-1">
-                                    <span className="px-2 py-0.5 rounded-md bg-emerald-950/60 border border-emerald-800/60 text-emerald-300 font-mono text-[11px] flex items-center gap-1">
+                                    <span className="px-2 py-0.5 rounded-md bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-[11px] flex items-center gap-1">
                                       <Phone className="w-3 h-3 text-emerald-400" />
                                       <a href={`tel:${s.phone}`} className="hover:underline">
                                         {s.phone}
@@ -1278,7 +1280,7 @@ export function AdminDashboard({ onBackToHome }: AdminDashboardProps) {
                                         href={`https://wa.me/${cleanDigits}`}
                                         target="_blank"
                                         rel="noreferrer"
-                                        className="px-1.5 py-0.5 rounded-md bg-emerald-700 hover:bg-emerald-600 text-white font-mono text-[10px] font-bold inline-flex items-center gap-0.5"
+                                        className="px-1.5 py-0.5 rounded-md bg-emerald-600 hover:bg-emerald-500 text-slate-950 text-[10px] font-bold inline-flex items-center gap-0.5"
                                         title="Chat on WhatsApp"
                                       >
                                         <MessageSquare className="w-2.5 h-2.5" />
@@ -1288,7 +1290,7 @@ export function AdminDashboard({ onBackToHome }: AdminDashboardProps) {
                                   </div>
                                 )}
                                 {s.telegram && (
-                                  <div className="text-[11px] font-mono text-slate-500 mt-0.5">
+                                  <div className="text-[10px] text-slate-500 mt-0.5">
                                     TG: {s.telegram}
                                   </div>
                                 )}
@@ -1296,14 +1298,14 @@ export function AdminDashboard({ onBackToHome }: AdminDashboardProps) {
 
                               <td className="px-6 py-4">
                                 <div className="flex items-center gap-1.5">
-                                  <span className="px-2 py-0.5 rounded-md bg-purple-950/60 border border-purple-800/60 text-purple-300 font-mono font-bold text-[11px]">
+                                  <span className="px-2 py-0.5 rounded-md bg-[#161F30] border border-[#1E293B] text-slate-300 font-medium text-[11px]">
                                     {s.platform || 'MT5'}
                                   </span>
-                                  <span className="font-mono font-bold text-slate-200">
+                                  <span className="font-semibold text-slate-200">
                                     {s.instrument || 'Multi-Asset'}
                                   </span>
                                 </div>
-                                <div className="text-[11px] font-mono text-slate-400 mt-0.5">
+                                <div className="text-[10px] text-slate-400 mt-0.5">
                                   TF: {s.timeframe || 'Any'} {s.direction ? `• ${s.direction}` : ''}
                                 </div>
                               </td>
@@ -1317,10 +1319,10 @@ export function AdminDashboard({ onBackToHome }: AdminDashboardProps) {
                               <td className="px-6 py-4">
                                 <div className="space-y-1">
                                   <span
-                                    className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-mono font-bold ${
+                                    className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-medium ${
                                       isDelivered
-                                        ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/40'
-                                        : 'bg-amber-500/20 text-amber-300 border border-amber-500/40'
+                                        ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20'
+                                        : 'bg-amber-500/10 text-amber-400 border border-amber-500/20'
                                     }`}
                                   >
                                     {isDelivered ? (
@@ -1381,38 +1383,38 @@ export function AdminDashboard({ onBackToHome }: AdminDashboardProps) {
         {activeTab === 'supabase-sync' && (
           <div className="space-y-6">
             {/* Top Telemetry Cards */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-              <div className="bg-[#111827] border border-slate-800 p-4 rounded-xl space-y-1">
-                <span className="text-[10px] uppercase font-mono text-slate-400 block">Supabase Connection</span>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5">
+              <div className="bg-[#101623] border border-[#1E293B] p-4 rounded-xl space-y-1">
+                <span className="text-xs font-medium text-slate-400 block">Supabase Connection</span>
                 <div className="flex items-center gap-2">
-                  <span className="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse"></span>
-                  <span className="text-sm font-bold font-mono text-emerald-400">Connected</span>
+                  <span className="w-2 h-2 rounded-full bg-emerald-400"></span>
+                  <span className="text-sm font-semibold text-emerald-400">Active & Connected</span>
                 </div>
-                <span className="text-[10px] font-mono text-slate-500 block truncate">xbrhalmcvpxutxojemoj</span>
+                <span className="text-[10px] text-slate-500 block truncate">xbrhalmcvpxutxojemoj</span>
               </div>
 
-              <div className="bg-[#111827] border border-slate-800 p-4 rounded-xl space-y-1">
-                <span className="text-[10px] uppercase font-mono text-slate-400 block">Content Parity</span>
-                <span className="text-xl font-bold font-mono text-cyan-400">{FALLBACK_LESSONS.length} / {FALLBACK_LESSONS.length} Lessons</span>
-                <span className="text-[10px] text-slate-400 block">8 Complete Levels (100% Fidelity)</span>
+              <div className="bg-[#101623] border border-[#1E293B] p-4 rounded-xl space-y-1">
+                <span className="text-xs font-medium text-slate-400 block">Curriculum Parity</span>
+                <span className="text-xl font-bold text-slate-100">{FALLBACK_LESSONS.length} / {FALLBACK_LESSONS.length} Lessons</span>
+                <span className="text-[10px] text-slate-400 block">8 Comprehensive Levels</span>
               </div>
 
-              <div className="bg-[#111827] border border-slate-800 p-4 rounded-xl space-y-1">
-                <span className="text-[10px] uppercase font-mono text-slate-400 block">Remote Database Rows</span>
-                <span className="text-xl font-bold font-mono text-purple-400">
+              <div className="bg-[#101623] border border-emerald-500/20 p-4 rounded-xl space-y-1">
+                <span className="text-xs font-medium text-slate-400 block">Cloud Records</span>
+                <span className="text-xl font-bold text-emerald-400">
                   {syncStatus ? `${syncStatus.remoteCount} Active` : 'Checking...'}
                 </span>
-                <span className="text-[10px] text-slate-400 block">
-                  {syncStatus?.isSynced ? 'Fully Synced with Cloud' : 'Fallback active if empty'}
+                <span className="text-[10px] text-emerald-400/80 block">
+                  {syncStatus?.isSynced ? 'Fully Synced with Cloud' : 'Ready to Sync'}
                 </span>
               </div>
 
-              <div className="bg-[#111827] border border-slate-800 p-4 rounded-xl space-y-1">
-                <span className="text-[10px] uppercase font-mono text-slate-400 block">Target Missing Lessons</span>
+              <div className="bg-[#101623] border border-[#1E293B] p-4 rounded-xl space-y-1">
+                <span className="text-xs font-medium text-slate-400 block">Prepared Sync Chapters</span>
                 <div className="flex items-center gap-1.5">
-                  <span className="text-sm font-bold font-mono text-amber-300">6 Lessons Prepared</span>
+                  <span className="text-sm font-semibold text-slate-200">6 Lessons Prepared</span>
                 </div>
-                <span className="text-[10px] text-slate-400 block">6.4, 7.4, 8.1, 8.2, 8.3, 8.4</span>
+                <span className="text-[10px] text-slate-400 block">6.4, 7.4, 8.1–8.4</span>
               </div>
             </div>
 

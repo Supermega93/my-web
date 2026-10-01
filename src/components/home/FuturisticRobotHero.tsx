@@ -26,8 +26,10 @@ export const FuturisticRobotHero: React.FC<FuturisticRobotHeroProps> = ({
     if (heroImgSrc === '/face.jpg') {
       setHeroImgSrc('/assets/face.jpg');
     } else if (heroImgSrc === '/assets/face.jpg') {
-      setHeroImgSrc('/assets/ChatGPT Image Sep 30, 2026, 11_33_18 PM.png');
-    } else if (heroImgSrc === '/assets/ChatGPT Image Sep 30, 2026, 11_33_18 PM.png') {
+      setHeroImgSrc('/assets/hero-visionary-portrait.png');
+    } else if (heroImgSrc === '/assets/hero-visionary-portrait.png') {
+      setHeroImgSrc('/assets/hero-visionary-portrait.jpg');
+    } else if (heroImgSrc === '/assets/hero-visionary-portrait.jpg') {
       setHeroImgSrc('/assets/hero-visionary-portrait.svg');
     }
   };
