@@ -6,7 +6,10 @@ const SUPABASE_ANON_KEY = process.env.VITE_SUPABASE_ANON_KEY || process.env.SUPA
 const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.VITE_SUPABASE_SERVICE_ROLE_KEY || '';
 
 export function getSupabaseClient() {
-  const key = SUPABASE_SERVICE_ROLE_KEY || SUPABASE_ANON_KEY;
+  let key = SUPABASE_SERVICE_ROLE_KEY;
+  if (!key || key.startsWith('sb_publishable_')) {
+    key = SUPABASE_ANON_KEY;
+  }
   if (!key) {
     return null;
   }
@@ -17,6 +20,34 @@ export function getSupabaseClient() {
     },
   });
 }
+
+export const SUPABASE_PROFILES_SCHEMA_SQL = `-- Run in Supabase SQL Editor (https://supabase.com/dashboard/project/xbrhalmcvpxutxojemoj/sql)
+-- Schema for User Profiles & Entitlements with Firebase UID as Primary Key
+
+CREATE TABLE IF NOT EXISTS public.profiles (
+  id TEXT PRIMARY KEY, -- Permanent Firebase UID
+  email TEXT NOT NULL UNIQUE,
+  name TEXT,
+  phone TEXT,
+  role TEXT NOT NULL DEFAULT 'customer',
+  access_status TEXT NOT NULL DEFAULT 'free',
+  can_access_masterclass BOOLEAN NOT NULL DEFAULT false,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+-- Enable Row Level Security
+ALTER TABLE public.profiles ENABLE ROW LEVEL SECURITY;
+
+-- Allow select and write for application operations
+DROP POLICY IF EXISTS "Public select profiles" ON public.profiles;
+CREATE POLICY "Public select profiles" ON public.profiles FOR SELECT USING (true);
+
+DROP POLICY IF EXISTS "Public upsert profiles" ON public.profiles;
+CREATE POLICY "Public upsert profiles" ON public.profiles FOR ALL USING (true) WITH CHECK (true);
+
+CREATE INDEX IF NOT EXISTS idx_supabase_profiles_email ON public.profiles(email);
+`;
 
 export const SUPABASE_ORDERS_LICENSES_SCHEMA_SQL = `-- Run in Supabase SQL Editor (https://supabase.com/dashboard/project/xbrhalmcvpxutxojemoj/sql)
 -- Schema for Orders & EA Licenses with Secure RLS
@@ -461,5 +492,73 @@ export async function syncComplimentaryAccessToSupabase(record: {
     return { synced: false, error: err.message };
   }
 }
+
+/**
+ * Synchronizes user profile to Supabase profiles / users table
+ */
+export async function syncUserProfileToSupabase(profile: {
+  id: string; // Permanent Firebase UID
+  email: string;
+  name?: string;
+  phone?: string | null;
+  role?: string;
+  access_status?: string;
+  can_access_masterclass?: boolean;
+}): Promise<{ synced: boolean; error?: string }> {
+  const supabase = getSupabaseClient();
+  if (!supabase) {
+    return { synced: false, error: 'No Supabase client configured' };
+  }
+
+  try {
+    const payload = {
+      id: profile.id,
+      email: profile.email.toLowerCase().trim(),
+      name: profile.name || profile.email.split('@')[0],
+      phone: profile.phone || null,
+      role: profile.role || 'customer',
+      access_status: profile.access_status || 'free',
+      can_access_masterclass: profile.can_access_masterclass || false,
+      updated_at: new Date().toISOString(),
+    };
+
+    const { error: pErr } = await supabase.from('profiles').upsert(payload, { onConflict: 'id' });
+    if (pErr) {
+      const { error: uErr } = await supabase.from('users').upsert(payload, { onConflict: 'id' });
+      if (uErr) {
+        return { synced: false, error: pErr.message || uErr.message };
+      }
+    }
+
+    return { synced: true };
+  } catch (err: any) {
+    return { synced: false, error: err.message };
+  }
+}
+
+/**
+ * Fetches all registered user profiles from Supabase
+ */
+export async function fetchUsersFromSupabase(): Promise<any[]> {
+  const supabase = getSupabaseClient();
+  if (!supabase) return [];
+
+  try {
+    const { data: profiles, error: pErr } = await supabase.from('profiles').select('*');
+    if (!pErr && profiles && profiles.length > 0) {
+      return profiles;
+    }
+
+    const { data: users, error: uErr } = await supabase.from('users').select('*');
+    if (!uErr && users && users.length > 0) {
+      return users;
+    }
+
+    return [];
+  } catch {
+    return [];
+  }
+}
+
 
 

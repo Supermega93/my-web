@@ -300,10 +300,72 @@ export function AdminDashboard({ onBackToHome }: AdminDashboardProps) {
         (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
       );
 
-      setStats(statsRes);
+      // Fetch Firestore users directly so client-side registered users appear seamlessly
+      let firestoreUsers: AdminUserRecord[] = [];
+      try {
+        const usersSnap = await getDocs(collection(db, 'users'));
+        firestoreUsers = usersSnap.docs.map(d => {
+          const data = d.data();
+          return {
+            id: d.id, // Permanent Firebase UID
+            name: data.name || (data.email ? data.email.split('@')[0] : 'Trader'),
+            email: (data.email || '').toLowerCase().trim(),
+            phone: data.phone || null,
+            role: data.role || 'customer',
+            access_status: data.access_status || 'free',
+            can_access_masterclass: Boolean(data.can_access_masterclass),
+            complimentary_details: null,
+            paid_orders_count: 0,
+            created_at: data.createdAt || new Date().toISOString(),
+            updated_at: data.updatedAt || new Date().toISOString(),
+          } as AdminUserRecord;
+        });
+      } catch (fsUsersErr) {
+        console.warn('Firestore users fetch notice:', fsUsersErr);
+      }
+
+      // Merge backend users and Firestore users, deduplicating by id and email
+      const userMap = new Map<string, AdminUserRecord>();
+      (usersRes || []).forEach(u => {
+        if (u.id) userMap.set(u.id, u);
+        if (u.email) userMap.set(u.email.toLowerCase().trim(), u);
+      });
+      firestoreUsers.forEach(fu => {
+        const existing = userMap.get(fu.id) || (fu.email ? userMap.get(fu.email.toLowerCase().trim()) : null);
+        if (existing) {
+          userMap.set(fu.id, { ...existing, ...fu, id: fu.id });
+        } else {
+          userMap.set(fu.id, fu);
+        }
+      });
+      const mergedUsers = Array.from(new Set(userMap.values())).sort(
+        (a, b) => new Date(b.created_at || 0).getTime() - new Date(a.created_at || 0).getTime()
+      );
+
+      // Silently sync any missing Firestore users to backend
+      firestoreUsers.forEach(fu => {
+        if (!usersRes.some(bu => bu.id === fu.id || bu.email.toLowerCase() === fu.email.toLowerCase())) {
+          api.syncUserWithBackend({
+            id: fu.id,
+            email: fu.email,
+            name: fu.name,
+            phone: fu.phone,
+            role: fu.role,
+            access_status: fu.access_status,
+            can_access_masterclass: fu.can_access_masterclass
+          }).catch(() => null);
+        }
+      });
+
+      const mergedStats = {
+        ...statsRes,
+        totalUsers: Math.max(statsRes?.totalUsers || 0, mergedUsers.length),
+      };
+
+      setStats(mergedStats);
       setProducts(productsRes);
       setOrders(mergedOrders);
-      setUsersList(usersRes);
+      setUsersList(mergedUsers);
       setSubmissions(submissionsRes);
       setLicenses(licensesRes);
       checkSync();
@@ -326,10 +388,13 @@ export function AdminDashboard({ onBackToHome }: AdminDashboardProps) {
             api.getStrategySubmissions().catch(() => []),
             api.getAdminLicenses().catch(() => []),
           ]);
-          setStats(statsRes);
+          setStats({
+            ...statsRes,
+            totalUsers: Math.max(statsRes.totalUsers, usersList.length, usersRes.length)
+          });
           setProducts(productsRes);
           setOrders(ordersRes);
-          setUsersList(usersRes);
+          setUsersList(usersRes.length >= usersList.length ? usersRes : usersList);
           setSubmissions(submissionsRes);
           setLicenses(licensesRes);
           checkSync();

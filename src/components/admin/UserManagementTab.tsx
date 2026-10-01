@@ -9,6 +9,8 @@ import {
   getSupabaseActivityLogs, 
   SupabaseActivityLog 
 } from '../../lib/supabaseAdmin.ts';
+import { db } from '../../lib/firebase.ts';
+import { doc, updateDoc } from 'firebase/firestore';
 import { 
   Search, 
   Users, 
@@ -185,9 +187,20 @@ export function UserManagementTab({ users, onRefresh }: UserManagementTabProps) 
         grantNotes.trim() || undefined
       );
 
+      // 3. Update Firestore /users/{userId} document for instant client sync
+      try {
+        await updateDoc(doc(db, 'users', grantTargetUser.id), {
+          access_status: 'complimentary',
+          can_access_masterclass: true,
+          updatedAt: new Date().toISOString()
+        });
+      } catch (fsErr) {
+        console.warn('Firestore complimentary grant notice:', fsErr);
+      }
+
       setFeedback({
         success: true,
-        message: `Complimentary Masterclass access successfully granted to ${grantTargetUser.email}. Entitlement synchronized with Supabase.`,
+        message: `Complimentary Masterclass access successfully granted to ${grantTargetUser.email}. Entitlement synchronized across Supabase and Firestore.`,
       });
       setGrantTargetUser(null);
       await onRefresh();
@@ -224,9 +237,20 @@ export function UserManagementTab({ users, onRefresh }: UserManagementTabProps) 
         revokeTargetUser.email
       );
 
+      // 3. Update Firestore /users/{userId} document
+      try {
+        await updateDoc(doc(db, 'users', revokeTargetUser.id), {
+          access_status: 'free',
+          can_access_masterclass: false,
+          updatedAt: new Date().toISOString()
+        });
+      } catch (fsErr) {
+        console.warn('Firestore complimentary revoke notice:', fsErr);
+      }
+
       setFeedback({
         success: true,
-        message: `Complimentary Masterclass access revoked for ${revokeTargetUser.email}. Entitlement updated in Supabase.`,
+        message: `Complimentary Masterclass access revoked for ${revokeTargetUser.email}. Entitlement updated across Supabase and Firestore.`,
       });
       setRevokeTargetUser(null);
       await onRefresh();

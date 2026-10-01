@@ -17,7 +17,10 @@ import {
   batchSyncLicensesToSupabase,
   SUPABASE_ORDERS_LICENSES_SCHEMA_SQL,
   SUPABASE_COMPLIMENTARY_ACCESS_SCHEMA_SQL,
-  syncComplimentaryAccessToSupabase
+  SUPABASE_PROFILES_SCHEMA_SQL,
+  syncComplimentaryAccessToSupabase,
+  syncUserProfileToSupabase,
+  fetchUsersFromSupabase
 } from './server/supabaseSync.ts';
 import { interpretStrategyWithGemini } from './server/strategyAiService.ts';
 import {
@@ -2535,7 +2538,8 @@ app.get('/api/admin/supabase-status', requireAuth, requireRole(['admin']), async
     res.json({
       ...health,
       schemaSql: SUPABASE_ORDERS_LICENSES_SCHEMA_SQL,
-      complimentarySchemaSql: SUPABASE_COMPLIMENTARY_ACCESS_SCHEMA_SQL
+      complimentarySchemaSql: SUPABASE_COMPLIMENTARY_ACCESS_SCHEMA_SQL,
+      profilesSchemaSql: SUPABASE_PROFILES_SCHEMA_SQL
     });
   } catch (error: any) {
     res.status(500).json({ error: error.message });
@@ -2543,9 +2547,30 @@ app.get('/api/admin/supabase-status', requireAuth, requireRole(['admin']), async
 });
 
 // Admin: Users List with Access Status and Search
-app.get('/api/admin/users', requireAuth, requireRole(['admin']), (req, res) => {
+app.get('/api/admin/users', requireAuth, requireRole(['admin']), async (req, res) => {
   try {
     const search = ((req.query.search as string) || '').toLowerCase().trim();
+
+    // Merge any users from Supabase if present
+    try {
+      const supaUsers = await fetchUsersFromSupabase();
+      if (supaUsers && supaUsers.length > 0) {
+        for (const su of supaUsers) {
+          if (su.id && su.email) {
+            dbQueries.ensureUser({
+              id: su.id,
+              name: su.name || su.email.split('@')[0],
+              email: su.email.toLowerCase().trim(),
+              phone: su.phone || null,
+              role: su.role || 'customer'
+            });
+          }
+        }
+      }
+    } catch (sbErr) {
+      console.warn('[Admin Users] Supabase sync note:', sbErr);
+    }
+
     let users = dbQueries.getAllUsersWithAccessStatus();
     if (search) {
       users = users.filter((u: any) => 
@@ -2686,20 +2711,43 @@ app.get('/api/user/access-status', requireAuth, (req, res) => {
   }
 });
 
-// User: Synchronize Supabase user into database
-app.post('/api/users/sync', requireAuth, (req, res) => {
+// User: Synchronize user into database and Supabase
+app.post('/api/users/sync', async (req, res) => {
   try {
-    const user = (req as any).user;
-    const { phone } = req.body;
+    const authUser = await resolveAuthUser(req);
+    const body = req.body || {};
+    const userId = body.id || authUser?.userId;
+    const email = (body.email || authUser?.email || '').toLowerCase().trim();
+    const name = body.name || authUser?.name || email.split('@')[0] || 'Trader';
+    const phone = body.phone || authUser?.phone || null;
+    const role = body.role || authUser?.role || (isServerAdminEmail(email) ? 'admin' : 'customer');
+
+    if (!userId && !email) {
+      return res.status(400).json({ error: 'User ID or email is required for sync.' });
+    }
+
+    const resolvedId = userId || `usr_${Date.now()}`;
     dbQueries.ensureUser({
-      id: user.userId,
-      email: user.email,
-      name: user.name,
-      phone: phone || user.phone || null,
-      role: user.role
+      id: resolvedId,
+      email,
+      name,
+      phone,
+      role
     });
-    const access = dbQueries.getUserAccessStatus(user.userId, user.email);
-    res.json({ success: true, user, access });
+
+    // Also sync to Supabase profiles
+    void syncUserProfileToSupabase({
+      id: resolvedId,
+      email,
+      name,
+      phone,
+      role,
+      access_status: body.access_status || 'free',
+      can_access_masterclass: Boolean(body.can_access_masterclass)
+    });
+
+    const access = dbQueries.getUserAccessStatus(resolvedId, email);
+    res.json({ success: true, user: { id: resolvedId, email, name, phone, role }, access });
   } catch (error: any) {
     res.status(500).json({ error: error.message });
   }

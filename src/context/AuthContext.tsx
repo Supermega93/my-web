@@ -151,6 +151,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             emailVerified: fbUser.emailVerified,
           });
 
+          // Ensure user is synchronized with backend database
+          api.syncUserWithBackend({
+            id: fbUser.uid,
+            email,
+            name: fbUser.displayName || firestoreProfile.name || email.split('@')[0],
+            phone: fbUser.phoneNumber || null,
+            role: firestoreProfile.role || determinedRole,
+            access_status: firestoreProfile.access_status || (isAdminDetected ? 'paid' : 'free'),
+            can_access_masterclass: firestoreProfile.can_access_masterclass ?? isAdminDetected,
+          }).catch(() => null);
+
           // Check if Supabase has active entitlements for this user
           let resolvedAccessStatus = firestoreProfile.access_status || (isAdminDetected ? 'paid' : 'free');
           let canAccessMasterclass = firestoreProfile.can_access_masterclass ?? isAdminDetected;
@@ -803,6 +814,27 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           access_status: isAdminDetected ? 'paid' : 'free',
           can_access_masterclass: isAdminDetected,
         }).catch((err) => console.warn('[Firestore] Register sync notice:', err));
+
+        // Synchronize with backend database immediately
+        api.syncUserWithBackend({
+          id: fbUser.uid,
+          email: cleanEmail,
+          name: displayName,
+          phone: phone.trim() || null,
+          role: isAdminDetected ? 'admin' : 'customer',
+          access_status: isAdminDetected ? 'paid' : 'free',
+          can_access_masterclass: isAdminDetected,
+        }).catch(() => null);
+
+        // Sync to Supabase profiles
+        void syncFirebaseUserToSupabase({
+          id: fbUser.uid,
+          email: cleanEmail,
+          name: displayName,
+          phone: phone.trim() || null,
+          role: isAdminDetected ? 'admin' : 'customer',
+          emailVerified: fbUser.emailVerified,
+        });
 
         const activeUser: User = {
           id: fbUser.uid,

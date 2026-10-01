@@ -4,6 +4,12 @@ import { normalizeSupabaseUrl, SUPABASE_URL, SUPABASE_ANON_KEY } from './supabas
 // 1. ENVIRONMENT CONFIGURATION & SERVICE ROLE KEY RESOLUTION
 const metaEnv = typeof import.meta !== 'undefined' ? (import.meta as unknown as { env?: Record<string, string> }).env : undefined;
 
+const rawKey =
+  (typeof process !== 'undefined' && process.env?.SUPABASE_SERVICE_ROLE_KEY) ||
+  metaEnv?.SUPABASE_SERVICE_ROLE_KEY ||
+  (typeof process !== 'undefined' && process.env?.VITE_SUPABASE_SERVICE_ROLE_KEY) ||
+  metaEnv?.VITE_SUPABASE_SERVICE_ROLE_KEY;
+
 export const env = {
   SUPABASE_URL:
     (typeof process !== 'undefined' && process.env?.SUPABASE_URL) ||
@@ -11,12 +17,7 @@ export const env = {
     metaEnv?.VITE_SUPABASE_URL ||
     metaEnv?.SUPABASE_URL ||
     SUPABASE_URL,
-  SUPABASE_SERVICE_ROLE_KEY:
-    (typeof process !== 'undefined' && process.env?.SUPABASE_SERVICE_ROLE_KEY) ||
-    metaEnv?.SUPABASE_SERVICE_ROLE_KEY ||
-    (typeof process !== 'undefined' && process.env?.VITE_SUPABASE_SERVICE_ROLE_KEY) ||
-    metaEnv?.VITE_SUPABASE_SERVICE_ROLE_KEY ||
-    SUPABASE_ANON_KEY,
+  SUPABASE_SERVICE_ROLE_KEY: (rawKey && !rawKey.startsWith('sb_publishable_')) ? rawKey : SUPABASE_ANON_KEY,
 };
 
 export const SUPABASE_SERVICE_ROLE_KEY: string = env.SUPABASE_SERVICE_ROLE_KEY;

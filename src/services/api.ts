@@ -522,10 +522,19 @@ export const api = {
     return request('/api/user/access-status');
   },
 
-  async syncUserWithBackend(phone?: string): Promise<{ success: boolean; user: any; access: any }> {
+  async syncUserWithBackend(payload?: {
+    id?: string;
+    email?: string;
+    name?: string;
+    phone?: string | null;
+    role?: string;
+    access_status?: string;
+    can_access_masterclass?: boolean;
+  } | string): Promise<{ success: boolean; user: any; access: any }> {
+    const body = typeof payload === 'string' ? { phone: payload } : (payload || {});
     return request('/api/users/sync', {
       method: 'POST',
-      body: JSON.stringify({ phone }),
+      body: JSON.stringify(body),
     });
   },
 
