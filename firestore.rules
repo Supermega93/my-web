@@ -181,5 +181,46 @@ service cloud.firestore {
     match /test/connection {
       allow read: if true;
     }
+
+    // Ebook Downloads Collection
+    function isValidEbookDownload(data) {
+      return data.keys().hasAll(['id', 'ebookId', 'downloadedAt']) &&
+             data.keys().hasOnly(['id', 'ebookId', 'ebookTitle', 'userId', 'userEmail', 'source', 'downloadUrl', 'downloadedAt']) &&
+             data.id is string && data.id.size() > 0 && data.id.size() <= 128 &&
+             data.ebookId is string && data.ebookId.size() > 0 && data.ebookId.size() <= 100 &&
+             data.downloadedAt is string && data.downloadedAt.size() <= 50 &&
+             (!('ebookTitle' in data) || (data.ebookTitle is string && data.ebookTitle.size() <= 200)) &&
+             (!('userId' in data) || (data.userId is string && data.userId.size() <= 128)) &&
+             (!('userEmail' in data) || (data.userEmail is string && data.userEmail.size() <= 120)) &&
+             (!('source' in data) || (data.source is string && data.source.size() <= 50)) &&
+             (!('downloadUrl' in data) || (data.downloadUrl is string && data.downloadUrl.size() <= 500));
+    }
+
+    match /ebook_downloads/{downloadId} {
+      allow get: if true;
+      allow list: if isAdmin();
+      allow create: if isValidId(downloadId) && isValidEbookDownload(incoming());
+      allow update, delete: if isAdmin();
+    }
+
+    // App Assets Registry (Book covers, storefront media)
+    function isValidAppAsset(data) {
+      return data.keys().hasAll(['id', 'name', 'url']) &&
+             data.keys().hasOnly(['id', 'name', 'type', 'productId', 'url', 'originalFilename', 'updatedAt']) &&
+             data.id is string && data.id.size() > 0 && data.id.size() <= 128 &&
+             data.name is string && data.name.size() > 0 && data.name.size() <= 150 &&
+             data.url is string && data.url.size() > 0 && data.url.size() <= 500 &&
+             (!('type' in data) || (data.type is string && data.type.size() <= 50)) &&
+             (!('productId' in data) || (data.productId is string && data.productId.size() <= 100)) &&
+             (!('originalFilename' in data) || (data.originalFilename is string && data.originalFilename.size() <= 100)) &&
+             (!('updatedAt' in data) || (data.updatedAt is string && data.updatedAt.size() <= 50));
+    }
+
+    match /app_assets/{assetId} {
+      allow get: if true;
+      allow list: if true;
+      allow create, update: if isValidId(assetId) && isValidAppAsset(incoming());
+      allow delete: if isAdmin();
+    }
   }
 }

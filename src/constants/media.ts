@@ -34,8 +34,8 @@ export const STOREFRONT_MEDIA = {
     id: 'prod_ebook_ai_prompt',
     title: 'The AI Prompt Engineering Handbook for Trading Automation (Vol 2)',
     author: 'M. Dinga',
-    // Exact Supabase Image src
-    coverUrl: `${SUPABASE_STOREFRONT_BUCKET}/Gemini_Generated_Image_v49p2qv49p2qv49p.jfif`,
+    // Exact official cover presentation matching BOOK2PROM.png
+    coverUrl: '/assets/books/ai-prompt-engineering-handbook-vol2.svg',
     // Exact Supabase Download href
     downloadUrl: `${SUPABASE_STOREFRONT_BUCKET}/The%20AI%20Prompt%20Engineering%20Handbook.pdf`,
   },

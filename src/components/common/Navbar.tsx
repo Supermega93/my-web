@@ -90,13 +90,17 @@ export function Navbar({
     return current === item.view;
   };
 
+  const isDarkTheme = current === 'home' && !scrolled;
+
   return (
     <header className="fixed top-0 inset-x-0 z-50 pointer-events-none transition-all duration-300">
       <div className={`max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 transition-all duration-300 ${
         scrolled ? 'pt-2 sm:pt-2.5' : 'pt-3.5 sm:pt-4'
       }`}>
         <div className={`pointer-events-auto mx-auto max-w-6xl rounded-full transition-all duration-300 flex items-center justify-between border ${
-          scrolled
+          isDarkTheme
+            ? 'bg-black/50 backdrop-blur-xl border-white/10 shadow-[0_8px_32px_rgba(0,0,0,0.8)] px-4 sm:px-6 py-2 sm:py-2.5'
+            : scrolled
             ? 'bg-white/85 backdrop-blur-xl border-slate-200/80 shadow-[0_4px_24px_rgba(0,0,0,0.06)] px-4 sm:px-6 py-2'
             : 'bg-white/75 backdrop-blur-lg border-slate-200/60 shadow-[0_2px_12px_rgba(0,0,0,0.03)] px-4 sm:px-6 py-2 sm:py-2.5'
         }`}>
@@ -105,27 +109,41 @@ export function Navbar({
             onClick={() => handleNavClick({ label: 'Home', view: 'home' })}
             className="flex items-center gap-2.5 cursor-pointer group select-none shrink-0"
           >
-            <div className="w-9 h-9 rounded-2xl bg-gradient-to-b from-slate-900 via-[#0A101D] to-slate-950 border border-slate-700/70 text-white flex items-center justify-center shadow-sm group-hover:border-slate-500 group-hover:scale-102 transition-all">
+            <div className={`w-9 h-9 rounded-2xl flex items-center justify-center shadow-sm transition-all group-hover:scale-102 ${
+              isDarkTheme
+                ? 'bg-zinc-900 border border-zinc-700/80 text-white group-hover:border-zinc-500'
+                : 'bg-gradient-to-b from-slate-900 via-[#0A101D] to-slate-950 border border-slate-700/70 text-white group-hover:border-slate-500'
+            }`}>
               <MegAiLogoIcon size={24} />
             </div>
 
             <div className="flex flex-col">
               <div className="flex items-baseline leading-none">
-                <span className="font-black text-sm sm:text-base tracking-tight text-slate-900 group-hover:text-slate-950 transition-colors font-sans leading-none">
-                  MEG<span className="text-cyan-500 font-black">.</span>AI
+                <span className={`font-black text-sm sm:text-base tracking-tight transition-colors font-sans leading-none ${
+                  isDarkTheme ? 'text-white' : 'text-slate-900 group-hover:text-slate-950'
+                }`}>
+                  MEG<span className={isDarkTheme ? 'text-white font-black' : 'text-cyan-500 font-black'}>.</span>AI
                 </span>
-                <span className="font-extrabold text-xs tracking-wider ml-1 text-slate-500 uppercase">
+                <span className={`font-extrabold text-xs tracking-wider ml-1 uppercase ${
+                  isDarkTheme ? 'text-zinc-400' : 'text-slate-500'
+                }`}>
                   LABS
                 </span>
               </div>
-              <span className="text-[8px] font-mono tracking-widest text-slate-400 uppercase mt-0.5 font-medium leading-none">
+              <span className={`text-[8px] font-mono tracking-widest uppercase mt-0.5 font-medium leading-none ${
+                isDarkTheme ? 'text-zinc-500' : 'text-slate-400'
+              }`}>
                 AI Trading Technology
               </span>
             </div>
           </div>
 
           {/* Center Navigation Menu Items */}
-          <nav className="hidden lg:flex items-center gap-1 bg-slate-100/50 p-1 rounded-full border border-slate-200/50">
+          <nav className={`hidden lg:flex items-center gap-1 p-1 rounded-full border ${
+            isDarkTheme
+              ? 'bg-white/[0.04] border-white/10'
+              : 'bg-slate-100/50 border-slate-200/50'
+          }`}>
             {navItems.map((item) => {
               const active = isItemActive(item);
               return (
@@ -133,7 +151,11 @@ export function Navbar({
                   key={item.label}
                   onClick={() => handleNavClick(item)}
                   className={`relative px-3.5 py-1.5 rounded-full text-xs font-medium tracking-tight transition-all duration-200 flex items-center gap-1.5 cursor-pointer select-none ${
-                    active
+                    isDarkTheme
+                      ? active
+                        ? 'bg-white/15 text-white font-semibold shadow-xs'
+                        : 'text-zinc-400 hover:text-white hover:bg-white/5'
+                      : active
                       ? 'bg-slate-900 text-white shadow-xs font-semibold'
                       : 'text-slate-600 hover:text-slate-900 hover:bg-white/80'
                   }`}
@@ -156,14 +178,26 @@ export function Navbar({
             {/* Quick Global Search Trigger Button */}
             <button
               onClick={() => setIsSearchOpen(true)}
-              className="group flex items-center gap-2 px-3 py-1.5 rounded-full bg-slate-100/80 hover:bg-slate-100 border border-slate-200/80 hover:border-slate-300 text-slate-500 hover:text-slate-800 transition-all cursor-pointer text-xs select-none shadow-2xs active:scale-[0.98]"
+              className={`group flex items-center gap-2 px-3 py-1.5 rounded-full border transition-all cursor-pointer text-xs select-none shadow-2xs active:scale-[0.98] ${
+                isDarkTheme
+                  ? 'bg-white/5 hover:bg-white/10 border-white/10 text-zinc-400 hover:text-white'
+                  : 'bg-slate-100/80 hover:bg-slate-100 border-slate-200/80 hover:border-slate-300 text-slate-500 hover:text-slate-800'
+              }`}
               title="Search EAs, lessons, docs, and prompts (Ctrl/Cmd + K)"
             >
-              <Search className="w-3.5 h-3.5 text-slate-400 group-hover:text-emerald-600 transition-colors" />
-              <span className="hidden xl:inline text-xs font-medium text-slate-600 group-hover:text-slate-900">
+              <Search className={`w-3.5 h-3.5 transition-colors ${
+                isDarkTheme ? 'text-zinc-400 group-hover:text-white' : 'text-slate-400 group-hover:text-emerald-600'
+              }`} />
+              <span className={`hidden xl:inline text-xs font-medium ${
+                isDarkTheme ? 'text-zinc-400 group-hover:text-white' : 'text-slate-600 group-hover:text-slate-900'
+              }`}>
                 Search...
               </span>
-              <span className="flex items-center gap-0.5 text-[10px] font-mono font-medium px-1.5 py-0.2 rounded bg-white border border-slate-200 text-slate-400 group-hover:text-slate-600 shadow-2xs">
+              <span className={`flex items-center gap-0.5 text-[10px] font-mono font-medium px-1.5 py-0.2 rounded border shadow-2xs ${
+                isDarkTheme
+                  ? 'bg-white/5 border-white/10 text-zinc-400 group-hover:text-white'
+                  : 'bg-white border-slate-200 text-slate-400 group-hover:text-slate-600'
+              }`}>
                 <Command className="w-2.5 h-2.5 inline" />K
               </span>
             </button>
@@ -174,9 +208,13 @@ export function Navbar({
             {!user ? (
               <button
                 onClick={() => onNavigate('login')}
-                className="text-xs font-medium text-slate-700 hover:text-slate-950 px-3.5 py-1.5 rounded-full hover:bg-slate-100/80 transition-all cursor-pointer flex items-center gap-1.5 active:scale-[0.98]"
+                className={`text-xs font-medium px-3.5 py-1.5 rounded-full transition-all cursor-pointer flex items-center gap-1.5 active:scale-[0.98] ${
+                  isDarkTheme
+                    ? 'text-zinc-300 hover:text-white hover:bg-white/5'
+                    : 'text-slate-700 hover:text-slate-950 hover:bg-slate-100/80'
+                }`}
               >
-                <UserIcon className="w-3.5 h-3.5 text-slate-500" />
+                <UserIcon className="w-3.5 h-3.5 opacity-70" />
                 <span>Login</span>
               </button>
             ) : (
@@ -185,11 +223,13 @@ export function Navbar({
                   onClick={() => onNavigate('portal')}
                   className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-medium transition-all cursor-pointer ${
                     current === 'portal'
-                      ? 'bg-slate-900 text-white font-semibold shadow-xs'
+                      ? 'bg-white text-zinc-950 font-bold shadow-xs'
+                      : isDarkTheme
+                      ? 'bg-white/5 border border-white/10 text-zinc-300 hover:text-white'
                       : 'bg-white border border-slate-200/90 hover:border-slate-300 text-slate-700'
                   }`}
                 >
-                  <UserIcon className="w-3.5 h-3.5 text-slate-500" />
+                  <UserIcon className="w-3.5 h-3.5 opacity-70" />
                   <span>Portal</span>
                   {isAdmin && (
                     <span className="text-[9px] px-1.5 py-0.2 rounded-full bg-purple-100 text-purple-700 uppercase font-bold">
@@ -200,7 +240,7 @@ export function Navbar({
 
                 <button
                   onClick={() => logout()}
-                  className="p-1.5 rounded-full hover:bg-rose-50 text-slate-400 hover:text-rose-600 transition-colors cursor-pointer"
+                  className="p-1.5 rounded-full hover:bg-rose-500/10 text-zinc-400 hover:text-rose-400 transition-colors cursor-pointer"
                   title="Logout"
                 >
                   <LogOut className="w-3.5 h-3.5" />
@@ -208,16 +248,18 @@ export function Navbar({
               </div>
             )}
 
-            {/* Apple-Inspired Understated CTA Button */}
-            <Button
-              variant="primary"
-              size="sm"
+            {/* Glowing CTA Button matching Reference Start Free Trial */}
+            <button
               onClick={() => onNavigate('academy')}
-              className="font-medium px-4 py-1.5 text-xs shadow-xs hover:shadow-md"
+              className={`font-bold px-4 py-1.5 text-xs rounded-full cursor-pointer transition-all flex items-center gap-1 ${
+                isDarkTheme
+                  ? 'bg-white text-zinc-950 hover:bg-zinc-100 shadow-[0_0_20px_rgba(255,255,255,0.25)] hover:shadow-[0_0_28px_rgba(255,255,255,0.45)]'
+                  : 'bg-slate-900 text-white hover:bg-slate-800 shadow-xs'
+              }`}
             >
               <span>Get Started</span>
               <ArrowRight className="w-3.5 h-3.5 ml-0.5" />
-            </Button>
+            </button>
           </div>
 
           {/* Mobile Right Controls */}
@@ -225,7 +267,11 @@ export function Navbar({
             {/* Mobile Search Button */}
             <button
               onClick={() => setIsSearchOpen(true)}
-              className="p-2 rounded-full bg-slate-100/80 border border-slate-200/80 text-slate-700 hover:text-slate-950 transition-colors cursor-pointer"
+              className={`p-2 rounded-full border transition-colors cursor-pointer ${
+                isDarkTheme
+                  ? 'bg-white/5 border-white/10 text-zinc-300 hover:text-white'
+                  : 'bg-slate-100/80 border-slate-200/80 text-slate-700 hover:text-slate-950'
+              }`}
               title="Search"
               aria-label="Search"
             >
@@ -236,7 +282,11 @@ export function Navbar({
 
             <button
               onClick={() => onNavigate('academy')}
-              className="px-3 py-1.5 rounded-full bg-slate-900 text-white font-medium text-xs flex items-center gap-1 shadow-xs active:scale-[0.98]"
+              className={`px-3 py-1.5 rounded-full font-bold text-xs flex items-center gap-1 shadow-xs active:scale-[0.98] ${
+                isDarkTheme
+                  ? 'bg-white text-zinc-950 hover:bg-zinc-100 shadow-[0_0_15px_rgba(255,255,255,0.2)]'
+                  : 'bg-slate-900 text-white'
+              }`}
             >
               <span>Start</span>
               <ArrowRight className="w-3 h-3" />
@@ -244,7 +294,11 @@ export function Navbar({
 
             <button
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-              className="p-2 rounded-full bg-slate-100/80 border border-slate-200/80 text-slate-700 hover:text-slate-950 transition-colors cursor-pointer"
+              className={`p-2 rounded-full border transition-colors cursor-pointer ${
+                isDarkTheme
+                  ? 'bg-white/5 border-white/10 text-zinc-300 hover:text-white'
+                  : 'bg-slate-100/80 border-slate-200/80 text-slate-700 hover:text-slate-950'
+              }`}
               aria-label="Toggle navigation menu"
             >
               {mobileMenuOpen ? <X className="w-4 h-4" /> : <Menu className="w-4 h-4" />}
@@ -260,7 +314,11 @@ export function Navbar({
               animate={{ opacity: 1, y: 0, scale: 1 }}
               exit={{ opacity: 0, y: -8, scale: 0.98 }}
               transition={{ duration: 0.18 }}
-              className="pointer-events-auto mt-2 max-w-6xl mx-auto rounded-3xl bg-white/95 backdrop-blur-2xl border border-slate-200/90 shadow-xl p-4 space-y-3 text-slate-800"
+              className={`pointer-events-auto mt-2 max-w-6xl mx-auto rounded-3xl backdrop-blur-2xl border shadow-xl p-4 space-y-3 ${
+                isDarkTheme
+                  ? 'bg-zinc-950/95 border-zinc-800 text-zinc-200'
+                  : 'bg-white/95 border-slate-200/90 text-slate-800'
+              }`}
             >
               {/* Mobile Search Bar inside dropdown */}
               <div
@@ -268,13 +326,19 @@ export function Navbar({
                   setMobileMenuOpen(false);
                   setIsSearchOpen(true);
                 }}
-                className="flex items-center justify-between px-3.5 py-2 rounded-2xl bg-slate-100/80 hover:bg-slate-100 border border-slate-200/80 text-slate-500 cursor-pointer text-xs"
+                className={`flex items-center justify-between px-3.5 py-2 rounded-2xl border cursor-pointer text-xs ${
+                  isDarkTheme
+                    ? 'bg-zinc-900 border-zinc-800 text-zinc-400'
+                    : 'bg-slate-100/80 hover:bg-slate-100 border-slate-200/80 text-slate-500'
+                }`}
               >
                 <div className="flex items-center gap-2">
-                  <Search className="w-3.5 h-3.5 text-slate-400" />
+                  <Search className="w-3.5 h-3.5 opacity-70" />
                   <span>Search EAs, lessons, docs...</span>
                 </div>
-                <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-white text-slate-400 border border-slate-200">
+                <span className={`text-[10px] font-mono px-1.5 py-0.5 rounded border ${
+                  isDarkTheme ? 'bg-zinc-800 text-zinc-400 border-zinc-700' : 'bg-white text-slate-400 border-slate-200'
+                }`}>
                   Ctrl+K
                 </span>
               </div>
@@ -287,7 +351,11 @@ export function Navbar({
                       key={item.label}
                       onClick={() => handleNavClick(item)}
                       className={`text-left px-4 py-2.5 rounded-2xl text-xs sm:text-sm font-medium transition-all flex items-center justify-between ${
-                        active 
+                        isDarkTheme
+                          ? active
+                            ? 'bg-white/15 text-white font-semibold'
+                            : 'text-zinc-300 hover:bg-zinc-900 hover:text-white'
+                          : active 
                           ? 'bg-slate-900 text-white font-semibold shadow-xs'
                           : 'text-slate-700 hover:bg-slate-100/70 hover:text-slate-900'
                       }`}
@@ -305,7 +373,9 @@ export function Navbar({
                 })}
               </div>
 
-              <div className="pt-3 border-t border-slate-100 flex flex-col gap-2">
+              <div className={`pt-3 border-t flex flex-col gap-2 ${
+                isDarkTheme ? 'border-zinc-800' : 'border-slate-100'
+              }`}>
                 {!user ? (
                   <Button
                     variant="outline"

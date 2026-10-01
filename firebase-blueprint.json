@@ -451,6 +451,105 @@
         "broker",
         "eaName"
       ]
+    },
+    "EbookDownload": {
+      "title": "EbookDownload",
+      "description": "Record of a free eBook download event.",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier of the download record.",
+          "maxLength": 128
+        },
+        "ebookId": {
+          "type": "string",
+          "description": "Identifier of the downloaded eBook.",
+          "maxLength": 100
+        },
+        "ebookTitle": {
+          "type": "string",
+          "description": "Title of the downloaded eBook.",
+          "maxLength": 200
+        },
+        "userId": {
+          "type": "string",
+          "description": "UID of the user or 'anonymous' / 'guest'.",
+          "maxLength": 128
+        },
+        "userEmail": {
+          "type": "string",
+          "description": "Email of the user if available.",
+          "maxLength": 120
+        },
+        "source": {
+          "type": "string",
+          "description": "Button or view source e.g. 'hero_btn_download_free_ebook'.",
+          "maxLength": 50
+        },
+        "downloadUrl": {
+          "type": "string",
+          "description": "File or endpoint path for the download.",
+          "maxLength": 500
+        },
+        "downloadedAt": {
+          "type": "string",
+          "description": "ISO timestamp of the download event.",
+          "maxLength": 50
+        }
+      },
+      "required": [
+        "id",
+        "ebookId",
+        "downloadedAt"
+      ]
+    },
+    "AppAsset": {
+      "title": "AppAsset",
+      "description": "Storefront visual asset or book cover metadata record.",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier of the asset.",
+          "maxLength": 128
+        },
+        "name": {
+          "type": "string",
+          "description": "Asset name or title.",
+          "maxLength": 150
+        },
+        "type": {
+          "type": "string",
+          "description": "Type of asset e.g. 'book_cover'.",
+          "maxLength": 50
+        },
+        "productId": {
+          "type": "string",
+          "description": "Associated product ID.",
+          "maxLength": 100
+        },
+        "url": {
+          "type": "string",
+          "description": "URL or path of the cover image asset.",
+          "maxLength": 500
+        },
+        "originalFilename": {
+          "type": "string",
+          "description": "Uploaded source filename.",
+          "maxLength": 100
+        },
+        "updatedAt": {
+          "type": "string",
+          "description": "ISO timestamp of update.",
+          "maxLength": 50
+        }
+      },
+      "required": [
+        "id",
+        "name",
+        "url"
+      ]
     }
   },
   "firestore": {
@@ -477,6 +576,14 @@
     "/admins/{adminId}": {
       "schema": "Admin",
       "description": "Trusted administrators list."
+    },
+    "/ebook_downloads/{downloadId}": {
+      "schema": "EbookDownload",
+      "description": "Download records for free eBooks."
+    },
+    "/app_assets/{assetId}": {
+      "schema": "AppAsset",
+      "description": "Storefront media and book cover asset registry."
     }
   }
 }

@@ -413,3 +413,114 @@ export async function simulateEaMetricTick(
     handleFirestoreError(error, OperationType.UPDATE, path);
   }
 }
+
+export interface EbookDownloadRecord {
+  id: string;
+  ebookId: string;
+  ebookTitle?: string;
+  userId?: string;
+  userEmail?: string;
+  source?: string;
+  downloadUrl?: string;
+  downloadedAt: string;
+}
+
+/**
+ * Saves a free eBook download event record to Firebase Firestore
+ */
+export async function saveEbookDownloadToFirestore(
+  record: {
+    ebookId: string;
+    ebookTitle?: string;
+    userId?: string;
+    userEmail?: string;
+    source?: string;
+    downloadUrl?: string;
+  }
+): Promise<EbookDownloadRecord> {
+  const downloadId = `dl_${Date.now()}_${Math.random().toString(36).substring(2, 8)}`;
+  const now = new Date().toISOString();
+
+  const finalRecord: EbookDownloadRecord = {
+    id: downloadId,
+    ebookId: record.ebookId,
+    ebookTitle: record.ebookTitle || "The Trader's Guide to Understanding Strategy Automation",
+    userId: record.userId || auth.currentUser?.uid || 'guest',
+    userEmail: record.userEmail || auth.currentUser?.email || '',
+    source: record.source || 'hero_btn_download_free_ebook',
+    downloadUrl: record.downloadUrl || '/api/ebooks/download',
+    downloadedAt: now,
+  };
+
+  const path = `ebook_downloads/${downloadId}`;
+  try {
+    const docRef = doc(db, 'ebook_downloads', downloadId);
+    await setDoc(docRef, finalRecord);
+    console.log(`[Firestore] Saved eBook download record (${downloadId}) to Firebase`);
+  } catch (error) {
+    console.warn('[Firestore] Error saving eBook download to Firebase:', error);
+    try {
+      handleFirestoreError(error, OperationType.WRITE, path);
+    } catch (_) {}
+  }
+
+  return finalRecord;
+}
+
+export interface AppAssetRecord {
+  id: string;
+  name: string;
+  type: string;
+  productId?: string;
+  url: string;
+  originalFilename?: string;
+  updatedAt: string;
+}
+
+/**
+ * Saves a storefront visual media / book cover asset record to Firebase Firestore
+ */
+export async function saveAppAssetToFirestore(asset: {
+  id: string;
+  name: string;
+  type?: string;
+  productId?: string;
+  url: string;
+  originalFilename?: string;
+}): Promise<AppAssetRecord> {
+  const now = new Date().toISOString();
+  const record: AppAssetRecord = {
+    id: asset.id,
+    name: asset.name,
+    type: asset.type || 'book_cover',
+    productId: asset.productId || 'prod_ebook_ai_prompt',
+    url: asset.url,
+    originalFilename: asset.originalFilename || 'BOOK2PROM.png',
+    updatedAt: now,
+  };
+
+  const path = `app_assets/${asset.id}`;
+  try {
+    const docRef = doc(db, 'app_assets', asset.id);
+    await setDoc(docRef, record, { merge: true });
+    console.log(`[Firestore] Successfully registered asset (${asset.id}) on Firebase`);
+  } catch (err) {
+    console.warn('[Firestore] Note saving asset to Firebase:', err);
+    try {
+      handleFirestoreError(err, OperationType.WRITE, path);
+    } catch (_) {}
+  }
+
+  return record;
+}
+
+// Automatically sync the official BOOK2PROM.png cover asset registration to Firebase Firestore
+saveAppAssetToFirestore({
+  id: 'cover_prod_ebook_ai_prompt',
+  name: 'The AI Prompt Engineering Handbook for Trading Automation (Vol 2) Official Cover',
+  type: 'book_cover',
+  productId: 'prod_ebook_ai_prompt',
+  url: '/assets/books/ai-prompt-engineering-handbook-vol2.svg',
+  originalFilename: 'BOOK2PROM.png',
+}).catch(() => {});
+

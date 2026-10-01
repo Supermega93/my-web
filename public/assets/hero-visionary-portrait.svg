@@ -1,0 +1,226 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 1400" width="1200" height="1400">
+  <defs>
+    <!-- Background Environment -->
+    <radialGradient id="envGlow" cx="65%" cy="30%" r="60%">
+      <stop offset="0%" stop-color="#ffffff" stop-opacity="0.12" />
+      <stop offset="20%" stop-color="#cbd5e1" stop-opacity="0.05" />
+      <stop offset="60%" stop-color="#0a0c10" stop-opacity="0.8" />
+      <stop offset="100%" stop-color="#000000" stop-opacity="1" />
+    </radialGradient>
+
+    <!-- Halo Ambient Cloud -->
+    <radialGradient id="haloBloom" cx="64%" cy="20%" r="35%">
+      <stop offset="0%" stop-color="#ffffff" stop-opacity="0.45" />
+      <stop offset="25%" stop-color="#e2e8f0" stop-opacity="0.2" />
+      <stop offset="55%" stop-color="#475569" stop-opacity="0.06" />
+      <stop offset="100%" stop-color="#000000" stop-opacity="0" />
+    </radialGradient>
+
+    <!-- Chiaroscuro Skin Gradients matching face.jpg -->
+    <linearGradient id="faceShade" x1="45%" y1="20%" x2="75%" y2="85%">
+      <stop offset="0%" stop-color="#453d38" />
+      <stop offset="20%" stop-color="#2d2623" />
+      <stop offset="50%" stop-color="#181514" />
+      <stop offset="85%" stop-color="#0d0c0c" />
+      <stop offset="100%" stop-color="#000000" />
+    </linearGradient>
+
+    <linearGradient id="foreheadLight" x1="50%" y1="0%" x2="50%" y2="100%">
+      <stop offset="0%" stop-color="#ffffff" stop-opacity="0.85" />
+      <stop offset="30%" stop-color="#e2e8f0" stop-opacity="0.4" />
+      <stop offset="70%" stop-color="#334155" stop-opacity="0.1" />
+      <stop offset="100%" stop-color="#000000" stop-opacity="0" />
+    </linearGradient>
+
+    <linearGradient id="jacketShade" x1="30%" y1="0%" x2="70%" y2="100%">
+      <stop offset="0%" stop-color="#1c2026" />
+      <stop offset="30%" stop-color="#101216" />
+      <stop offset="70%" stop-color="#08090b" />
+      <stop offset="100%" stop-color="#000000" />
+    </linearGradient>
+
+    <linearGradient id="clearFrameReflect" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#ffffff" stop-opacity="0.95" />
+      <stop offset="30%" stop-color="#cbd5e1" stop-opacity="0.5" />
+      <stop offset="70%" stop-color="#64748b" stop-opacity="0.2" />
+      <stop offset="100%" stop-color="#ffffff" stop-opacity="0.85" />
+    </linearGradient>
+
+    <!-- Bottom Vignette -->
+    <linearGradient id="bottomFadeOut" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#000000" stop-opacity="0" />
+      <stop offset="60%" stop-color="#000000" stop-opacity="0.25" />
+      <stop offset="85%" stop-color="#000000" stop-opacity="0.9" />
+      <stop offset="100%" stop-color="#000000" stop-opacity="1" />
+    </linearGradient>
+  </defs>
+
+  <!-- 1. Background Fill -->
+  <rect width="1200" height="1400" fill="#000000" />
+  <rect width="1200" height="1400" fill="url(#envGlow)" />
+
+  <!-- 2. Concentric Orbital Rings (Background Depth) -->
+  <g opacity="0.2">
+    <circle cx="680" cy="380" r="380" fill="none" stroke="#ffffff" stroke-width="1.2" stroke-dasharray="4 8" />
+    <circle cx="680" cy="380" r="490" fill="none" stroke="#ffffff" stroke-width="0.8" />
+    <circle cx="680" cy="380" r="600" fill="none" stroke="#ffffff" stroke-width="0.5" stroke-dasharray="2 12" />
+  </g>
+
+  <!-- 3. Soft Halo Ambient Cloud -->
+  <circle cx="680" cy="210" r="280" fill="url(#haloBloom)" />
+
+  <!-- 4. Cascading Braids / Locs Behind Neck and Shoulders (matching face.jpg) -->
+  <g fill="#0b0c0f" stroke="#1c2028" stroke-width="2">
+    <path d="M720 400 C740 480 770 560 790 660 C780 670 760 670 750 650 C735 560 710 470 700 420 Z" fill="#0e1014" />
+    <path d="M740 420 C765 500 800 600 820 720 C810 730 790 730 780 700 C760 590 730 490 720 430 Z" fill="#090a0d" />
+    <path d="M760 440 C790 530 830 640 850 780 C840 790 820 785 810 750 C790 630 755 520 740 450 Z" fill="#050608" />
+    <path d="M680 430 C700 520 720 620 730 710 C720 715 705 710 695 680 C685 600 670 510 665 440 Z" fill="#14171d" />
+  </g>
+
+  <!-- 5. Dark Tech Jacket & Torso (Recreating Reference Design Dark Structured Clothing) -->
+  <g id="jacket">
+    <!-- Main Jacket Body -->
+    <path d="M380 1400 C400 1150 420 950 490 820 C520 760 560 720 610 680 C640 660 680 650 720 660 C770 675 830 710 880 760 C940 830 990 950 1040 1150 C1060 1230 1080 1330 1100 1400 Z" fill="url(#jacketShade)" />
+
+    <!-- Jacket Collar - High Tech Structured Neckline -->
+    <path d="M540 760 C530 700 545 640 590 610 C620 590 665 590 705 605 C735 620 755 650 750 710 C730 750 700 780 650 790 C590 800 550 780 540 760 Z" fill="#181c22" stroke="#2d333f" stroke-width="1.5" />
+    
+    <!-- Left Collar Fold with Specular Rim -->
+    <path d="M545 750 C540 690 560 640 595 615 C605 635 605 675 600 730 C580 745 560 750 545 750 Z" fill="#252c38" />
+    <path d="M545 750 C540 690 560 640 595 615" fill="none" stroke="#e2e8f0" stroke-width="3" opacity="0.9" />
+
+    <!-- Right Collar & Shoulder Ridge -->
+    <path d="M695 615 C730 635 750 670 750 730 C730 750 710 755 690 755 C695 700 695 650 695 615 Z" fill="#1a1e24" />
+    
+    <!-- Front Zipper Track & Metallic Sheen -->
+    <path d="M648 690 L648 1400" stroke="#050608" stroke-width="14" />
+    <path d="M648 690 L648 1400" stroke="#475569" stroke-width="4" stroke-dasharray="4 3" />
+    <path d="M646 690 L646 1400" stroke="#ffffff" stroke-width="1.5" opacity="0.5" />
+    
+    <!-- Jacket Wrinkles & Seams -->
+    <path d="M490 820 C530 850 580 880 640 890" fill="none" stroke="#2a303c" stroke-width="2.5" />
+    <path d="M480 830 C525 860 575 888 635 898" fill="none" stroke="#050608" stroke-width="3.5" />
+    <path d="M720 760 C780 820 850 870 920 910" fill="none" stroke="#2a303c" stroke-width="2.5" />
+    <path d="M715 770 C775 828 845 878 915 918" fill="none" stroke="#050608" stroke-width="3.5" />
+
+    <!-- Left Shoulder Rim Light (Specular Edge from Halo) -->
+    <path d="M490 820 C420 950 400 1150 380 1400" fill="none" stroke="#ffffff" stroke-width="2.5" opacity="0.4" />
+  </g>
+
+  <!-- 6. Neck & Throat (Chiaroscuro) -->
+  <g id="neck">
+    <path d="M580 540 C570 590 565 650 575 700 C600 715 640 720 670 710 C690 670 700 610 705 550 C665 560 620 555 580 540 Z" fill="url(#faceShade)" />
+    <!-- Throat highlight & Adam's apple rim -->
+    <path d="M595 560 C590 610 590 660 605 690 C615 680 620 650 620 610 C615 580 605 565 595 560 Z" fill="#352e2c" />
+    <path d="M575 580 C570 630 570 670 580 700" fill="none" stroke="#ffffff" stroke-width="3" opacity="0.85" />
+  </g>
+
+  <!-- 7. Head & Facial Structure (Faithfully Representing face.jpg looking up-left) -->
+  <g id="head">
+    <!-- Cranium & Jaw Contour -->
+    <path d="M545 420 C535 390 540 350 560 320 C590 280 645 250 715 260 C780 270 825 310 840 370 C855 430 840 480 815 520 C790 560 740 580 700 580 C650 580 600 565 570 535 C550 500 545 460 545 420 Z" fill="url(#faceShade)" />
+
+    <!-- Jawline & Chin Structure -->
+    <path d="M540 460 C535 490 545 520 570 535 C610 555 660 550 700 530 C720 500 730 460 725 430 C695 440 665 440 635 435 C590 440 560 445 540 460 Z" fill="#221e1d" />
+    <!-- Chin Rim Light -->
+    <path d="M542 470 C540 500 555 525 575 535 C595 545 625 545 650 540" fill="none" stroke="#ffffff" stroke-width="3" opacity="0.9" />
+
+    <!-- Goatee and Facial Hair (Exact matching face.jpg) -->
+    <!-- Chin beard & goatee patch -->
+    <path d="M555 480 C550 505 560 528 580 535 C575 515 570 495 570 480 Z" fill="#08080a" />
+    <path d="M552 485 C548 510 558 532 578 538" stroke="#181c24" stroke-width="3" stroke-linecap="round" />
+    <!-- Mustache -->
+    <path d="M558 442 C572 436 595 436 612 444 C596 448 574 448 558 442 Z" fill="#0a0b0e" />
+
+    <!-- Lips & Mouth -->
+    <path d="M560 455 C575 450 595 450 610 458 C595 465 575 465 560 455 Z" fill="#2d2524" />
+    <path d="M565 454 C580 451 595 451 608 456" fill="none" stroke="#ffffff" stroke-width="1.5" opacity="0.65" />
+
+    <!-- Nose (Strong Bridge & Tip looking upward-left) -->
+    <path d="M560 380 C550 400 545 420 550 430 C555 435 570 438 585 432 C580 425 575 410 575 390 Z" fill="#322c2b" />
+    <path d="M560 380 C550 400 548 420 552 430 C555 433 565 435 575 432" fill="none" stroke="#ffffff" stroke-width="3" opacity="0.95" />
+
+    <!-- Cheekbone Highlight -->
+    <path d="M580 390 C610 380 645 385 670 405 C650 415 620 420 590 415 Z" fill="#3a3433" opacity="0.8" />
+    <path d="M585 390 C610 382 640 388 660 402" fill="none" stroke="#ffffff" stroke-width="2" opacity="0.75" />
+
+    <!-- Forehead & Brow Bone catching radiant down-light from Halo -->
+    <path d="M565 330 C585 305 620 290 665 290 C705 290 735 305 750 330 C720 345 680 350 640 350 C600 350 575 340 565 330 Z" fill="url(#foreheadLight)" opacity="0.7" />
+    <path d="M568 335 C590 310 625 298 670 298 C710 298 740 312 755 335" fill="none" stroke="#ffffff" stroke-width="3.5" opacity="1" />
+
+    <!-- Eyebrow & Eyes (Focused gaze directed upward-left toward the headline) -->
+    <path d="M580 358 C595 352 615 352 630 358" fill="none" stroke="#0e1014" stroke-width="6" stroke-linecap="round" />
+    <path d="M582 357 C596 351 614 351 628 357" fill="none" stroke="#ffffff" stroke-width="1.5" opacity="0.75" />
+
+    <ellipse cx="602" cy="372" rx="14" ry="8" fill="#15171c" transform="rotate(-8 602 372)" />
+    <circle cx="598" cy="370" r="3.8" fill="#ffffff" />
+    <circle cx="599" cy="369" r="1.8" fill="#ffffff" />
+
+    <!-- Ear & Details -->
+    <path d="M720 400 C735 390 750 405 745 435 C740 460 725 470 710 465 Z" fill="#24201f" stroke="#2d2827" stroke-width="1.2" />
+    <path d="M728 405 C738 400 745 412 742 432" fill="none" stroke="#ffffff" stroke-width="1.8" opacity="0.7" />
+  </g>
+
+  <!-- 8. Braided Locs & Top Hair (Exact match of face.jpg hair styling) -->
+  <g id="hair">
+    <path d="M580 300 C600 275 640 260 680 265 C720 270 750 290 770 320" stroke="#ffffff" stroke-width="3" stroke-dasharray="8 6" opacity="0.9" />
+    <path d="M600 315 C625 290 660 280 700 285 C740 290 770 310 790 340" stroke="#e2e8f0" stroke-width="2.5" stroke-dasharray="7 5" opacity="0.8" />
+    <path d="M620 330 C645 305 680 295 720 300 C755 308 785 330 805 365" stroke="#94a3b8" stroke-width="2.5" stroke-dasharray="7 5" opacity="0.7" />
+    <path d="M640 345 C665 325 700 315 735 320 C770 328 800 350 820 390" stroke="#64748b" stroke-width="2.2" stroke-dasharray="6 6" opacity="0.6" />
+
+    <!-- Braids flowing back and down right side -->
+    <path d="M770 320 C810 350 840 400 850 460 C860 520 850 580 830 640" fill="none" stroke="#181c24" stroke-width="15" stroke-linecap="round" />
+    <path d="M770 320 C810 350 840 400 850 460 C860 520 850 580 830 640" fill="none" stroke="#ffffff" stroke-width="3.5" stroke-dasharray="10 8" opacity="0.85" />
+
+    <path d="M750 350 C785 385 815 440 825 500 C835 560 820 620 800 680" fill="none" stroke="#101318" stroke-width="13" stroke-linecap="round" />
+    <path d="M750 350 C785 385 815 440 825 500 C835 560 820 620 800 680" fill="none" stroke="#e2e8f0" stroke-width="3" stroke-dasharray="9 7" opacity="0.8" />
+  </g>
+
+  <!-- 9. Modern Clear-Frame Aviator Glasses (Exact match to face.jpg glasses with double bridge) -->
+  <g id="aviatorGlasses">
+    <!-- Left Rim Frame (Facing Viewer) -->
+    <path d="M565 372 C565 350 585 346 605 346 C625 346 638 356 638 376 C638 396 622 404 602 404 C582 404 565 394 565 372 Z" fill="none" stroke="url(#clearFrameReflect)" stroke-width="5" />
+    <!-- Glass Lens Tint & Refraction -->
+    <path d="M567 372 C567 352 585 348 605 348 C623 348 636 358 636 376 C636 394 620 402 602 402 C584 402 567 392 567 372 Z" fill="#ffffff" fill-opacity="0.08" />
+    
+    <!-- Top Aviator Brow Bar (Distinctive feature in face.jpg) -->
+    <path d="M580 348 L685 352" fill="none" stroke="#ffffff" stroke-width="3" opacity="0.85" />
+    <!-- Bridge across Nose -->
+    <path d="M638 368 C645 363 655 363 662 368" fill="none" stroke="#ffffff" stroke-width="4.5" stroke-linecap="round" opacity="0.95" />
+
+    <!-- Right Rim Frame (Partial Perspective) -->
+    <path d="M662 368 C668 355 685 352 700 356 C712 360 720 372 718 388 C715 400 702 406 688 404 C675 402 664 390 662 368 Z" fill="none" stroke="url(#clearFrameReflect)" stroke-width="4.5" opacity="0.9" />
+    
+    <!-- Temple Arm extending to Ear -->
+    <path d="M718 376 C728 382 735 390 740 405" fill="none" stroke="#ffffff" stroke-width="4" stroke-linecap="round" opacity="0.8" />
+
+    <!-- Glare Reflections on Glass Surface -->
+    <path d="M574 354 C590 348 610 348 626 354" fill="none" stroke="#ffffff" stroke-width="3" stroke-linecap="round" opacity="0.95" />
+  </g>
+
+  <!-- 10. THE GLOWING HALO RING (The Iconic Reference Design Hero Feature) -->
+  <g id="haloRing" transform="translate(685, 215) rotate(-13)">
+    <!-- Layer 1: Giant Volumetric Aura -->
+    <ellipse cx="0" cy="0" rx="198" ry="69" fill="none" stroke="#ffffff" stroke-width="52" opacity="0.14" />
+    <!-- Layer 2: Medium Soft Glow Ring -->
+    <ellipse cx="0" cy="0" rx="192" ry="66" fill="none" stroke="#ffffff" stroke-width="28" opacity="0.38" />
+    <!-- Layer 3: Radiant Corona Ring -->
+    <ellipse cx="0" cy="0" rx="187" ry="63" fill="none" stroke="#f8fafc" stroke-width="16" opacity="0.78" />
+    <!-- Layer 4: Pure White Solid Core -->
+    <ellipse cx="0" cy="0" rx="184" ry="62" fill="none" stroke="#ffffff" stroke-width="9" opacity="1" />
+    <!-- Layer 5: Ultra-sharp Specular Centerline -->
+    <ellipse cx="0" cy="0" rx="184" ry="62" fill="none" stroke="#ffffff" stroke-width="4.5" opacity="1" />
+    <!-- Inner Edge Sharp Definition -->
+    <ellipse cx="0" cy="0" rx="178" ry="58" fill="none" stroke="#ffffff" stroke-width="1.8" opacity="0.95" />
+  </g>
+
+  <!-- 11. Downward Volumetric Rim Light Cones onto Subject -->
+  <g opacity="0.35">
+    <polygon points="560,240 540,380 620,380 640,240" fill="url(#haloBloom)" />
+    <polygon points="680,250 670,420 760,420 780,250" fill="url(#haloBloom)" />
+  </g>
+
+  <!-- 12. Bottom Edge Gradient Blend (Seamless Fade into Pure Black Background) -->
+  <rect x="0" y="850" width="1200" height="550" fill="url(#bottomFadeOut)" />
+  <rect x="0" y="1180" width="1200" height="220" fill="#000000" opacity="0.98" />
+</svg>

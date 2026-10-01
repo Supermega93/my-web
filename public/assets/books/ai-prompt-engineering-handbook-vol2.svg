@@ -1,173 +1,413 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 800" width="100%" height="100%">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 760 900" width="100%" height="100%">
   <defs>
-    <!-- Shelf Ambient Lighting -->
-    <linearGradient id="shelfGrad" x1="0" y1="0" x2="0" y2="1">
-      <stop offset="0%" stopColor="#120c08" />
-      <stop offset="40%" stopColor="#25170f" />
-      <stop offset="85%" stopColor="#1a110a" />
-      <stop offset="100%" stopColor="#0a0704" />
+    <!-- Soft Base Ground Shadow -->
+    <filter id="groundShadow" x="-30%" y="-30%" width="160%" height="160%">
+      <feGaussianBlur stdDeviation="16" />
+    </filter>
+
+    <!-- 3D Book Drop Shadow -->
+    <filter id="bookShadow3D" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="24" dy="32" stdDeviation="22" flood-color="#090d16" flood-opacity="0.28" />
+      <feDropShadow dx="6" dy="10" stdDeviation="8" flood-color="#090d16" flood-opacity="0.14" />
+    </filter>
+
+    <!-- Luxury Gold Gradients -->
+    <linearGradient id="goldEmboss" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stopColor="#966C15" />
+      <stop offset="20%" stopColor="#C99B29" />
+      <stop offset="42%" stopColor="#F5E49F" />
+      <stop offset="68%" stopColor="#C79828" />
+      <stop offset="90%" stopColor="#E2C264" />
+      <stop offset="100%" stopColor="#8A6311" />
     </linearGradient>
 
-    <radialGradient id="shelfWarmGlow" cx="60%" cy="20%" r="70%">
-      <stop offset="0%" stopColor="#f59e0b" stopOpacity="0.12" />
-      <stop offset="60%" stopColor="#78350f" stopOpacity="0.04" />
-      <stop offset="100%" stopColor="#000000" stopOpacity="0" />
+    <linearGradient id="goldSheen" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0%" stopColor="#916813" />
+      <stop offset="25%" stopColor="#C89A29" />
+      <stop offset="50%" stopColor="#FAEBB1" />
+      <stop offset="75%" stopColor="#C89A29" />
+      <stop offset="100%" stopColor="#8A6311" />
+    </linearGradient>
+
+    <linearGradient id="goldLine" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0%" stopColor="#C89A29" stopOpacity="0.1" />
+      <stop offset="20%" stopColor="#C89A29" stopOpacity="0.8" />
+      <stop offset="50%" stopColor="#F5E49F" />
+      <stop offset="80%" stopColor="#C89A29" stopOpacity="0.8" />
+      <stop offset="100%" stopColor="#C89A29" stopOpacity="0.1" />
+    </linearGradient>
+
+    <!-- Spine 3D Texture Gradient -->
+    <linearGradient id="spineGradient" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0%" stopColor="#DAD6CB" />
+      <stop offset="15%" stopColor="#F2EEE6" />
+      <stop offset="75%" stopColor="#ECE8DE" />
+      <stop offset="95%" stopColor="#CBC6B9" />
+      <stop offset="100%" stopColor="#8E897D" />
+    </linearGradient>
+
+    <!-- Cover Linen Paper Gradient -->
+    <linearGradient id="coverPaper" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stopColor="#FFFFFF" />
+      <stop offset="30%" stopColor="#FAF8F5" />
+      <stop offset="70%" stopColor="#F5F3ED" />
+      <stop offset="100%" stopColor="#ECE7DC" />
+    </linearGradient>
+
+    <!-- Pages Stack Depth Gradient -->
+    <linearGradient id="pageStack" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0%" stopColor="#E2E2E6" />
+      <stop offset="35%" stopColor="#F6F6F8" />
+      <stop offset="70%" stopColor="#E6E6EA" />
+      <stop offset="100%" stopColor="#BABABF" />
+    </linearGradient>
+
+    <!-- Holographic Cube Gradients -->
+    <linearGradient id="cubeTop" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stopColor="#1e3a8a" stopOpacity="0.9" />
+      <stop offset="40%" stopColor="#0284c7" stopOpacity="0.95" />
+      <stop offset="80%" stopColor="#f59e0b" stopOpacity="0.9" />
+      <stop offset="100%" stopColor="#d97706" />
+    </linearGradient>
+
+    <linearGradient id="cubeLeft" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stopColor="#0c4a6e" stopOpacity="0.95" />
+      <stop offset="60%" stopColor="#0369a1" />
+      <stop offset="100%" stopColor="#082f49" />
+    </linearGradient>
+
+    <linearGradient id="cubeRight" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stopColor="#b45309" stopOpacity="0.95" />
+      <stop offset="50%" stopColor="#1e293b" />
+      <stop offset="100%" stopColor="#0f172a" />
+    </linearGradient>
+
+    <!-- Holographic Aura Radial Glow -->
+    <radialGradient id="cubeAura" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stopColor="#38bdf8" stopOpacity="0.45" />
+      <stop offset="35%" stopColor="#f59e0b" stopOpacity="0.25" />
+      <stop offset="70%" stopColor="#0284c7" stopOpacity="0.08" />
+      <stop offset="100%" stopColor="#ffffff" stopOpacity="0" />
     </radialGradient>
 
-    <!-- Paper & Spine Gradients -->
-    <linearGradient id="paperGrad" x1="0" y1="0" x2="1" y2="0">
-      <stop offset="0%" stopColor="#E5E5E7" />
-      <stop offset="5%" stopColor="#F9F9FB" />
-      <stop offset="95%" stopColor="#F6F6F8" />
-      <stop offset="100%" stopColor="#E7E7E9" />
+    <!-- Glass Window Panel Gradients -->
+    <linearGradient id="glassPanel" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stopColor="#0f172a" stopOpacity="0.88" />
+      <stop offset="100%" stopColor="#020617" stopOpacity="0.95" />
     </linearGradient>
-
-    <linearGradient id="spineGrad2" x1="0" y1="0" x2="1" y2="0">
-      <stop offset="0%" stopColor="#CECECE" />
-      <stop offset="40%" stopColor="#ECECEC" />
-      <stop offset="85%" stopColor="#C4C4C4" />
-      <stop offset="100%" stopColor="#808080" />
-    </linearGradient>
-
-    <!-- Bull Medallion Gradient -->
-    <radialGradient id="coinGrad" cx="35%" cy="35%" r="65%">
-      <stop offset="0%" stopColor="#4B5563" />
-      <stop offset="50%" stopColor="#1F2937" />
-      <stop offset="100%" stopColor="#0B0F17" />
-    </radialGradient>
-    <linearGradient id="coinRim" x1="0" y1="0" x2="1" y2="1">
-      <stop offset="0%" stopColor="#9CA3AF" />
-      <stop offset="50%" stopColor="#374151" />
-      <stop offset="100%" stopColor="#111827" />
-    </linearGradient>
-
-    <!-- Shadows -->
-    <filter id="bookShadow2" x="-15%" y="-10%" width="130%" height="130%">
-      <feDropShadow dx="18" dy="24" stdDeviation="16" flood-color="#000000" flood-opacity="0.75" />
-    </filter>
-    <filter id="embossBull" x="-10%" y="-10%" width="120%" height="120%">
-      <feDropShadow dx="2" dy="2" stdDeviation="1.5" flood-color="#000000" flood-opacity="0.8" />
-    </filter>
   </defs>
 
-  <!-- Bookshelf Background -->
-  <rect width="600" height="800" fill="url(#shelfGrad)" />
-  <rect width="600" height="800" fill="url(#shelfWarmGlow)" />
+  <!-- Ambient Ground Shadow -->
+  <ellipse cx="400" cy="836" rx="290" ry="24" fill="#0b1120" opacity="0.32" filter="url(#groundShadow)" />
 
-  <!-- Wooden Shelf Surface Lines -->
-  <rect x="0" y="725" width="600" height="75" fill="#180e07" />
-  <line x1="0" y1="725" x2="600" y2="725" stroke="#3d2516" stroke-width="3" />
-  <line x1="0" y1="728" x2="600" y2="728" stroke="#0a0503" stroke-width="1.5" />
+  <g transform="translate(48, 32)">
+    <!-- 3D Bottom Page Edges -->
+    <polygon points="562,778 578,788 128,788 114,778" fill="#BCB8AD" />
+    <polygon points="562,38 578,48 578,788 562,778" fill="url(#pageStack)" />
 
-  <!-- Nearby Books on Shelf (Background Context) -->
-  <g opacity="0.35">
-    <!-- Book on left -->
-    <rect x="15" y="110" width="60" height="615" fill="#374151" rx="2" />
-    <line x1="15" y1="200" x2="75" y2="200" stroke="#D97706" stroke-width="2" />
-    <line x1="15" y1="640" x2="75" y2="640" stroke="#D97706" stroke-width="2" />
-    <!-- Book on right -->
-    <rect x="525" y="140" width="65" height="585" fill="#2E1065" rx="2" />
-    <line x1="525" y1="230" x2="590" y2="230" stroke="#F59E0B" stroke-width="2" />
-  </g>
+    <!-- Main 3D Book Container with Drop Shadow -->
+    <g filter="url(#bookShadow3D)">
+      <!-- 1. LEFT SPINE -->
+      <path d="M 68 56 Q 74 52 82 52 L 126 38 L 126 778 L 82 790 Q 72 790 68 784 Z" fill="url(#spineGradient)" />
 
-  <!-- Ground Contact Shadow -->
-  <ellipse cx="300" cy="735" rx="210" ry="20" fill="#000000" opacity="0.85" />
+      <!-- Spine Head Highlight & Crease Lines -->
+      <line x1="82" y1="52" x2="82" y2="790" stroke="#FFFFFF" stroke-width="1.2" opacity="0.8" />
+      <line x1="126" y1="38" x2="126" y2="778" stroke="#858074" stroke-width="1.5" />
+      <line x1="128" y1="38" x2="128" y2="778" stroke="#FFFFFF" stroke-width="1.8" opacity="0.9" />
 
-  <!-- 3D BOOK STRUCTURE -->
-  <g filter="url(#bookShadow2)">
-    <!-- Book Spine -->
-    <path d="M 95 80 L 135 68 L 135 715 L 95 730 Z" fill="url(#spineGrad2)" />
-    <!-- Spine Typography -->
-    <g transform="translate(118, 380) rotate(-90)">
-      <text x="-60" y="0" text-anchor="middle" font-family="'Impact', 'Arial Black', sans-serif" font-size="12" font-weight="900" fill="#18181B" letter-spacing="2">
-        THE AI PROMPT ENGINEERING HANDBOOK
-      </text>
-      <text x="180" y="0" text-anchor="middle" font-family="'Inter', sans-serif" font-size="11" font-weight="bold" fill="#3F3F46" letter-spacing="1.5">
-        M. DINGA
-      </text>
-    </g>
-    <!-- Mini Spine Bull -->
-    <circle cx="115" cy="690" r="10" fill="#18181B" />
-    <circle cx="115" cy="690" r="8" fill="none" stroke="#FFFFFF" stroke-width="0.8" opacity="0.4" />
+      <!-- Spine Top Emblem Box -->
+      <rect x="74" y="66" width="34" height="34" rx="2" fill="none" stroke="url(#goldSheen)" stroke-width="1.8" />
+      <text x="91" y="89" text-anchor="middle" font-family="'Cinzel', 'Playfair Display', 'Georgia', serif" font-size="16" font-weight="900" fill="url(#goldSheen)">AI</text>
 
-    <!-- Front Cover Surface -->
-    <rect x="135" y="68" width="380" height="647" rx="5" fill="url(#paperGrad)" />
+      <!-- Spine Rotated Vertical Title -->
+      <g transform="translate(93, 430) rotate(-90)">
+        <text x="0" y="0" text-anchor="middle" font-family="'Cinzel', 'Playfair Display', 'Georgia', serif" font-size="13.5" font-weight="800" fill="url(#goldEmboss)" letter-spacing="3.5">
+          THE AI PROMPT ENGINEERING HANDBOOK
+        </text>
+        <text x="0" y="16" text-anchor="middle" font-family="'Georgia', serif" font-size="10" font-style="italic" fill="#78716C" letter-spacing="2">
+          — for TRADING AUTOMATION —
+        </text>
+        <text x="-210" y="0" text-anchor="middle" font-family="'Cinzel', 'Georgia', serif" font-size="13" font-weight="800" fill="url(#goldEmboss)" letter-spacing="3">
+          M DINGA
+        </text>
+      </g>
 
-    <!-- Edge highlights & creasing -->
-    <line x1="136" y1="68" x2="136" y2="715" stroke="#FFFFFF" stroke-width="2" />
-    <line x1="140" y1="68" x2="140" y2="715" stroke="#DCDCE0" stroke-width="1" />
-    <line x1="513" y1="69" x2="513" y2="714" stroke="#D1D1D6" stroke-width="1.5" />
-    <line x1="135" y1="714" x2="514" y2="714" stroke="#B8B8BD" stroke-width="1.5" />
+      <!-- 2. FRONT COVER BOARD -->
+      <rect x="126" y="38" width="436" height="740" rx="8" fill="url(#coverPaper)" stroke="#E0DCD3" stroke-width="1.2" />
 
-    <!-- ================= COVER DESIGN ================= -->
+      <!-- Subtle Left Crease Highlight -->
+      <line x1="134" y1="39" x2="134" y2="777" stroke="#DCD6C9" stroke-width="1" />
+      <line x1="136" y1="39" x2="136" y2="777" stroke="#FFFFFF" stroke-width="1.5" opacity="0.9" />
 
-    <!-- Top Right Author -->
-    <text x="490" y="115" text-anchor="end" font-family="'Montserrat', 'Arial Black', sans-serif" font-size="18" font-weight="900" fill="#18181B" letter-spacing="1">
-      M. DINGA
-    </text>
+      <!-- ============================================== -->
+      <!-- COVER TYPOGRAPHY (Exact Match to BOOK2PROM.png) -->
+      <!-- ============================================== -->
 
-    <!-- HUGE BOLD SWISS / MODERNIST DISPLAY TYPOGRAPHY -->
-    <g transform="translate(170, 195)">
-      <text x="0" y="0" font-family="'Arial Black', 'Impact', sans-serif" font-size="64" font-weight="900" fill="#09090B" letter-spacing="1">
-        THE AI
-      </text>
-      <text x="0" y="80" font-family="'Arial Black', 'Impact', sans-serif" font-size="64" font-weight="900" fill="#09090B" letter-spacing="1">
-        PROMPT
-      </text>
-      <text x="0" y="160" font-family="'Arial Black', 'Impact', sans-serif" font-size="47" font-weight="900" fill="#09090B" letter-spacing="-0.5">
-        ENGINEERING
-      </text>
-      <g>
-        <text x="0" y="240" font-family="'Arial Black', 'Impact', sans-serif" font-size="52" font-weight="900" fill="#09090B" letter-spacing="0">
+      <!-- Top Title Group -->
+      <g transform="translate(344, 98)">
+        <!-- "The" -->
+        <text x="0" y="0" text-anchor="middle" font-family="'Playfair Display', 'Baskerville', 'Georgia', serif" font-size="26" font-style="italic" font-weight="500" fill="url(#goldEmboss)">
+          The
+        </text>
+
+        <!-- "AI" -->
+        <text x="0" y="94" text-anchor="middle" font-family="'Cinzel', 'Playfair Display', 'Georgia', serif" font-size="112" font-weight="900" fill="url(#goldEmboss)" letter-spacing="6">
+          AI
+        </text>
+
+        <!-- "PROMPT" -->
+        <text x="0" y="148" text-anchor="middle" font-family="'Cinzel', 'Playfair Display', 'Georgia', serif" font-size="44" font-weight="900" fill="url(#goldEmboss)" letter-spacing="7">
+          PROMPT
+        </text>
+
+        <!-- "ENGINEERING" -->
+        <text x="0" y="194" text-anchor="middle" font-family="'Cinzel', 'Playfair Display', 'Georgia', serif" font-size="39" font-weight="900" fill="url(#goldEmboss)" letter-spacing="5">
+          ENGINEERING
+        </text>
+
+        <!-- "HANDBOOK" -->
+        <text x="0" y="238" text-anchor="middle" font-family="'Cinzel', 'Playfair Display', 'Georgia', serif" font-size="34" font-weight="900" fill="url(#goldEmboss)" letter-spacing="8">
           HANDBOOK
         </text>
-        <!-- The stylish open curly brace in gray -->
-        <text x="312" y="240" font-family="'Arial Black', 'Courier New', monospace" font-size="64" font-weight="400" fill="#71717A">
-          {
+
+        <!-- "— for —" -->
+        <line x1="-140" y1="265" x2="-28" y2="265" stroke="url(#goldLine)" stroke-width="1.8" />
+        <text x="0" y="270" text-anchor="middle" font-family="'Georgia', serif" font-size="18" font-style="italic" fill="url(#goldEmboss)">
+          for
+        </text>
+        <line x1="28" y1="265" x2="140" y2="265" stroke="url(#goldLine)" stroke-width="1.8" />
+
+        <!-- "TRADING AUTOMATION" -->
+        <text x="0" y="302" text-anchor="middle" font-family="'Cinzel', 'Montserrat', 'Arial', sans-serif" font-size="22" font-weight="900" fill="#18181B" letter-spacing="3.5">
+          TRADING AUTOMATION
         </text>
       </g>
-    </g>
 
-    <!-- SUBTITLE BLOCK -->
-    <g transform="translate(260, 490)">
-      <text x="0" y="0" font-family="'Arial Black', 'Montserrat', sans-serif" font-size="20" font-weight="900" fill="#18181B" letter-spacing="0.5">
-        FOR TRADING
-      </text>
-      <text x="0" y="28" font-family="'Arial Black', 'Montserrat', sans-serif" font-size="20" font-weight="900" fill="#18181B" letter-spacing="0.5">
-        AUTOMATION (Vol 2)
-      </text>
+      <!-- ============================================== -->
+      <!-- CENTRAL HOLOGRAPHIC 3D QUANTUM TRADING CUBE   -->
+      <!-- ============================================== -->
 
-      <!-- Red Highlighted Text -->
-      <g transform="translate(0, 68)" font-family="'Inter', 'Helvetica Neue', sans-serif" font-size="15" font-weight="800">
-        <text x="0" y="0" fill="#18181B">
-          Build Trading <tspan fill="#DC2626">Robots &amp;</tspan>
-        </text>
-        <text x="0" y="24" fill="#18181B">
-          Indicators Using Purely AI
-        </text>
+      <!-- Background Glow Aura -->
+      <circle cx="344" cy="510" r="145" fill="url(#cubeAura)" />
+
+      <!-- Sparkle Light Flares -->
+      <g stroke="#38bdf8" stroke-width="1.2" opacity="0.75">
+        <line x1="344" y1="410" x2="344" y2="610" />
+        <line x1="244" y1="510" x2="444" y2="510" />
+        <line x1="274" y1="440" x2="414" y2="580" />
+        <line x1="274" y1="580" x2="414" y2="440" />
       </g>
-    </g>
+      <circle cx="344" cy="510" r="28" fill="#ffffff" opacity="0.6" filter="url(#groundShadow)" />
 
-    <!-- 3D SCULPTED CHARGING BULL MEDALLION (Bottom Left) -->
-    <g transform="translate(205, 545)" filter="url(#embossBull)">
-      <!-- Outer Rim -->
-      <circle cx="0" cy="0" r="42" fill="url(#coinRim)" stroke="#09090B" stroke-width="2" />
-      <!-- Inner Coin Face -->
-      <circle cx="0" cy="0" r="38" fill="url(#coinGrad)" />
-      <circle cx="0" cy="0" r="35" fill="none" stroke="#6B7280" stroke-width="0.8" opacity="0.6" />
+      <!-- Isometric 3D Glowing Cube -->
+      <g transform="translate(344, 510)">
+        <!-- TOP FACE OF CUBE -->
+        <polygon points="0,-68 62,-34 0,0 -62,-34" fill="url(#cubeTop)" stroke="#38bdf8" stroke-width="2" />
+        <!-- Top Face Grid & Header -->
+        <line x1="-31" y1="-17" x2="31" y2="-51" stroke="#bae6fd" stroke-width="1" opacity="0.6" />
+        <line x1="31" y1="-17" x2="-31" y2="-51" stroke="#bae6fd" stroke-width="1" opacity="0.6" />
+        <text x="0" y="-30" text-anchor="middle" font-family="'Courier New', monospace" font-size="9" font-weight="bold" fill="#ffffff" letter-spacing="1">
+          AI PROMPT
+        </text>
 
-      <!-- Wall Street Charging Bull Silhouette -->
-      <g fill="#E5E7EB" transform="translate(-25, -20) scale(0.68)">
-        <!-- Muscular head, horns, body, legs of charging bull -->
-        <path d="M 45 10 C 47 6, 52 4, 56 6 C 58 7, 56 12, 53 14 C 58 14, 63 17, 65 22 C 67 27, 63 33, 60 36 L 56 34 C 57 32, 58 28, 56 25 C 53 23, 49 23, 46 25 L 43 28 C 38 23, 31 21, 25 21 C 18 21, 12 24, 8 30 L 10 33 C 13 28, 18 26, 24 26 C 29 26, 34 29, 37 34 L 35 48 L 30 58 L 24 58 L 20 45 L 14 45 L 14 58 L 8 58 L 10 40 C 6 36, 4 30, 4 24 C 4 15, 12 8, 22 8 C 29 8, 36 12, 40 17 Z" />
-        <path d="M 48 10 C 51 4, 56 0, 62 2 C 65 3, 63 8, 59 10 Z" fill="#F3F4F6" />
-        <circle cx="56" cy="22" r="2.5" fill="#111827" />
-        <!-- Powerful shoulder ridge -->
-        <ellipse cx="32" cy="28" rx="8" ry="5" fill="#D1D5DB" opacity="0.4" />
+        <!-- LEFT FACE OF CUBE (MQL5 & Candlesticks) -->
+        <polygon points="-62,-34 0,0 0,72 -62,38" fill="url(#cubeLeft)" stroke="#0ea5e9" stroke-width="2" />
+        <!-- MQL5 Logo & Live Chart on Left Face -->
+        <text x="-31" y="-8" text-anchor="middle" font-family="'Impact', sans-serif" font-size="14" fill="#38bdf8" letter-spacing="1">
+          MQL5
+        </text>
+        <g stroke="#38bdf8" stroke-width="1" opacity="0.7" transform="translate(-54, 8)">
+          <!-- Candlesticks on isometric face -->
+          <line x1="8" y1="12" x2="8" y2="28" stroke="#38bdf8" />
+          <rect x="5" y="16" width="6" height="8" fill="#38bdf8" />
+          <line x1="22" y1="4" x2="22" y2="24" stroke="#4ade80" />
+          <rect x="19" y="8" width="6" height="12" fill="#4ade80" />
+          <line x1="36" y1="2" x2="36" y2="22" stroke="#4ade80" />
+          <rect x="33" y="6" width="6" height="10" fill="#4ade80" />
+        </g>
+        <text x="-31" y="58" text-anchor="middle" font-family="'Courier New', monospace" font-size="8" fill="#93c5fd">
+          MQL4
+        </text>
+
+        <!-- RIGHT FACE OF CUBE (MQL4 & Gold Chart) -->
+        <polygon points="0,0 62,-34 62,38 0,72" fill="url(#cubeRight)" stroke="#f59e0b" stroke-width="2" />
+        <text x="31" y="-8" text-anchor="middle" font-family="'Impact', sans-serif" font-size="14" fill="#fbbf24" letter-spacing="1">
+          MQL4
+        </text>
+        <!-- Golden Candlestick Chart on Right Face -->
+        <g stroke="#f59e0b" stroke-width="1" opacity="0.8" transform="translate(10, 8)">
+          <line x1="8" y1="18" x2="8" y2="4" stroke="#f59e0b" />
+          <rect x="5" y="8" width="6" height="7" fill="#f59e0b" />
+          <line x1="22" y1="22" x2="22" y2="2" stroke="#fbbf24" />
+          <rect x="19" y="6" width="6" height="12" fill="#fbbf24" />
+          <line x1="36" y1="26" x2="36" y2="6" stroke="#fbbf24" />
+          <rect x="33" y="10" width="6" height="11" fill="#fbbf24" />
+        </g>
+        <text x="31" y="58" text-anchor="middle" font-family="'Courier New', monospace" font-size="8" fill="#fde68a">
+          AI PROMPT
+        </text>
+
+        <!-- Glowing Vertex Nodes -->
+        <circle cx="0" cy="-68" r="4.5" fill="#ffffff" stroke="#38bdf8" stroke-width="2" />
+        <circle cx="62" cy="-34" r="4.5" fill="#ffffff" stroke="#f59e0b" stroke-width="2" />
+        <circle cx="-62" cy="-34" r="4.5" fill="#ffffff" stroke="#38bdf8" stroke-width="2" />
+        <circle cx="0" cy="0" r="5" fill="#ffffff" stroke="#38bdf8" stroke-width="2.5" />
+        <circle cx="0" cy="72" r="4.5" fill="#ffffff" stroke="#38bdf8" stroke-width="2" />
+        <circle cx="-62" cy="38" r="4.5" fill="#ffffff" stroke="#0ea5e9" stroke-width="2" />
+        <circle cx="62" cy="38" r="4.5" fill="#ffffff" stroke="#f59e0b" stroke-width="2" />
       </g>
-    </g>
 
-    <!-- Bottom Spine/Base Highlight -->
-    <line x1="135" y1="712" x2="515" y2="712" stroke="#FFFFFF" stroke-width="1" opacity="0.6" />
+      <!-- ============================================== -->
+      <!-- FLOATING ILLUMINATED CODE & CHART WINDOWS      -->
+      <!-- ============================================== -->
+
+      <!-- 1. Top-Left: "AI PROMPT" Glass Window -->
+      <g transform="translate(150, 420)">
+        <rect width="112" height="54" rx="4" fill="url(#glassPanel)" stroke="#38bdf8" stroke-width="1.2" opacity="0.95" />
+        <!-- Window Bar -->
+        <rect width="112" height="12" rx="4" fill="#0f172a" />
+        <text x="6" y="9" font-family="'Courier New', monospace" font-size="6.5" font-weight="bold" fill="#38bdf8">AI PROMPT</text>
+        <circle cx="94" cy="6" r="1.5" fill="#64748b" />
+        <circle cx="100" cy="6" r="1.5" fill="#64748b" />
+        <circle cx="106" cy="6" r="1.5" fill="#f43f5e" />
+        <!-- Prompt Content -->
+        <text x="6" y="21" font-family="'Courier New', monospace" font-size="5" fill="#e2e8f0">'Create an Expert Advisor</text>
+        <text x="6" y="28" font-family="'Courier New', monospace" font-size="5" fill="#e2e8f0">using moving average crossover</text>
+        <text x="6" y="35" font-family="'Courier New', monospace" font-size="5" fill="#e2e8f0">with risk management &amp;</text>
+        <text x="6" y="42" font-family="'Courier New', monospace" font-size="5" fill="#e2e8f0">trailing stop.'</text>
+      </g>
+
+      <!-- 2. Mid-Left: "MQL5" Code Window -->
+      <g transform="translate(142, 492)">
+        <rect width="118" height="58" rx="4" fill="url(#glassPanel)" stroke="#38bdf8" stroke-width="1.2" opacity="0.95" />
+        <rect width="118" height="12" rx="4" fill="#0f172a" />
+        <text x="6" y="9" font-family="'Courier New', monospace" font-size="6.5" font-weight="bold" fill="#38bdf8">MQL5</text>
+        <text x="6" y="22" font-family="'Courier New', monospace" font-size="5" fill="#38bdf8">void OnTick() {</text>
+        <text x="12" y="30" font-family="'Courier New', monospace" font-size="5" fill="#cbd5e1">if (Conditions) {</text>
+        <text x="18" y="38" font-family="'Courier New', monospace" font-size="5" fill="#4ade80">trade.Buy(lots,_Symbol,</text>
+        <text x="24" y="46" font-family="'Courier New', monospace" font-size="5" fill="#4ade80">Ask, sl, tp);</text>
+        <text x="12" y="53" font-family="'Courier New', monospace" font-size="5" fill="#cbd5e1">}</text>
+      </g>
+
+      <!-- 3. Bottom-Left: "EURUSD,M15" Candlestick Chart Window -->
+      <g transform="translate(150, 568)">
+        <rect width="110" height="56" rx="4" fill="url(#glassPanel)" stroke="#38bdf8" stroke-width="1.2" opacity="0.95" />
+        <rect width="110" height="12" rx="4" fill="#0f172a" />
+        <text x="6" y="9" font-family="'Courier New', monospace" font-size="6.5" font-weight="bold" fill="#38bdf8">EURUSD,M15</text>
+        <!-- Candlestick graph -->
+        <g transform="translate(6, 16)">
+          <!-- Grid lines -->
+          <line x1="0" y1="10" x2="98" y2="10" stroke="#1e293b" stroke-width="0.8" />
+          <line x1="0" y1="24" x2="98" y2="24" stroke="#1e293b" stroke-width="0.8" />
+          <!-- Candles -->
+          <line x1="12" y1="28" x2="12" y2="14" stroke="#ef4444" stroke-width="1" />
+          <rect x="10" y="18" width="4" height="7" fill="#ef4444" />
+          <line x1="24" y1="24" x2="24" y2="8" stroke="#22c55e" stroke-width="1" />
+          <rect x="22" y="12" width="4" height="8" fill="#22c55e" />
+          <line x1="36" y1="20" x2="36" y2="6" stroke="#22c55e" stroke-width="1" />
+          <rect x="34" y="9" width="4" height="8" fill="#22c55e" />
+          <line x1="48" y1="26" x2="48" y2="12" stroke="#ef4444" stroke-width="1" />
+          <rect x="46" y="15" width="4" height="7" fill="#ef4444" />
+          <line x1="60" y1="18" x2="60" y2="2" stroke="#22c55e" stroke-width="1" />
+          <rect x="58" y="6" width="4" height="9" fill="#22c55e" />
+          <line x1="72" y1="14" x2="72" y2="1" stroke="#22c55e" stroke-width="1" />
+          <rect x="70" y="3" width="4" height="9" fill="#22c55e" />
+          <line x1="84" y1="10" x2="84" y2="0" stroke="#22c55e" stroke-width="1" />
+          <rect x="82" y="2" width="4" height="6" fill="#22c55e" />
+          <!-- Moving average overlay line -->
+          <path d="M 6 24 Q 30 18 55 10 T 94 2" fill="none" stroke="#f59e0b" stroke-width="1.2" />
+        </g>
+      </g>
+
+      <!-- 4. Top-Right: "Pine Script" Window -->
+      <g transform="translate(422, 420)">
+        <rect width="114" height="54" rx="4" fill="url(#glassPanel)" stroke="#38bdf8" stroke-width="1.2" opacity="0.95" />
+        <rect width="114" height="12" rx="4" fill="#0f172a" />
+        <text x="6" y="9" font-family="'Courier New', monospace" font-size="6.5" font-weight="bold" fill="#38bdf8">Pine Script</text>
+        <circle cx="96" cy="6" r="1.5" fill="#64748b" />
+        <circle cx="102" cy="6" r="1.5" fill="#64748b" />
+        <circle cx="108" cy="6" r="1.5" fill="#f43f5e" />
+        <text x="6" y="21" font-family="'Courier New', monospace" font-size="5" fill="#64748b">//@version=5</text>
+        <text x="6" y="28" font-family="'Courier New', monospace" font-size="5" fill="#38bdf8">strategy("AI Strategy")</text>
+        <text x="6" y="35" font-family="'Courier New', monospace" font-size="5" fill="#cbd5e1">ema1 = ta.ema(close, 20)</text>
+        <text x="6" y="42" font-family="'Courier New', monospace" font-size="5" fill="#cbd5e1">ema2 = ta.ema(close, 50)</text>
+      </g>
+
+      <!-- 5. Mid-Right: "MQL4" Code Window -->
+      <g transform="translate(426, 492)">
+        <rect width="114" height="58" rx="4" fill="url(#glassPanel)" stroke="#f59e0b" stroke-width="1.2" opacity="0.95" />
+        <rect width="114" height="12" rx="4" fill="#0f172a" />
+        <text x="6" y="9" font-family="'Courier New', monospace" font-size="6.5" font-weight="bold" fill="#f59e0b">MQL4</text>
+        <text x="6" y="22" font-family="'Courier New', monospace" font-size="5" fill="#fbbf24">int start() {</text>
+        <text x="12" y="30" font-family="'Courier New', monospace" font-size="5" fill="#cbd5e1">if( Condition ) {</text>
+        <text x="16" y="38" font-family="'Courier New', monospace" font-size="5" fill="#fde68a">OrderSend(Symbol,</text>
+        <text x="16" y="46" font-family="'Courier New', monospace" font-size="5" fill="#fde68a">OP_BUY, Lots, Ask);</text>
+        <text x="12" y="53" font-family="'Courier New', monospace" font-size="5" fill="#cbd5e1">}</text>
+      </g>
+
+      <!-- 6. Bottom-Right: "TradingView" Candlestick Chart Window -->
+      <g transform="translate(422, 568)">
+        <rect width="114" height="56" rx="4" fill="url(#glassPanel)" stroke="#38bdf8" stroke-width="1.2" opacity="0.95" />
+        <rect width="114" height="12" rx="4" fill="#0f172a" />
+        <text x="6" y="9" font-family="'Courier New', monospace" font-size="6.5" font-weight="bold" fill="#38bdf8">TradingView</text>
+        <g transform="translate(6, 16)">
+          <line x1="0" y1="12" x2="102" y2="12" stroke="#1e293b" stroke-width="0.8" />
+          <line x1="0" y1="26" x2="102" y2="26" stroke="#1e293b" stroke-width="0.8" />
+          <line x1="10" y1="26" x2="10" y2="10" stroke="#22c55e" stroke-width="1" />
+          <rect x="8" y="14" width="4" height="8" fill="#22c55e" />
+          <line x1="24" y1="20" x2="24" y2="6" stroke="#22c55e" stroke-width="1" />
+          <rect x="22" y="10" width="4" height="8" fill="#22c55e" />
+          <line x1="38" y1="24" x2="38" y2="8" stroke="#ef4444" stroke-width="1" />
+          <rect x="36" y="12" width="4" height="7" fill="#ef4444" />
+          <line x1="52" y1="18" x2="52" y2="4" stroke="#22c55e" stroke-width="1" />
+          <rect x="50" y="8" width="4" height="8" fill="#22c55e" />
+          <line x1="66" y1="14" x2="66" y2="2" stroke="#22c55e" stroke-width="1" />
+          <rect x="64" y="4" width="4" height="8" fill="#22c55e" />
+          <line x1="80" y1="20" x2="80" y2="4" stroke="#22c55e" stroke-width="1" />
+          <rect x="78" y="8" width="4" height="9" fill="#22c55e" />
+          <line x1="94" y1="14" x2="94" y2="0" stroke="#22c55e" stroke-width="1" />
+          <rect x="92" y="2" width="4" height="8" fill="#22c55e" />
+          <path d="M 4 22 Q 40 16 70 8 T 98 2" fill="none" stroke="#38bdf8" stroke-width="1.2" />
+        </g>
+      </g>
+
+      <!-- Laser Network Connection Lines (Connecting Cube to Panels) -->
+      <g stroke="#38bdf8" stroke-width="0.8" opacity="0.4" stroke-dasharray="3, 3">
+        <line x1="282" y1="476" x2="262" y2="450" />
+        <line x1="282" y1="510" x2="260" y2="520" />
+        <line x1="282" y1="548" x2="260" y2="580" />
+        <line x1="406" y1="476" x2="422" y2="450" />
+        <line x1="406" y1="510" x2="426" y2="520" />
+        <line x1="406" y1="548" x2="422" y2="580" />
+      </g>
+
+      <!-- ============================================== -->
+      <!-- BOTTOM CALLOUT & AUTHOR (Exact Match)          -->
+      <!-- ============================================== -->
+      <g transform="translate(344, 660)">
+        <!-- "300+ PROFESSIONAL AI PROMPTS" -->
+        <text x="0" y="0" text-anchor="middle" font-family="'Cinzel', 'Montserrat', 'Georgia', serif" font-size="18.5" font-weight="900" fill="url(#goldEmboss)" letter-spacing="2.2">
+          300+ PROFESSIONAL AI PROMPTS
+        </text>
+
+        <!-- "FOR BUILDING MQL4, MQL5 & PINE SCRIPT" -->
+        <text x="0" y="24" text-anchor="middle" font-family="'Montserrat', 'Arial', sans-serif" font-size="12.5" font-weight="800" fill="#27272A" letter-spacing="2">
+          FOR BUILDING MQL4, MQL5 &amp; PINE SCRIPT
+        </text>
+
+        <!-- "TRADING BOTS — NO CODING EXPERIENCE REQUIRED" -->
+        <text x="0" y="44" text-anchor="middle" font-family="'Montserrat', 'Arial', sans-serif" font-size="11.5" font-weight="700" fill="#3F3F46" letter-spacing="1.4">
+          TRADING BOTS — NO CODING EXPERIENCE REQUIRED
+        </text>
+
+        <!-- Author Signature Rule -->
+        <line x1="-165" y1="74" x2="-65" y2="74" stroke="url(#goldLine)" stroke-width="1.8" />
+        <text x="0" y="80" text-anchor="middle" font-family="'Cinzel', 'Playfair Display', 'Georgia', serif" font-size="22" font-weight="800" fill="url(#goldEmboss)" letter-spacing="5">
+          M DINGA
+        </text>
+        <line x1="65" y1="74" x2="165" y2="74" stroke="url(#goldLine)" stroke-width="1.8" />
+      </g>
+
+    </g>
   </g>
 </svg>
