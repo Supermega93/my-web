@@ -1005,39 +1005,56 @@ export const dbQueries = {
   },
 
   // Complimentary Access Queries
-  getComplimentaryAccess(userIdOrEmail: string) {
+  getComplimentaryAccess(userIdOrEmail: string, emailCandidate?: string) {
+    const clean1 = (userIdOrEmail || '').trim();
+    const clean2 = (emailCandidate || '').trim();
     return db.prepare(`
       SELECT * FROM complimentary_access 
-      WHERE (user_id = ? OR user_email = ?) AND status = 'active'
+      WHERE (
+        user_id = ? OR LOWER(user_email) = LOWER(?) OR
+        user_id = ? OR LOWER(user_email) = LOWER(?)
+      ) AND status = 'active'
       ORDER BY granted_at DESC
       LIMIT 1
-    `).get(userIdOrEmail, userIdOrEmail) as any;
+    `).get(clean1, clean1, clean2, clean2) as any;
   },
   getAllComplimentaryAccess() {
     return db.prepare('SELECT * FROM complimentary_access ORDER BY granted_at DESC').all();
   },
-  grantComplimentaryAccess(userId: string, email: string, grantedBy: string, notes?: string) {
+  grantComplimentaryAccess(
+    userId: string,
+    email: string,
+    grantedBy: string,
+    notes?: string,
+    tierId?: string,
+    tierName?: string
+  ) {
     const now = new Date().toISOString();
     const id = `comp_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
+    const accessType = tierId || 'masterclass_99';
+    const cleanEmail = (email || '').toLowerCase().trim();
+    const resolvedNotes = notes || (tierName ? `Tier: ${tierName}` : 'Complimentary Masterclass access granted by administrator');
+
     // Check if record exists
-    const existing = db.prepare('SELECT id FROM complimentary_access WHERE user_id = ? OR user_email = ?').get(userId, email) as any;
+    const existing = db.prepare('SELECT id FROM complimentary_access WHERE user_id = ? OR LOWER(user_email) = LOWER(?)').get(userId, cleanEmail) as any;
     if (existing) {
       db.prepare(`
         UPDATE complimentary_access 
         SET status = 'active', 
+            access_type = ?,
             granted_at = ?, 
             granted_by = ?, 
             revoked_at = NULL, 
             revoked_by = NULL,
             notes = COALESCE(?, notes)
         WHERE id = ?
-      `).run(now, grantedBy, notes || null, existing.id);
+      `).run(accessType, now, grantedBy, resolvedNotes, existing.id);
       return existing.id;
     } else {
       db.prepare(`
         INSERT INTO complimentary_access (id, user_id, user_email, access_type, status, granted_at, granted_by, notes)
-        VALUES (?, ?, ?, 'masterclass', 'active', ?, ?, ?)
-      `).run(id, userId, email, now, grantedBy, notes || 'Complimentary Masterclass access granted by administrator');
+        VALUES (?, ?, ?, ?, 'active', ?, ?, ?)
+      `).run(id, userId, email, accessType, now, grantedBy, resolvedNotes);
       return id;
     }
   },
@@ -1048,18 +1065,20 @@ export const dbQueries = {
       SET status = 'revoked', 
           revoked_at = ?, 
           revoked_by = ? 
-      WHERE (user_id = ? OR user_email = ?) AND status = 'active'
+      WHERE (user_id = ? OR LOWER(user_email) = LOWER(?)) AND status = 'active'
     `).run(now, revokedBy, userId, userId);
   },
   getUserAccessStatus(userId: string, email?: string) {
     const cleanEmail = (email || '').toLowerCase().trim();
+    const cleanUserId = (userId || '').trim();
+
     // 1. Check paid orders (by user_id OR joined users.email)
     const paidOrder = db.prepare(`
       SELECT o.id, o.product_id, o.created_at FROM orders o
       LEFT JOIN users u ON o.user_id = u.id
       WHERE (o.user_id = ? OR (u.email IS NOT NULL AND LOWER(u.email) = ?)) AND o.payment_status = 'paid'
       ORDER BY o.created_at DESC LIMIT 1
-    `).get(userId, cleanEmail || userId) as any;
+    `).get(cleanUserId, cleanEmail || cleanUserId) as any;
 
     if (paidOrder) {
       return {
@@ -1071,12 +1090,23 @@ export const dbQueries = {
     }
 
     // 2. Check complimentary access
-    const comp = this.getComplimentaryAccess(cleanEmail || userId);
+    const comp = this.getComplimentaryAccess(cleanUserId, cleanEmail);
     if (comp) {
+      const tierId = comp.access_type || 'masterclass_99';
+      let tierName = '$99 Masterclass (Essential)';
+      if (tierId === 'masterclass_ea_169' || tierId === 'masterclass-ea') {
+        tierName = '$169 Masterclass + Adaptive Liquidity Pro EA';
+      } else if (tierId === 'masterclass_vip_299' || tierId === 'premium') {
+        tierName = '$299 Premium VIP Masterclass';
+      }
+
       return {
         access_status: 'complimentary' as const,
         can_access_masterclass: true,
         complimentary_id: comp.id,
+        access_type: tierId,
+        tier_id: tierId,
+        tier_name: tierName,
         granted_at: comp.granted_at,
         granted_by: comp.granted_by,
         notes: comp.notes

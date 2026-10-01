@@ -11,6 +11,8 @@ export interface User {
   updated_at: string;
   access_status?: UserAccessStatus;
   can_access_masterclass?: boolean;
+  tier_id?: string;
+  tier_name?: string;
   photoURL?: string | null;
   avatar_url?: string | null;
 }
@@ -18,8 +20,13 @@ export interface User {
 export interface AdminUserRecord extends User {
   access_status: UserAccessStatus;
   can_access_masterclass: boolean;
+  tier_id?: string;
+  tier_name?: string;
   complimentary_details?: {
     complimentary_id?: string;
+    access_type?: string;
+    tier_id?: string;
+    tier_name?: string;
     granted_at?: string;
     granted_by?: string;
     notes?: string;

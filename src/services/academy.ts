@@ -2,6 +2,7 @@ import { supabase } from '../lib/supabase.ts';
 import { Lesson, CustomDevLead, LevelMeta } from '../types.ts';
 import { FALLBACK_LESSONS } from '../data/lessonsData.ts';
 import { getStoredToken } from './api.ts';
+import { auth } from '../lib/firebase.ts';
 import { fetchUserProgressFromFirestore, saveLessonProgressToFirestore } from './firestoreService.ts';
 
 // Comprehensive, institutional BabyPips-style curriculum
@@ -195,7 +196,14 @@ export async function fetchAllLessons(): Promise<Lesson[]> {
 
 // Helper to fetch a single lesson by ID or lesson number with server-enforced access control
 export async function fetchLessonById(lessonId: string, token?: string | null): Promise<Lesson | null> {
-  const effectiveToken = token || getStoredToken();
+  let effectiveToken = token || getStoredToken();
+  if (!effectiveToken && auth?.currentUser) {
+    try {
+      effectiveToken = await auth.currentUser.getIdToken();
+    } catch {
+      // non-blocking fallback
+    }
+  }
   try {
     const headers: Record<string, string> = {};
     if (effectiveToken) {

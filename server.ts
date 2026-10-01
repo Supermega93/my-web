@@ -2590,7 +2590,7 @@ app.get('/api/admin/users', requireAuth, requireRole(['admin']), async (req, res
 app.post('/api/admin/users/:userId/complimentary-access', requireAuth, requireRole(['admin']), async (req, res) => {
   try {
     const { userId } = req.params;
-    const { notes } = req.body;
+    const { notes, tierId, tierName } = req.body;
     const adminUser = (req as any).user;
 
     const targetUser = dbQueries.getUserById(userId) as any;
@@ -2605,12 +2605,76 @@ app.post('/api/admin/users/:userId/complimentary-access', requireAuth, requireRo
       return res.status(400).json({ error: 'User already has Paid Masterclass access from a paid order.' });
     }
 
+    const resolvedNotes = (notes ? `${notes} · ` : '') + (tierName ? `Tier: ${tierName}` : 'Complimentary Masterclass Access');
     const compId = dbQueries.grantComplimentaryAccess(
       userId,
       targetEmail,
       adminUser.email || 'Admin',
-      notes || 'Complimentary Masterclass access granted by administrator'
+      resolvedNotes,
+      tierId || 'masterclass_99',
+      tierName || '$99 Masterclass (Essential)'
     );
+
+    // If tier includes EA license ($169 or $299), provision Adaptive Liquidity Pro license
+    const isEaIncluded = tierId === 'masterclass_ea_169' || tierId === 'masterclass_vip_299' || tierId === 'masterclass-ea' || tierId === 'premium';
+    let generatedLicense = null;
+    if (isEaIncluded) {
+      try {
+        const durationMonths = (tierId === 'masterclass_vip_299' || tierId === 'premium') ? 4 : 2;
+        const licKey = `MEGA-ALP-${Math.random().toString(36).substring(2, 6).toUpperCase()}-${Math.random().toString(36).substring(2, 6).toUpperCase()}-${Math.random().toString(36).substring(2, 6).toUpperCase()}`;
+        const licId = `lic_comp_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`;
+        const now = new Date();
+        const startsAt = now.toISOString();
+        const expiresAt = new Date(now.getTime() + durationMonths * 30 * 24 * 60 * 60 * 1000).toISOString();
+        const licType = `Adaptive Liquidity Pro (${durationMonths}-Month MT5 License)`;
+        const deliveryNotes = `Complimentary access granted for ${tierName || 'Masterclass + EA'}`;
+
+        db.prepare(`
+          INSERT INTO licenses (id, user_id, product_id, order_id, license_key, license_type, status, delivery_status, delivery_notes, starts_at, expires_at, created_at, updated_at)
+          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        `).run(
+          licId,
+          userId,
+          'prod_ea_adaptive_liquidity',
+          compId,
+          licKey,
+          licType,
+          'active',
+          'delivered',
+          deliveryNotes,
+          startsAt,
+          expiresAt,
+          startsAt,
+          startsAt
+        );
+
+        generatedLicense = {
+          id: licId,
+          license_key: licKey,
+          license_type: licType,
+          expires_at: expiresAt
+        };
+
+        // Sync license to Supabase
+        void persistLicenseToSupabase({
+          id: licId,
+          user_id: userId,
+          product_id: 'prod_ea_adaptive_liquidity',
+          order_id: compId,
+          license_key: licKey,
+          license_type: licType,
+          status: 'active',
+          delivery_status: 'delivered',
+          delivery_notes: deliveryNotes,
+          starts_at: startsAt,
+          expires_at: expiresAt,
+          created_at: startsAt,
+          updated_at: startsAt
+        });
+      } catch (licErr: any) {
+        console.warn('[Admin Grant] Auto-provision license notice:', licErr.message);
+      }
+    }
 
     // Sync to Supabase complimentary_access table
     let supabaseSynced = false;
@@ -2620,11 +2684,11 @@ app.post('/api/admin/users/:userId/complimentary-access', requireAuth, requireRo
         id: compId,
         user_id: userId,
         user_email: targetEmail,
-        access_type: 'masterclass',
+        access_type: tierId || 'masterclass',
         status: 'active',
         granted_at: new Date().toISOString(),
         granted_by: adminUser.email || 'Admin',
-        notes: notes || null,
+        notes: resolvedNotes,
       });
       supabaseSynced = syncResult.synced;
       supabaseMessage = syncResult.synced ? 'Synced to Supabase' : (syncResult.error || 'Supabase table pending schema initialization');
@@ -2634,9 +2698,12 @@ app.post('/api/admin/users/:userId/complimentary-access', requireAuth, requireRo
 
     res.json({
       success: true,
-      message: `Complimentary Masterclass access successfully granted to ${targetEmail}`,
+      message: `Complimentary Masterclass access (${tierName || '$99 Masterclass'}) successfully granted to ${targetEmail}`,
       access_status: 'complimentary',
       complimentary_id: compId,
+      tierId: tierId || 'masterclass_99',
+      tierName: tierName || '$99 Masterclass (Essential)',
+      license: generatedLicense,
       supabaseSynced,
       supabaseMessage
     });
@@ -2696,6 +2763,8 @@ app.get('/api/user/access-status', requireAuth, (req, res) => {
         access_status: 'paid',
         is_admin: true,
         can_access_masterclass: true,
+        tier_id: 'masterclass_vip_299',
+        tier_name: 'Administrator Full Access',
         message: 'Administrator privileges enabled'
       });
     }
@@ -2704,6 +2773,8 @@ app.get('/api/user/access-status', requireAuth, (req, res) => {
     res.json({
       access_status: access.access_status, // 'free' | 'paid' | 'complimentary'
       can_access_masterclass: access.can_access_masterclass,
+      tier_id: (access as any).tier_id || (access.access_status === 'paid' ? 'masterclass_99' : undefined),
+      tier_name: (access as any).tier_name || (access.access_status === 'paid' ? 'Paid Masterclass' : undefined),
       details: access
     });
   } catch (error: any) {

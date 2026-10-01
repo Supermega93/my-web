@@ -18,6 +18,8 @@ export interface FirestoreUserProfile {
   role: UserRole;
   access_status: UserAccessStatus;
   can_access_masterclass: boolean;
+  access_tier?: string;
+  tier_name?: string;
   photoURL?: string;
   phone?: string | null;
   createdAt: string;
@@ -65,6 +67,8 @@ export async function syncUserProfileToFirestore(
     role: profileData.role || 'customer',
     access_status: profileData.access_status || 'free',
     can_access_masterclass: profileData.can_access_masterclass || false,
+    access_tier: profileData.access_tier || 'free',
+    tier_name: profileData.tier_name || undefined,
     photoURL: cleanPhotoURL,
     phone: profileData.phone || null,
     createdAt: new Date().toISOString(),
@@ -85,21 +89,49 @@ export async function syncUserProfileToFirestore(
 
     if (existingSnap.exists()) {
       const existingData = existingSnap.data() as FirestoreUserProfile;
+
+      // Preserve paid or complimentary entitlement so default free logins never overwrite granted access
+      const hasExistingEntitlement = existingData.access_status === 'paid' || existingData.access_status === 'complimentary' || Boolean(existingData.can_access_masterclass);
+      const incomingIsDefaultFree = !profileData.access_status || profileData.access_status === 'free';
+
+      const preservedAccessStatus = (hasExistingEntitlement && incomingIsDefaultFree)
+        ? existingData.access_status
+        : (profileData.access_status || existingData.access_status || 'free');
+
+      const preservedCanAccessMasterclass = (hasExistingEntitlement && incomingIsDefaultFree)
+        ? true
+        : Boolean(profileData.can_access_masterclass ?? existingData.can_access_masterclass);
+
+      const preservedAccessTier = (hasExistingEntitlement && incomingIsDefaultFree)
+        ? (existingData.access_tier || 'masterclass_99')
+        : (profileData.access_tier || existingData.access_tier || 'free');
+
+      const preservedTierName = (hasExistingEntitlement && incomingIsDefaultFree)
+        ? (existingData.tier_name || '$99 Masterclass (Essential)')
+        : (profileData.tier_name || existingData.tier_name || undefined);
+
       finalProfile = {
         ...existingData,
         ...profileData,
+        access_status: preservedAccessStatus,
+        can_access_masterclass: preservedCanAccessMasterclass,
+        access_tier: preservedAccessTier,
+        tier_name: preservedTierName,
         photoURL: cleanPhotoURL,
         id: userId,
         updatedAt: now,
       };
-      await updateDoc(userRef, {
+      const updatePayload: Record<string, any> = {
         name: finalProfile.name,
         role: finalProfile.role,
         access_status: finalProfile.access_status,
         can_access_masterclass: finalProfile.can_access_masterclass,
         photoURL: cleanPhotoURL,
         updatedAt: now,
-      });
+      };
+      if (finalProfile.access_tier) updatePayload.access_tier = finalProfile.access_tier;
+      if (finalProfile.tier_name) updatePayload.tier_name = finalProfile.tier_name;
+      await updateDoc(userRef, updatePayload);
     } else {
       finalProfile = {
         ...fallbackProfile,

@@ -10,7 +10,7 @@ import {
   SupabaseActivityLog 
 } from '../../lib/supabaseAdmin.ts';
 import { db } from '../../lib/firebase.ts';
-import { doc, updateDoc } from 'firebase/firestore';
+import { doc, setDoc, updateDoc } from 'firebase/firestore';
 import { 
   Search, 
   Users, 
@@ -161,9 +161,19 @@ export function UserManagementTab({ users, onRefresh }: UserManagementTabProps) 
   const productClientsCount = users.filter((u) => u.access_status === 'paid').length;
 
   // Handle Grant action
+  const [selectedGrantTier, setSelectedGrantTier] = useState<'masterclass_99' | 'masterclass_ea_169' | 'masterclass_vip_299'>('masterclass_ea_169');
+
   const handleOpenGrantModal = (user: AdminUserRecord) => {
     setGrantTargetUser(user);
-    setGrantNotes('');
+    setGrantNotes(user.complimentary_details?.notes || '');
+    const existingTier = user.complimentary_details?.tier_id || user.complimentary_details?.access_type || user.tier_id;
+    if (existingTier === 'masterclass_99' || existingTier === 'masterclass') {
+      setSelectedGrantTier('masterclass_99');
+    } else if (existingTier === 'masterclass_vip_299' || existingTier === 'premium') {
+      setSelectedGrantTier('masterclass_vip_299');
+    } else {
+      setSelectedGrantTier('masterclass_ea_169');
+    }
   };
 
   const handleConfirmGrant = async () => {
@@ -171,12 +181,18 @@ export function UserManagementTab({ users, onRefresh }: UserManagementTabProps) 
     setIsGranting(true);
     setFeedback(null);
     try {
+      const tierConfig = {
+        masterclass_99: { name: '$99 Masterclass (Essential)', months: 0, hasEA: false },
+        masterclass_ea_169: { name: '$169 Masterclass + Adaptive Liquidity Pro EA', months: 2, hasEA: true },
+        masterclass_vip_299: { name: '$299 Premium VIP Masterclass', months: 4, hasEA: true },
+      }[selectedGrantTier];
+
       // 1. Direct Supabase Entitlement provision via supabaseAdmin
       await grantSupabaseEntitlement({
         userId: grantTargetUser.id,
         email: grantTargetUser.email,
-        accessType: 'masterclass',
-        notes: grantNotes.trim() || undefined,
+        accessType: selectedGrantTier,
+        notes: (grantNotes.trim() ? `${grantNotes.trim()} · ` : '') + `Tier: ${tierConfig.name}`,
         grantedBy: 'Admin Console'
       });
 
@@ -184,23 +200,27 @@ export function UserManagementTab({ users, onRefresh }: UserManagementTabProps) 
       const res = await api.grantComplimentaryAccess(
         grantTargetUser.id,
         grantTargetUser.email,
-        grantNotes.trim() || undefined
+        grantNotes.trim() || undefined,
+        selectedGrantTier,
+        tierConfig.name
       );
 
       // 3. Update Firestore /users/{userId} document for instant client sync
       try {
-        await updateDoc(doc(db, 'users', grantTargetUser.id), {
+        await setDoc(doc(db, 'users', grantTargetUser.id), {
           access_status: 'complimentary',
           can_access_masterclass: true,
+          access_tier: selectedGrantTier,
+          tier_name: tierConfig.name,
           updatedAt: new Date().toISOString()
-        });
+        }, { merge: true });
       } catch (fsErr) {
         console.warn('Firestore complimentary grant notice:', fsErr);
       }
 
       setFeedback({
         success: true,
-        message: `Complimentary Masterclass access successfully granted to ${grantTargetUser.email}. Entitlement synchronized across Supabase and Firestore.`,
+        message: `Complimentary access (${tierConfig.name}) successfully granted to ${grantTargetUser.email}.${res.license ? ` Provisioned License: ${res.license.license_key}` : ''}`,
       });
       setGrantTargetUser(null);
       await onRefresh();
@@ -239,11 +259,13 @@ export function UserManagementTab({ users, onRefresh }: UserManagementTabProps) 
 
       // 3. Update Firestore /users/{userId} document
       try {
-        await updateDoc(doc(db, 'users', revokeTargetUser.id), {
+        await setDoc(doc(db, 'users', revokeTargetUser.id), {
           access_status: 'free',
           can_access_masterclass: false,
+          access_tier: null,
+          tier_name: null,
           updatedAt: new Date().toISOString()
-        });
+        }, { merge: true });
       } catch (fsErr) {
         console.warn('Firestore complimentary revoke notice:', fsErr);
       }
@@ -648,10 +670,21 @@ export function UserManagementTab({ users, onRefresh }: UserManagementTabProps) 
                         )}
 
                         {isComplimentary && (
-                          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium bg-cyan-500/10 text-cyan-300 border border-cyan-500/20">
-                            <Gift className="w-3.5 h-3.5 text-cyan-400" />
-                            <span>Complimentary Masterclass</span>
-                          </span>
+                          <div className="space-y-1">
+                            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-semibold bg-cyan-500/10 text-cyan-300 border border-cyan-500/20 shadow-sm">
+                              <Gift className="w-3.5 h-3.5 text-cyan-400" />
+                              <span>Complimentary</span>
+                            </span>
+                            <span className="inline-block text-[10px] font-mono px-2 py-0.5 rounded bg-cyan-950/40 border border-cyan-800/40 text-cyan-200">
+                              {u.complimentary_details?.tier_name || (
+                                u.complimentary_details?.access_type === 'masterclass_vip_299' || u.complimentary_details?.tier_id === 'masterclass_vip_299'
+                                  ? '$299 VIP'
+                                  : (u.complimentary_details?.access_type === 'masterclass_ea_169' || u.complimentary_details?.tier_id === 'masterclass_ea_169'
+                                      ? '$169 Masterclass + EA'
+                                      : '$99 Essential')
+                              )}
+                            </span>
+                          </div>
                         )}
 
                         {isFree && (
@@ -670,7 +703,7 @@ export function UserManagementTab({ users, onRefresh }: UserManagementTabProps) 
                               Granted: {u.complimentary_details.granted_at ? new Date(u.complimentary_details.granted_at).toLocaleDateString() : 'Active'}
                             </div>
                             {u.complimentary_details.notes && (
-                              <div className="text-[10px] text-slate-400 italic bg-[#0E131F] px-2 py-0.5 rounded border border-[#1E293B] max-w-xs truncate">
+                              <div className="text-[10px] text-slate-400 italic bg-[#0E131F] px-2 py-0.5 rounded border border-[#1E293B] max-w-xs truncate" title={u.complimentary_details.notes}>
                                 "{u.complimentary_details.notes}"
                               </div>
                             )}
@@ -695,14 +728,25 @@ export function UserManagementTab({ users, onRefresh }: UserManagementTabProps) 
                       {/* Action Button */}
                       <td className="px-5 py-4 text-right">
                         {isComplimentary ? (
-                          <button
-                            type="button"
-                            onClick={() => handleOpenRevokeModal(u)}
-                            className="px-3 py-1.5 rounded-lg bg-rose-500/10 hover:bg-rose-500/20 text-rose-300 border border-rose-500/30 text-xs font-medium transition-colors flex items-center gap-1.5 ml-auto cursor-pointer"
-                          >
-                            <Lock className="w-3.5 h-3.5 text-rose-400" />
-                            <span>Revoke Access</span>
-                          </button>
+                          <div className="flex items-center justify-end gap-1.5 ml-auto">
+                            <button
+                              type="button"
+                              onClick={() => handleOpenGrantModal(u)}
+                              title="Change price point tier ($99, $169, or $299)"
+                              className="px-2.5 py-1.5 rounded-lg bg-cyan-500/10 hover:bg-cyan-500/20 text-cyan-300 border border-cyan-500/30 text-xs font-semibold transition-colors flex items-center gap-1 cursor-pointer"
+                            >
+                              <Gift className="w-3.5 h-3.5 text-cyan-400" />
+                              <span>Change Tier</span>
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => handleOpenRevokeModal(u)}
+                              className="px-2.5 py-1.5 rounded-lg bg-rose-500/10 hover:bg-rose-500/20 text-rose-300 border border-rose-500/30 text-xs font-medium transition-colors flex items-center gap-1 cursor-pointer"
+                            >
+                              <Lock className="w-3.5 h-3.5 text-rose-400" />
+                              <span>Revoke</span>
+                            </button>
+                          </div>
                         ) : isFree ? (
                           <button
                             type="button"
@@ -710,7 +754,7 @@ export function UserManagementTab({ users, onRefresh }: UserManagementTabProps) 
                             className="px-3 py-1.5 rounded-lg bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-semibold text-xs transition-colors flex items-center gap-1.5 ml-auto cursor-pointer shadow-sm"
                           >
                             <Gift className="w-3.5 h-3.5" />
-                            <span>Grant Masterclass</span>
+                            <span>Grant Access</span>
                           </button>
                         ) : (
                           <span
@@ -735,7 +779,7 @@ export function UserManagementTab({ users, onRefresh }: UserManagementTabProps) 
       <Modal
         isOpen={Boolean(grantTargetUser)}
         onClose={() => !isGranting && setGrantTargetUser(null)}
-        title="Grant Complimentary Masterclass Access"
+        title={grantTargetUser?.access_status === 'complimentary' ? "Update Access Tier & Price Point" : "Grant Complimentary Masterclass Access"}
         maxWidth="lg"
       >
         {grantTargetUser && (
@@ -765,6 +809,103 @@ export function UserManagementTab({ users, onRefresh }: UserManagementTabProps) 
               <div className="flex justify-between">
                 <span className="text-slate-400">Current Status:</span>
                 <span className="text-slate-300 capitalize">{grantTargetUser.access_status || 'free'}</span>
+              </div>
+            </div>
+
+            {/* Price Point / Curriculum Tier Selection */}
+            <div className="space-y-2">
+              <label className="text-xs font-medium text-slate-300 flex items-center justify-between">
+                <span>Select Access Tier & Price Point:</span>
+                <span className="text-[10px] text-cyan-400 font-mono">Configures Scope & EA Licensing</span>
+              </label>
+
+              <div className="grid grid-cols-1 gap-2.5">
+                {/* Option 1: $99 Masterclass (Essential) */}
+                <div
+                  onClick={() => setSelectedGrantTier('masterclass_99')}
+                  className={`p-3 rounded-xl border cursor-pointer transition-all ${
+                    selectedGrantTier === 'masterclass_99'
+                      ? 'bg-purple-950/40 border-purple-500 shadow-sm'
+                      : 'bg-slate-900/40 border-slate-800 hover:border-slate-700'
+                  }`}
+                >
+                  <div className="flex items-start justify-between">
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <span className="text-xs font-bold text-slate-100">$99 Masterclass (Essential)</span>
+                        <span className="px-1.5 py-0.5 rounded text-[9px] font-mono font-semibold bg-purple-500/20 text-purple-300">
+                          Education Tier
+                        </span>
+                      </div>
+                      <p className="text-[11px] text-slate-400 mt-1 leading-relaxed">
+                        Full Masterclass Curriculum (Levels 4–8), Course Book, AI Prompts, Capstone Projects & Certificate.
+                      </p>
+                    </div>
+                    <div className={`w-4 h-4 rounded-full border flex items-center justify-center shrink-0 mt-0.5 ${
+                      selectedGrantTier === 'masterclass_99' ? 'border-purple-400 bg-purple-500' : 'border-slate-700'
+                    }`}>
+                      {selectedGrantTier === 'masterclass_99' && <span className="w-1.5 h-1.5 rounded-full bg-slate-950" />}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Option 2: $169 Masterclass + EA */}
+                <div
+                  onClick={() => setSelectedGrantTier('masterclass_ea_169')}
+                  className={`p-3 rounded-xl border cursor-pointer transition-all ${
+                    selectedGrantTier === 'masterclass_ea_169'
+                      ? 'bg-cyan-950/40 border-cyan-500 shadow-sm'
+                      : 'bg-slate-900/40 border-slate-800 hover:border-slate-700'
+                  }`}
+                >
+                  <div className="flex items-start justify-between">
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <span className="text-xs font-bold text-slate-100">$169 Masterclass + Adaptive Liquidity Pro</span>
+                        <span className="px-1.5 py-0.5 rounded text-[9px] font-mono font-semibold bg-cyan-500/20 text-cyan-300">
+                          Best Value • Real EA
+                        </span>
+                      </div>
+                      <p className="text-[11px] text-slate-400 mt-1 leading-relaxed">
+                        Everything in $99 + <strong>2-Month Live MT5 License</strong> for Adaptive Liquidity Pro, Presets & EA Workshop.
+                      </p>
+                    </div>
+                    <div className={`w-4 h-4 rounded-full border flex items-center justify-center shrink-0 mt-0.5 ${
+                      selectedGrantTier === 'masterclass_ea_169' ? 'border-cyan-400 bg-cyan-500' : 'border-slate-700'
+                    }`}>
+                      {selectedGrantTier === 'masterclass_ea_169' && <span className="w-1.5 h-1.5 rounded-full bg-slate-950" />}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Option 3: $299 Premium VIP Masterclass */}
+                <div
+                  onClick={() => setSelectedGrantTier('masterclass_vip_299')}
+                  className={`p-3 rounded-xl border cursor-pointer transition-all ${
+                    selectedGrantTier === 'masterclass_vip_299'
+                      ? 'bg-emerald-950/40 border-emerald-500 shadow-sm'
+                      : 'bg-slate-900/40 border-slate-800 hover:border-slate-700'
+                  }`}
+                >
+                  <div className="flex items-start justify-between">
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <span className="text-xs font-bold text-slate-100">$299 Premium VIP Masterclass</span>
+                        <span className="px-1.5 py-0.5 rounded text-[9px] font-mono font-semibold bg-emerald-500/20 text-emerald-300">
+                          VIP Institutional
+                        </span>
+                      </div>
+                      <p className="text-[11px] text-slate-400 mt-1 leading-relaxed">
+                        Full Curriculum + <strong>4-Month Live MT5 License</strong> + 1-on-1 Strategy Architecture Review & VIP Community.
+                      </p>
+                    </div>
+                    <div className={`w-4 h-4 rounded-full border flex items-center justify-center shrink-0 mt-0.5 ${
+                      selectedGrantTier === 'masterclass_vip_299' ? 'border-emerald-400 bg-emerald-500' : 'border-slate-700'
+                    }`}>
+                      {selectedGrantTier === 'masterclass_vip_299' && <span className="w-1.5 h-1.5 rounded-full bg-slate-950" />}
+                    </div>
+                  </div>
+                </div>
               </div>
             </div>
 
@@ -806,7 +947,7 @@ export function UserManagementTab({ users, onRefresh }: UserManagementTabProps) 
                   )
                 }
               >
-                {isGranting ? 'Granting Access...' : 'Confirm & Grant Access'}
+                {isGranting ? 'Saving Access...' : (grantTargetUser.access_status === 'complimentary' ? 'Update Access Tier' : 'Confirm & Grant Access')}
               </Button>
             </div>
           </div>

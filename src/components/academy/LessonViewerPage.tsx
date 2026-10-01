@@ -157,7 +157,7 @@ export function LessonViewerPage({ lessonId, onNavigate, onOpenCheckout }: Lesso
     return () => {
       isMounted = false;
     };
-  }, [lessonId]);
+  }, [lessonId, user?.id, user?.access_status, studentTier]);
 
   // Access control: Free Tier students access Levels 1-3 and lesson-3-bonus.
   // Final practical capstone (lesson-3-practical) is locked until Levels 1 to 3 are completed.

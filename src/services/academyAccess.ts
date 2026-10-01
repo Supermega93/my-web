@@ -271,16 +271,18 @@ export function isLessonUnlockedForTier(
   if (!lesson) return false;
   if (isAdmin) return true;
 
-  // If server explicitly denied access for this lesson:
-  if (lesson.accessGranted === false && !lesson.is_free) {
-    return false;
-  }
+  // Paid and Complimentary students unlock all levels (1–8) and lesson-8-bonus
+  if (tier === 'paid' || tier === 'complimentary') return true;
+
   // If server explicitly granted access:
   if (lesson.accessGranted === true) {
     return true;
   }
 
-  if (tier === 'paid' || tier === 'complimentary') return true;
+  // If server explicitly denied access for this lesson:
+  if (lesson.accessGranted === false && !lesson.is_free) {
+    return false;
+  }
 
   // The final practical exercises of the Free Tier require completing all 14 foundation lessons across Levels 1–3
   if (lesson.id === PRACTICAL_EXERCISE_LESSON_ID || lesson.id === INDICATOR_WORKSHOP_LESSON_ID) {

@@ -162,17 +162,36 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             can_access_masterclass: firestoreProfile.can_access_masterclass ?? isAdminDetected,
           }).catch(() => null);
 
-          // Check if Supabase has active entitlements for this user
+          // Check if Firestore, server, or Supabase has active entitlements for this user
           let resolvedAccessStatus = firestoreProfile.access_status || (isAdminDetected ? 'paid' : 'free');
           let canAccessMasterclass = firestoreProfile.can_access_masterclass ?? isAdminDetected;
+          let resolvedTierId: string | undefined = firestoreProfile.access_tier;
+          let resolvedTierName: string | undefined = firestoreProfile.tier_name;
+
           try {
-            const supaEntitlement = await checkUserSupabaseEntitlement(fbUser.uid, email);
-            if (supaEntitlement.hasMasterclass) {
-              resolvedAccessStatus = 'complimentary';
+            const serverAccess = await api.getUserAccessStatus();
+            if (serverAccess && (serverAccess.access_status === 'paid' || serverAccess.access_status === 'complimentary')) {
+              resolvedAccessStatus = serverAccess.access_status;
               canAccessMasterclass = true;
+              if (serverAccess.tier_id) resolvedTierId = serverAccess.tier_id;
+              if (serverAccess.tier_name) resolvedTierName = serverAccess.tier_name;
             }
           } catch {
             // Non-blocking fallback
+          }
+
+          if (!canAccessMasterclass) {
+            try {
+              const supaEntitlement = await checkUserSupabaseEntitlement(fbUser.uid, email);
+              if (supaEntitlement.hasMasterclass) {
+                resolvedAccessStatus = 'complimentary';
+                canAccessMasterclass = true;
+                resolvedTierId = 'masterclass_99';
+                resolvedTierName = '$99 Masterclass (Essential)';
+              }
+            } catch {
+              // Non-blocking fallback
+            }
           }
 
           const activeUser: User = {
@@ -183,6 +202,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             role: firestoreProfile.role || determinedRole,
             access_status: resolvedAccessStatus,
             can_access_masterclass: canAccessMasterclass,
+            tier_id: resolvedTierId,
+            tier_name: resolvedTierName,
             created_at: fbUser.metadata.creationTime || new Date().toISOString(),
             updated_at: new Date().toISOString(),
           };
@@ -190,7 +211,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           if (mounted) {
             setUser(activeUser);
             localStorage.setItem('user_access_status', activeUser.access_status || 'free');
-            setActiveStudentTier(activeUser.access_status === 'paid' ? 'paid' : (activeUser.access_status === 'complimentary' ? 'complimentary' : 'free'));
+            if (activeUser.tier_id) localStorage.setItem('user_tier_id', activeUser.tier_id);
+            if (activeUser.tier_name) localStorage.setItem('user_tier_name', activeUser.tier_name);
+            setActiveStudentTier(
+              activeUser.access_status === 'paid'
+                ? 'paid'
+                : (activeUser.access_status === 'complimentary' || canAccessMasterclass ? 'complimentary' : 'free')
+            );
 
             // Hydrate progress from Firestore
             fetchUserProgressFromFirestore(fbUser.uid).then((progressIds) => {
@@ -254,11 +281,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             api.getUserAccessStatus().then((statusRes) => {
               if (statusRes) {
                 localStorage.setItem('user_access_status', statusRes.access_status);
+                if (statusRes.tier_id) localStorage.setItem('user_tier_id', statusRes.tier_id);
+                if (statusRes.tier_name) localStorage.setItem('user_tier_name', statusRes.tier_name);
                 setActiveStudentTier(statusRes.access_status === 'paid' ? 'paid' : (statusRes.access_status === 'complimentary' ? 'complimentary' : 'free'));
                 setUser((prev) => prev ? {
                   ...prev,
                   access_status: statusRes.access_status,
                   can_access_masterclass: statusRes.can_access_masterclass,
+                  tier_id: statusRes.tier_id || prev.tier_id,
+                  tier_name: statusRes.tier_name || prev.tier_name,
                 } : null);
               }
             }).catch(() => {
@@ -326,11 +357,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         api.getUserAccessStatus().then((statusRes) => {
           if (statusRes) {
             localStorage.setItem('user_access_status', statusRes.access_status);
+            if (statusRes.tier_id) localStorage.setItem('user_tier_id', statusRes.tier_id);
+            if (statusRes.tier_name) localStorage.setItem('user_tier_name', statusRes.tier_name);
             setActiveStudentTier(statusRes.access_status === 'paid' ? 'paid' : (statusRes.access_status === 'complimentary' ? 'complimentary' : 'free'));
             setUser((prev) => prev ? {
               ...prev,
               access_status: statusRes.access_status,
               can_access_masterclass: statusRes.can_access_masterclass,
+              tier_id: statusRes.tier_id || prev.tier_id,
+              tier_name: statusRes.tier_name || prev.tier_name,
             } : null);
           }
         }).catch(() => {
@@ -1064,11 +1099,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       const statusRes = await api.getUserAccessStatus();
       if (statusRes) {
         localStorage.setItem('user_access_status', statusRes.access_status);
+        if (statusRes.tier_id) localStorage.setItem('user_tier_id', statusRes.tier_id);
+        if (statusRes.tier_name) localStorage.setItem('user_tier_name', statusRes.tier_name);
         setActiveStudentTier(statusRes.access_status === 'paid' ? 'paid' : (statusRes.access_status === 'complimentary' ? 'complimentary' : 'free'));
         setUser((prev) => prev ? {
           ...prev,
           access_status: statusRes.access_status,
           can_access_masterclass: statusRes.can_access_masterclass,
+          tier_id: statusRes.tier_id || prev.tier_id,
+          tier_name: statusRes.tier_name || prev.tier_name,
         } : null);
       }
     } catch {

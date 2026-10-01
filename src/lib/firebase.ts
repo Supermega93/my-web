@@ -20,7 +20,8 @@ import firebaseConfig from '../../firebase-applet-config.json';
 export const app = getApps().length === 0 ? initializeApp(firebaseConfig) : getApp();
 
 // CRITICAL: The app will break without specifying firestoreDatabaseId
-export const db = getFirestore(app, firebaseConfig.firestoreDatabaseId);
+const firestoreDbId = (firebaseConfig as any).firestoreDatabaseId || 'ai-studio-eaautomationhub-233e3688-b019-43b1-9575-15fb5a0906b7';
+export const db = getFirestore(app, firestoreDbId);
 export const auth = getAuth(app);
 
 // Configure Google Auth Provider
@@ -96,8 +97,8 @@ export async function testConnection() {
   try {
     await getDocFromServer(doc(db, 'test', 'connection'));
   } catch (error) {
-    if (error instanceof Error && error.message.includes('the client is offline')) {
-      console.error('Please check your Firebase configuration.');
+    if (error instanceof Error && !error.message.includes('not-found') && !error.message.includes('permission-denied')) {
+      console.warn('[Firestore] Initial connection probe notice:', error.message);
     }
   }
 }

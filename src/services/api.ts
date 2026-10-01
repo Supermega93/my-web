@@ -495,11 +495,13 @@ export const api = {
   async grantComplimentaryAccess(
     userId: string,
     email: string,
-    notes?: string
-  ): Promise<{ success: boolean; message: string; access_status: UserAccessStatus; complimentary_id?: string; supabaseSynced: boolean; supabaseMessage?: string }> {
+    notes?: string,
+    tierId?: string,
+    tierName?: string
+  ): Promise<{ success: boolean; message: string; access_status: UserAccessStatus; complimentary_id?: string; supabaseSynced: boolean; supabaseMessage?: string; license?: any }> {
     return request(`/api/admin/users/${userId}/complimentary-access`, {
       method: 'POST',
-      body: JSON.stringify({ email, notes }),
+      body: JSON.stringify({ email, notes, tierId, tierName }),
     });
   },
 
@@ -517,6 +519,8 @@ export const api = {
     access_status: UserAccessStatus;
     can_access_masterclass: boolean;
     is_admin?: boolean;
+    tier_id?: string;
+    tier_name?: string;
     details?: any;
   }> {
     return request('/api/user/access-status');

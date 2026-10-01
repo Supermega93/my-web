@@ -33,14 +33,16 @@ service cloud.firestore {
 
     function isValidUserProfile(data) {
       return data.keys().hasAll(['id', 'email', 'role']) &&
-             data.keys().hasOnly(['id', 'name', 'email', 'role', 'access_status', 'can_access_masterclass', 'photoURL', 'phone', 'createdAt', 'updatedAt']) &&
+             data.keys().hasOnly(['id', 'name', 'email', 'role', 'access_status', 'can_access_masterclass', 'access_tier', 'tier_name', 'photoURL', 'phone', 'createdAt', 'updatedAt']) &&
              data.id is string && data.id.size() <= 128 &&
-             data.id == request.auth.uid &&
+             (data.id == request.auth.uid || isAdmin()) &&
              data.email is string && data.email.size() <= 120 &&
              data.role in ['customer', 'admin', 'developer'] &&
              (!('name' in data) || (data.name is string && data.name.size() <= 100)) &&
              (!('access_status' in data) || (data.access_status in ['free', 'paid', 'complimentary'])) &&
              (!('can_access_masterclass' in data) || data.can_access_masterclass is bool) &&
+             (!('access_tier' in data) || (data.access_tier is string && data.access_tier.size() <= 50)) &&
+             (!('tier_name' in data) || (data.tier_name is string && data.tier_name.size() <= 100)) &&
              (!('photoURL' in data) || (data.photoURL is string && data.photoURL.size() <= 2048)) &&
              (!('phone' in data) || data.phone == null || (data.phone is string && data.phone.size() <= 50)) &&
              (!('createdAt' in data) || (data.createdAt is string && data.createdAt.size() <= 50)) &&
@@ -129,6 +131,11 @@ service cloud.firestore {
     // Default Deny All Catch-all
     match /{document=**} {
       allow read, write: if false;
+    }
+
+    // Connection Test Collection
+    match /test/{testId} {
+      allow get: if true;
     }
 
     // User Profiles Collection
