@@ -954,27 +954,37 @@ function seedInitialData() {
 export const dbQueries = {
   // Users
   getUserByEmail(email: string) {
-    return db.prepare('SELECT * FROM users WHERE email = ?').get(email);
+    const cleanEmail = (email || '').toLowerCase().trim();
+    return db.prepare('SELECT * FROM users WHERE LOWER(email) = ?').get(cleanEmail);
   },
   getUserById(id: string) {
-    return db.prepare('SELECT id, name, email, phone, role, created_at, updated_at FROM users WHERE id = ?').get(id);
+    if (!id) return null;
+    return db.prepare('SELECT id, name, email, phone, role, created_at, updated_at FROM users WHERE id = ? OR LOWER(email) = LOWER(?)').get(id, id);
   },
   createUser(user: { id: string; name: string; email: string; phone?: string; role: string; password_hash: string }) {
+    const cleanEmail = (user.email || '').toLowerCase().trim();
+    const existing = db.prepare('SELECT id FROM users WHERE LOWER(email) = ?').get(cleanEmail) as any;
+    if (existing) {
+      throw new Error('An account with this email address already exists. Please log in.');
+    }
     const now = new Date().toISOString();
     return db.prepare(`
       INSERT INTO users (id, name, email, phone, role, password_hash, created_at, updated_at)
       VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-    `).run(user.id, user.name, user.email, user.phone || null, user.role, user.password_hash, now, now);
+    `).run(user.id, user.name, cleanEmail, user.phone || null, user.role, user.password_hash, now, now);
   },
   updateUserPassword(email: string, newPasswordHash: string) {
+    const cleanEmail = (email || '').toLowerCase().trim();
     const now = new Date().toISOString();
-    return db.prepare('UPDATE users SET password_hash = ?, updated_at = ? WHERE email = ?').run(newPasswordHash, now, email);
+    return db.prepare('UPDATE users SET password_hash = ?, updated_at = ? WHERE LOWER(email) = ?').run(newPasswordHash, now, cleanEmail);
   },
   getAllUsers() {
     return db.prepare('SELECT id, name, email, phone, role, created_at, updated_at FROM users ORDER BY created_at DESC').all();
   },
   ensureUser(user: { id: string; name: string; email: string; phone?: string | null; role?: string }) {
-    const existing = db.prepare('SELECT id, role, name, phone FROM users WHERE id = ? OR email = ?').get(user.id, user.email) as any;
+    const cleanEmail = (user.email || '').toLowerCase().trim();
+    const cleanId = (user.id || '').trim();
+    const existing = db.prepare('SELECT id, role, name, phone FROM users WHERE id = ? OR LOWER(email) = LOWER(?)').get(cleanId, cleanEmail) as any;
     const now = new Date().toISOString();
     if (existing) {
       db.prepare(`
@@ -991,16 +1001,16 @@ export const dbQueries = {
         INSERT INTO users (id, name, email, phone, role, password_hash, created_at, updated_at)
         VALUES (?, ?, ?, ?, ?, ?, ?, ?)
       `).run(
-        user.id,
-        user.name || user.email.split('@')[0],
-        user.email,
+        cleanId,
+        user.name || cleanEmail.split('@')[0],
+        cleanEmail,
         user.phone || null,
         user.role || 'customer',
         'SUPABASE_AUTHENTICATED',
         now,
         now
       );
-      return user.id;
+      return cleanId;
     }
   },
 
@@ -1158,17 +1168,26 @@ export const dbQueries = {
   },
   getAllUsersWithAccessStatus() {
     const users = db.prepare('SELECT id, name, email, phone, role, created_at, updated_at FROM users ORDER BY created_at DESC').all() as any[];
-    return users.map((u) => {
+    const seenEmails = new Set<string>();
+    const deduplicated: any[] = [];
+    for (const u of users) {
+      const email = (u.email || '').toLowerCase().trim();
+      if (email) {
+        if (seenEmails.has(email)) continue;
+        seenEmails.add(email);
+      }
       const accessInfo = this.getUserAccessStatus(u.id, u.email);
       const paidOrders = db.prepare("SELECT COUNT(*) as count FROM orders WHERE user_id = ? AND payment_status = 'paid'").get(u.id) as any;
-      return {
+      deduplicated.push({
         ...u,
+        email,
         access_status: accessInfo.access_status, // 'free' | 'paid' | 'complimentary'
         can_access_masterclass: accessInfo.can_access_masterclass,
         complimentary_details: accessInfo.access_status === 'complimentary' ? accessInfo : null,
         paid_orders_count: paidOrders?.count || 0,
-      };
-    });
+      });
+    }
+    return deduplicated;
   },
 
   // Sessions (Auth persistence across server restarts)

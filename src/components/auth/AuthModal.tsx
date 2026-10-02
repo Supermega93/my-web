@@ -16,7 +16,7 @@ export function AuthModal({
   onClose,
   defaultMode = 'login',
 }: AuthModalProps) {
-  const { login, register, loginWithGoogle, resendVerificationEmail } = useAuth();
+  const { login, register, loginWithGoogle, checkEmailExists, resendVerificationEmail } = useAuth();
   const [mode, setMode] = useState<'login' | 'register'>(defaultMode);
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
@@ -30,11 +30,31 @@ export function AuthModal({
   const [resending, setResending] = useState(false);
   const [needsVerification, setNeedsVerification] = useState(false);
   const [unverifiedEmail, setUnverifiedEmail] = useState('');
+  const [isAlreadyRegistered, setIsAlreadyRegistered] = useState(false);
+  const [alreadyRegisteredEmail, setAlreadyRegisteredEmail] = useState<string | null>(null);
   const [domainAuthPrompt, setDomainAuthPrompt] = useState<{
     show: boolean;
     domain: string;
     consoleUrl: string;
   } | null>(null);
+
+  const handleEmailBlur = async () => {
+    if (mode !== 'register') return;
+    const clean = email.trim().toLowerCase();
+    if (!clean || !clean.includes('@') || !clean.includes('.')) return;
+    try {
+      const check = await checkEmailExists(clean);
+      if (check.exists) {
+        setIsAlreadyRegistered(true);
+        setAlreadyRegisteredEmail(clean);
+      } else {
+        setIsAlreadyRegistered(false);
+        setAlreadyRegisteredEmail(null);
+      }
+    } catch {
+      // Non-blocking
+    }
+  };
 
   const handleGoogleLogin = async () => {
     setError('');
@@ -110,8 +130,16 @@ export function AuthModal({
           setUnverifiedEmail(result.unverifiedEmail || cleanEmail);
           setSuccess(result.message || `Verification link sent to ${cleanEmail}! Please check your email to activate your account.`);
         } else if (!result.success) {
-          setError(result.error || 'Registration failed');
+          if (result.isAlreadyRegistered || (result.error && /already\s+(exists|registered)/i.test(result.error))) {
+            setIsAlreadyRegistered(true);
+            setAlreadyRegisteredEmail(cleanEmail);
+            setError('An account with this email address already exists. Please log in.');
+          } else {
+            setError(result.error || 'Registration failed');
+          }
         } else {
+          setIsAlreadyRegistered(false);
+          setAlreadyRegisteredEmail(null);
           onClose();
         }
       }
@@ -205,7 +233,31 @@ export function AuthModal({
           </div>
         )}
 
-        {error && (
+        {isAlreadyRegistered && (
+          <div className="p-3.5 rounded-2xl bg-amber-950/40 border border-amber-500/50 text-amber-200 flex flex-col gap-2.5 animate-in fade-in duration-150">
+            <div className="flex items-start gap-2">
+              <AlertCircle className="w-4 h-4 shrink-0 mt-0.5 text-amber-400" />
+              <div className="leading-relaxed text-xs">
+                <span className="font-semibold block text-amber-200">Account Already Registered</span>
+                <span>An account with <strong className="text-white">{alreadyRegisteredEmail || email}</strong> already exists on MEG.AI Labs. Please log in with your credentials.</span>
+              </div>
+            </div>
+            <button
+              type="button"
+              onClick={() => {
+                setMode('login');
+                setError('');
+                setIsAlreadyRegistered(false);
+              }}
+              className="w-full py-2 px-3 rounded-xl bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 font-medium text-xs flex items-center justify-center gap-1.5 transition-all cursor-pointer border border-amber-500/30 hover:border-amber-500/50"
+            >
+              <LogIn className="w-3.5 h-3.5" />
+              <span>Switch to Log In with this Email</span>
+            </button>
+          </div>
+        )}
+
+        {error && !isAlreadyRegistered && (
           <div className="p-3 rounded-2xl bg-rose-950/50 border border-rose-800/80 text-rose-300 flex items-start gap-2 animate-in fade-in duration-150">
             <AlertCircle className="w-4 h-4 shrink-0 mt-0.5 text-rose-400" />
             <span className="leading-relaxed">{error}</span>
@@ -316,7 +368,14 @@ export function AuthModal({
                   type="email"
                   required
                   value={email}
-                  onChange={(e) => setEmail(e.target.value)}
+                  onChange={(e) => {
+                    setEmail(e.target.value);
+                    if (isAlreadyRegistered) {
+                      setIsAlreadyRegistered(false);
+                      setAlreadyRegisteredEmail(null);
+                    }
+                  }}
+                  onBlur={handleEmailBlur}
                   placeholder="trader@ea-hub.com"
                   className="w-full px-3.5 py-2.5 bg-slate-950/80 border border-slate-800 focus:border-slate-500 rounded-2xl text-slate-100 placeholder-slate-600 focus:outline-none focus:ring-1 focus:ring-slate-700 text-xs transition-all"
                 />

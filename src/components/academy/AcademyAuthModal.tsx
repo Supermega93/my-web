@@ -24,7 +24,7 @@ interface AcademyAuthModalProps {
 }
 
 export function AcademyAuthModal({ isOpen, onClose, onSuccess }: AcademyAuthModalProps) {
-  const { login, register, loginWithGoogle, resendVerificationEmail } = useAuth();
+  const { login, register, loginWithGoogle, checkEmailExists, resendVerificationEmail } = useAuth();
   const [mode, setMode] = useState<'login' | 'register'>('login');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -36,11 +36,31 @@ export function AcademyAuthModal({ isOpen, onClose, onSuccess }: AcademyAuthModa
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
   const [needsVerification, setNeedsVerification] = useState(false);
   const [unverifiedEmail, setUnverifiedEmail] = useState('');
+  const [isAlreadyRegistered, setIsAlreadyRegistered] = useState(false);
+  const [alreadyRegisteredEmail, setAlreadyRegisteredEmail] = useState<string | null>(null);
   const [domainAuthPrompt, setDomainAuthPrompt] = useState<{
     show: boolean;
     domain: string;
     consoleUrl: string;
   } | null>(null);
+
+  const handleEmailBlur = async () => {
+    if (mode !== 'register') return;
+    const clean = email.trim().toLowerCase();
+    if (!clean || !clean.includes('@') || !clean.includes('.')) return;
+    try {
+      const check = await checkEmailExists(clean);
+      if (check.exists) {
+        setIsAlreadyRegistered(true);
+        setAlreadyRegisteredEmail(clean);
+      } else {
+        setIsAlreadyRegistered(false);
+        setAlreadyRegisteredEmail(null);
+      }
+    } catch {
+      // Non-blocking
+    }
+  };
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -146,8 +166,16 @@ export function AcademyAuthModal({ isOpen, onClose, onSuccess }: AcademyAuthModa
           setUnverifiedEmail(result.unverifiedEmail || cleanEmail);
           setSuccessMsg(result.message || `Verification link sent to ${cleanEmail}! Please check your email to activate your account.`);
         } else if (!result.success) {
-          setErrorMsg(result.error || 'Registration failed');
+          if (result.isAlreadyRegistered || (result.error && /already\s+(exists|registered)/i.test(result.error))) {
+            setIsAlreadyRegistered(true);
+            setAlreadyRegisteredEmail(cleanEmail);
+            setErrorMsg('This email is already registered on MEG.AI Labs. Please sign in to access your courses.');
+          } else {
+            setErrorMsg(result.error || 'Registration failed');
+          }
         } else {
+          setIsAlreadyRegistered(false);
+          setAlreadyRegisteredEmail(null);
           setSuccessMsg('Account created successfully! Logging you in...');
           setTimeout(() => {
             if (onSuccess) onSuccess();
@@ -366,7 +394,31 @@ export function AcademyAuthModal({ isOpen, onClose, onSuccess }: AcademyAuthModa
               </div>
             )}
 
-            {errorMsg && (
+            {isAlreadyRegistered && (
+              <div className="mb-3.5 p-3.5 rounded-2xl bg-amber-950/40 border border-amber-500/50 text-amber-200 text-xs flex flex-col gap-2.5 animate-in fade-in duration-150">
+                <div className="flex items-start gap-2">
+                  <AlertCircle className="w-4 h-4 shrink-0 mt-0.5 text-amber-400" />
+                  <div className="leading-relaxed">
+                    <span className="font-semibold block text-amber-200">Account Already Registered</span>
+                    <span>An account with <strong className="text-white">{alreadyRegisteredEmail || email}</strong> already exists on MEG.AI Labs. Please sign in to access your course.</span>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setMode('login');
+                    setErrorMsg(null);
+                    setIsAlreadyRegistered(false);
+                  }}
+                  className="w-full py-2 px-3 rounded-xl bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 font-medium text-xs flex items-center justify-center gap-1.5 transition-all cursor-pointer border border-amber-500/30 hover:border-amber-500/50"
+                >
+                  <LogIn className="w-3.5 h-3.5" />
+                  <span>Switch to Sign In with this Email</span>
+                </button>
+              </div>
+            )}
+
+            {errorMsg && !isAlreadyRegistered && (
               <div className="mb-3.5 p-3 rounded-2xl bg-rose-950/50 border border-rose-800/80 text-rose-300 text-xs flex items-start gap-2 animate-in fade-in duration-150">
                 <AlertCircle className="w-4 h-4 shrink-0 mt-0.5 text-rose-400" />
                 <span className="leading-relaxed">{errorMsg}</span>
@@ -440,7 +492,14 @@ export function AcademyAuthModal({ isOpen, onClose, onSuccess }: AcademyAuthModa
                   type="email"
                   required
                   value={email}
-                  onChange={(e) => setEmail(e.target.value)}
+                  onChange={(e) => {
+                    setEmail(e.target.value);
+                    if (isAlreadyRegistered) {
+                      setIsAlreadyRegistered(false);
+                      setAlreadyRegisteredEmail(null);
+                    }
+                  }}
+                  onBlur={handleEmailBlur}
                   placeholder="student@meg-labs.com"
                   className="w-full px-3.5 py-2.5 bg-slate-950/80 border border-slate-800 focus:border-slate-500 rounded-2xl text-slate-100 placeholder-slate-600 focus:outline-none focus:ring-1 focus:ring-slate-700 text-xs transition-all"
                 />

@@ -664,6 +664,68 @@ app.get('/api/academy/lessons/:id', async (req, res) => {
   }
 });
 
+// Auth: Check if email already exists
+app.get('/api/auth/check-email', async (req, res) => {
+  try {
+    const email = (req.query.email as string || '').toLowerCase().trim();
+    if (!email) {
+      return res.status(400).json({ error: 'Email parameter is required.' });
+    }
+    
+    // 1. Check primary users table
+    const existing = dbQueries.getUserByEmail(email) as any;
+    if (existing) {
+      return res.json({
+        exists: true,
+        isAlreadyRegistered: true,
+        email,
+        name: existing.name,
+        role: existing.role,
+        message: 'An account with this email address already exists. Please log in.'
+      });
+    }
+
+    // 2. Check complimentary access table
+    const comp = db.prepare('SELECT id, user_name, user_role FROM complimentary_access WHERE LOWER(user_email) = ?').get(email) as any;
+    if (comp) {
+      return res.json({
+        exists: true,
+        isAlreadyRegistered: true,
+        email,
+        name: comp.user_name || undefined,
+        role: comp.user_role || 'customer',
+        message: 'An account with this email is already registered with access. Please log in.'
+      });
+    }
+
+    // 3. Check Supabase profiles if configured
+    try {
+      const supaUsers = await fetchUsersFromSupabase();
+      const matched = supaUsers?.find(su => su.email && su.email.toLowerCase().trim() === email);
+      if (matched) {
+        return res.json({
+          exists: true,
+          isAlreadyRegistered: true,
+          email,
+          name: matched.name,
+          role: matched.role,
+          message: 'An account with this email address already exists. Please log in.'
+        });
+      }
+    } catch {
+      // Supabase lookup non-blocking
+    }
+
+    res.json({
+      exists: false,
+      isAlreadyRegistered: false,
+      email
+    });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message || 'Email lookup error.' });
+  }
+});
+
 // Auth: Register
 app.post('/api/auth/register', (req, res) => {
   try {
@@ -672,9 +734,14 @@ app.post('/api/auth/register', (req, res) => {
       return res.status(400).json({ error: 'Name, email, and password are required.' });
     }
 
-    const existing = dbQueries.getUserByEmail(email.toLowerCase().trim());
-    if (existing) {
-      return res.status(400).json({ error: 'An account with this email address already exists.' });
+    const cleanEmail = email.toLowerCase().trim();
+    const existing = dbQueries.getUserByEmail(cleanEmail);
+    const comp = db.prepare('SELECT id FROM complimentary_access WHERE LOWER(user_email) = ?').get(cleanEmail);
+    if (existing || comp) {
+      return res.status(409).json({
+        error: 'An account with this email address already exists. Please log in.',
+        isAlreadyRegistered: true
+      });
     }
 
     const assignedRole = role === 'admin' || role === 'developer' ? role : 'customer';
@@ -683,16 +750,16 @@ app.post('/api/auth/register', (req, res) => {
     dbQueries.createUser({
       id,
       name: name.trim(),
-      email: email.toLowerCase().trim(),
+      email: cleanEmail,
       phone: phone ? phone.trim() : undefined,
       role: assignedRole,
       password_hash: password // In production, bcrypt is used
     });
 
     const token = `tok_${Math.random().toString(36).substring(2)}_${Date.now()}`;
-    const userProfile = { userId: id, role: assignedRole, email: email.toLowerCase().trim(), name: name.trim() };
+    const userProfile = { userId: id, role: assignedRole, email: cleanEmail, name: name.trim() };
     activeSessions.set(token, userProfile);
-    dbQueries.saveSession({ token, userId: id, role: assignedRole, email: email.toLowerCase().trim(), name: name.trim() });
+    dbQueries.saveSession({ token, userId: id, role: assignedRole, email: cleanEmail, name: name.trim() });
 
     res.json({
       success: true,
@@ -700,7 +767,7 @@ app.post('/api/auth/register', (req, res) => {
       user: {
         id,
         name: name.trim(),
-        email: email.toLowerCase().trim(),
+        email: cleanEmail,
         role: assignedRole,
         phone: phone || null
       }

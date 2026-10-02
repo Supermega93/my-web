@@ -324,21 +324,45 @@ export function AdminDashboard({ onBackToHome }: AdminDashboardProps) {
         console.warn('Firestore users fetch notice:', fsUsersErr);
       }
 
-      // Merge backend users and Firestore users, deduplicating by id and email
-      const userMap = new Map<string, AdminUserRecord>();
+      // Merge backend users and Firestore users, strictly deduplicating by normalized email
+      const userByEmail = new Map<string, AdminUserRecord>();
+
       (usersRes || []).forEach(u => {
-        if (u.id) userMap.set(u.id, u);
-        if (u.email) userMap.set(u.email.toLowerCase().trim(), u);
-      });
-      firestoreUsers.forEach(fu => {
-        const existing = userMap.get(fu.id) || (fu.email ? userMap.get(fu.email.toLowerCase().trim()) : null);
-        if (existing) {
-          userMap.set(fu.id, { ...existing, ...fu, id: fu.id });
-        } else {
-          userMap.set(fu.id, fu);
+        const emailKey = (u.email || '').toLowerCase().trim();
+        if (emailKey) {
+          userByEmail.set(emailKey, u);
+        } else if (u.id) {
+          userByEmail.set(u.id, u);
         }
       });
-      const mergedUsers = Array.from(new Set(userMap.values())).sort(
+
+      firestoreUsers.forEach(fu => {
+        const emailKey = (fu.email || '').toLowerCase().trim();
+        if (emailKey) {
+          const existing = userByEmail.get(emailKey);
+          if (existing) {
+            userByEmail.set(emailKey, {
+              ...existing,
+              ...fu,
+              // Keep database user ID if available, otherwise Firestore ID
+              id: existing.id || fu.id,
+              // Preserve active paid or complimentary access status
+              access_status: existing.access_status === 'paid' || existing.access_status === 'complimentary'
+                ? existing.access_status
+                : (fu.access_status || existing.access_status || 'free'),
+              can_access_masterclass: existing.can_access_masterclass || fu.can_access_masterclass,
+              complimentary_details: existing.complimentary_details || fu.complimentary_details || null,
+              paid_orders_count: Math.max(existing.paid_orders_count || 0, fu.paid_orders_count || 0),
+            });
+          } else {
+            userByEmail.set(emailKey, fu);
+          }
+        } else if (fu.id && !userByEmail.has(fu.id)) {
+          userByEmail.set(fu.id, fu);
+        }
+      });
+
+      const mergedUsers = Array.from(userByEmail.values()).sort(
         (a, b) => new Date(b.created_at || 0).getTime() - new Date(a.created_at || 0).getTime()
       );
 

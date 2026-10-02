@@ -100,6 +100,18 @@ export const api = {
     return data;
   },
 
+  async checkEmail(email: string): Promise<{ exists: boolean; isAlreadyRegistered?: boolean; message?: string; name?: string; role?: string }> {
+    const clean = (email || '').toLowerCase().trim();
+    if (!clean) return { exists: false, isAlreadyRegistered: false };
+    try {
+      return await request<{ exists: boolean; isAlreadyRegistered?: boolean; message?: string; name?: string; role?: string }>(
+        `/api/auth/check-email?email=${encodeURIComponent(clean)}`
+      );
+    } catch {
+      return { exists: false, isAlreadyRegistered: false };
+    }
+  },
+
   async register(userData: { name: string; email: string; password: string; phone?: string; role?: string }): Promise<{ user: User; token: string }> {
     const data = await request<{ success: boolean; user: User; token: string }>('/api/auth/register', {
       method: 'POST',

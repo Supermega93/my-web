@@ -7,6 +7,7 @@ import { fetchUserProgressFromSupabase } from '../services/academy.ts';
 import { setActiveStudentTier, getActiveStudentTier } from '../services/academyAccess.ts';
 import { 
   auth, 
+  db,
   googleAuthProvider, 
   signInWithPopup, 
   signInWithCredential, 
@@ -19,6 +20,7 @@ import {
   fbSignOut, 
   onAuthStateChanged 
 } from '../lib/firebase.ts';
+import { collection, query, where, getDocs, limit } from 'firebase/firestore';
 import { syncUserProfileToFirestore, fetchUserProgressFromFirestore } from '../services/firestoreService.ts';
 import { syncFirebaseUserToSupabase, checkUserSupabaseEntitlement } from '../lib/supabaseAdmin.ts';
 
@@ -95,7 +97,8 @@ interface AuthContextType {
     dataOrEmail: string | { name?: string; email: string; password: string; phone?: string; role?: string },
     password?: string,
     name?: string
-  ) => Promise<{ success: boolean; error?: string; message?: string; needsVerification?: boolean; unverifiedEmail?: string }>;
+  ) => Promise<{ success: boolean; error?: string; message?: string; needsVerification?: boolean; unverifiedEmail?: string; isAlreadyRegistered?: boolean }>;
+  checkEmailExists: (email: string) => Promise<{ exists: boolean; message?: string; name?: string; role?: string }>;
   resendVerificationEmail: (email: string) => Promise<{ success: boolean; message?: string; error?: string }>;
   sendMasterclassVerification: () => Promise<{ success: boolean; message?: string; error?: string }>;
   sendPasswordReset: (email: string) => Promise<{ success: boolean; message?: string; error?: string }>;
@@ -797,12 +800,52 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
-  // Firebase Auth Primary Registration - lets users access the platform immediately without mandatory email confirmation
+  // Robust pre-check if an email is already registered across SQLite, backend, Firestore, or Supabase
+  const checkEmailExists = useCallback(async (email: string): Promise<{ exists: boolean; message?: string; name?: string; role?: string }> => {
+    const clean = (email || '').toLowerCase().trim();
+    if (!clean) return { exists: false };
+    try {
+      // 1. Check backend SQLite database & complimentary access
+      const checkRes = await api.checkEmail(clean);
+      if (checkRes.exists) {
+        return {
+          exists: true,
+          name: checkRes.name,
+          role: checkRes.role,
+          message: checkRes.message || 'An account with this email address already exists. Please log in.'
+        };
+      }
+
+      // 2. Check Firestore users collection directly
+      try {
+        const usersRef = collection(db, 'users');
+        const q = query(usersRef, where('email', '==', clean), limit(1));
+        const snap = await getDocs(q);
+        if (!snap.empty) {
+          const docData = snap.docs[0].data();
+          return {
+            exists: true,
+            name: docData.name,
+            role: docData.role,
+            message: 'An account with this email address already exists. Please log in.'
+          };
+        }
+      } catch {
+        // Firestore permission rules or network offline, proceed non-blocking
+      }
+
+      return { exists: false };
+    } catch {
+      return { exists: false };
+    }
+  }, []);
+
+  // Firebase Auth Primary Registration - recognizes existing accounts and prevents duplication
   const register = async (
     dataOrEmail: string | { name?: string; email: string; password: string; phone?: string; role?: string },
     passwordParam?: string,
     nameParam?: string
-  ): Promise<{ success: boolean; error?: string; message?: string; needsVerification?: boolean; unverifiedEmail?: string }> => {
+  ): Promise<{ success: boolean; error?: string; message?: string; needsVerification?: boolean; unverifiedEmail?: string; isAlreadyRegistered?: boolean }> => {
     try {
       setError(null);
       setLoading(true);
@@ -824,8 +867,36 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
 
       const cleanEmail = email.trim().toLowerCase();
+      if (!cleanEmail) {
+        const msg = 'Please enter a valid email address.';
+        setError(msg);
+        return { success: false, error: msg };
+      }
+      if (!password || password.length < 6) {
+        const msg = 'Password should be at least 6 characters.';
+        setError(msg);
+        return { success: false, error: msg };
+      }
+
       const displayName = name.trim() || cleanEmail.split('@')[0] || 'Trader';
       const isAdminDetected = checkIsAdminEmail(cleanEmail);
+
+      // PRE-CHECK: Recognize existing accounts BEFORE creating any new entries or credentials
+      try {
+        const checkResult = await checkEmailExists(cleanEmail);
+        if (checkResult.exists) {
+          const msg = checkResult.message || 'An account with this email address already exists. Please log in.';
+          setError(msg);
+          setLoading(false);
+          return {
+            success: false,
+            error: msg,
+            isAlreadyRegistered: true
+          };
+        }
+      } catch (checkErr) {
+        console.warn('Pre-registration email check notice:', checkErr);
+      }
 
       // 1. PRIMARY: Create account in Firebase Auth
       try {
@@ -896,17 +967,21 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           },
         }).catch(() => null);
 
-        // Immediate continuation - no email blocking!
+        // Immediate continuation - account created
         return {
           success: true,
           needsVerification: false,
           message: `Welcome to MEG.AI Labs, ${displayName}! Your account is active.`,
         };
       } catch (fbErr: any) {
-        if (fbErr.code === 'auth/email-already-in-use') {
+        if (
+          fbErr.code === 'auth/email-already-in-use' ||
+          fbErr.code === 'auth/credential-already-in-use' ||
+          fbErr.code === 'auth/account-exists-with-different-credential'
+        ) {
           const msg = 'An account with this email address already exists. Please log in.';
           setError(msg);
-          return { success: false, error: msg };
+          return { success: false, error: msg, isAlreadyRegistered: true };
         } else if (fbErr.code === 'auth/weak-password') {
           const msg = 'Password should be at least 6 characters.';
           setError(msg);
@@ -916,10 +991,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           setError(msg);
           return { success: false, error: msg };
         }
-        console.warn('[Firebase Auth Register warning, falling back to Supabase]', fbErr);
+        console.warn('[Firebase Auth Register warning, checking Supabase fallback]', fbErr);
       }
 
-      // 2. FALLBACK: Supabase Auth signup without blocking access
+      // 2. FALLBACK: Supabase Auth signup without duplicating existing accounts
       const redirectUrl = getAppRedirectUrl();
       const { data, error: signUpError } = await supabase.auth.signUp({
         email: cleanEmail,
@@ -934,9 +1009,24 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       });
 
       if (signUpError) {
-        const msg = signUpError.message || 'Registration failed';
+        const isAlready = /already\s+(registered|exists)|duplicate|email_exists/i.test(signUpError.message);
+        const msg = isAlready
+          ? 'An account with this email address already exists. Please log in.'
+          : (signUpError.message || 'Registration failed');
         setError(msg);
-        return { success: false, error: msg };
+        return { success: false, error: msg, isAlreadyRegistered: isAlready };
+      }
+
+      // CRITICAL: Supabase anti-enumeration detection.
+      // When an account already exists in Supabase, identities is returned as empty []
+      if (data?.user && Array.isArray(data.user.identities) && data.user.identities.length === 0) {
+        const msg = 'An account with this email address already exists. Please log in.';
+        setError(msg);
+        return {
+          success: false,
+          error: msg,
+          isAlreadyRegistered: true
+        };
       }
 
       const activeUser: User = {
@@ -1180,6 +1270,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         login,
         loginWithGoogle,
         register,
+        checkEmailExists,
         resendVerificationEmail,
         sendMasterclassVerification,
         sendPasswordReset,

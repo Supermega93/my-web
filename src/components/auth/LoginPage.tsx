@@ -22,7 +22,7 @@ interface LoginPageProps {
 }
 
 export function LoginPage({ onNavigate, initialMode = 'login' }: LoginPageProps) {
-  const { user, login, register, loginWithGoogle, loading: authLoading, isAdmin } = useAuth();
+  const { user, login, register, loginWithGoogle, checkEmailExists, loading: authLoading, isAdmin } = useAuth();
 
   const [mode, setMode] = useState<'login' | 'register'>(initialMode);
   const [email, setEmail] = useState('');
@@ -34,6 +34,8 @@ export function LoginPage({ onNavigate, initialMode = 'login' }: LoginPageProps)
   const [googleLoading, setGoogleLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [infoMessage, setInfoMessage] = useState<string | null>(null);
+  const [isAlreadyRegistered, setIsAlreadyRegistered] = useState(false);
+  const [alreadyRegisteredEmail, setAlreadyRegisteredEmail] = useState<string | null>(null);
 
   // If user is already authenticated, redirect to /portal
   useEffect(() => {
@@ -41,6 +43,24 @@ export function LoginPage({ onNavigate, initialMode = 'login' }: LoginPageProps)
       onNavigate('portal');
     }
   }, [user, authLoading, onNavigate]);
+
+  const handleEmailBlur = async () => {
+    if (mode !== 'register') return;
+    const clean = email.trim().toLowerCase();
+    if (!clean || !clean.includes('@') || !clean.includes('.')) return;
+    try {
+      const check = await checkEmailExists(clean);
+      if (check.exists) {
+        setIsAlreadyRegistered(true);
+        setAlreadyRegisteredEmail(clean);
+      } else {
+        setIsAlreadyRegistered(false);
+        setAlreadyRegisteredEmail(null);
+      }
+    } catch {
+      // Non-blocking check
+    }
+  };
 
   const handleGoogleLogin = async () => {
     setErrorMessage(null);
@@ -94,8 +114,16 @@ export function LoginPage({ onNavigate, initialMode = 'login' }: LoginPageProps)
         });
 
         if (!result.success) {
-          setErrorMessage(result.error || 'Registration failed. Please check your details.');
+          if (result.isAlreadyRegistered || (result.error && /already\s+(exists|registered)/i.test(result.error))) {
+            setIsAlreadyRegistered(true);
+            setAlreadyRegisteredEmail(email.trim());
+            setErrorMessage('An account with this email address already exists. Please log in.');
+          } else {
+            setErrorMessage(result.error || 'Registration failed. Please check your details.');
+          }
         } else {
+          setIsAlreadyRegistered(false);
+          setAlreadyRegisteredEmail(null);
           if (result.message) {
             setInfoMessage(result.message);
           }
@@ -191,8 +219,38 @@ export function LoginPage({ onNavigate, initialMode = 'login' }: LoginPageProps)
           </button>
         </div>
 
+        {/* Already Registered Recognition Banner */}
+        {isAlreadyRegistered && (
+          <div 
+            id="auth-already-registered-banner"
+            className="mb-5 p-3.5 rounded-2xl bg-amber-950/40 border border-amber-500/50 text-amber-200 text-xs flex flex-col gap-2.5 animate-fadeIn"
+          >
+            <div className="flex items-start gap-2.5">
+              <AlertCircle className="w-4 h-4 text-amber-400 shrink-0 mt-0.5" />
+              <div className="leading-relaxed">
+                <span className="font-semibold block text-amber-200">Account Already Registered</span>
+                <span>An account with <strong className="text-white">{alreadyRegisteredEmail || email}</strong> already exists on MEG.AI Labs. Please log in with your credentials or Google.</span>
+              </div>
+            </div>
+            <div className="flex items-center gap-2 pt-1 border-t border-amber-500/20">
+              <button
+                type="button"
+                onClick={() => {
+                  setMode('login');
+                  setErrorMessage(null);
+                  setIsAlreadyRegistered(false);
+                }}
+                className="w-full py-2 px-3 rounded-xl bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 font-medium text-xs flex items-center justify-center gap-2 transition-all cursor-pointer border border-amber-500/30 hover:border-amber-500/50"
+              >
+                <LogIn className="w-3.5 h-3.5" />
+                <span>Switch to Log In with this Email</span>
+              </button>
+            </div>
+          </div>
+        )}
+
         {/* Error Notification */}
-        {errorMessage && (
+        {errorMessage && !isAlreadyRegistered && (
           <div 
             id="auth-error-banner"
             className="mb-5 p-3.5 rounded-2xl bg-rose-950/50 border border-rose-800/80 text-rose-300 text-xs flex items-start gap-2.5 animate-fadeIn"
@@ -279,7 +337,14 @@ export function LoginPage({ onNavigate, initialMode = 'login' }: LoginPageProps)
                 type="email"
                 required
                 value={email}
-                onChange={(e) => setEmail(e.target.value)}
+                onChange={(e) => {
+                  setEmail(e.target.value);
+                  if (isAlreadyRegistered) {
+                    setIsAlreadyRegistered(false);
+                    setAlreadyRegisteredEmail(null);
+                  }
+                }}
+                onBlur={handleEmailBlur}
                 placeholder="trader@meg-labs.com"
                 autoComplete="email"
                 className="w-full pl-10 pr-4 py-2.5 bg-slate-950/80 border border-slate-800 focus:border-slate-500 rounded-2xl text-slate-100 placeholder-slate-600 focus:outline-none focus:ring-1 focus:ring-slate-700 text-xs transition-all"
