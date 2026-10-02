@@ -16,6 +16,9 @@ import {
   sendPasswordResetEmail,
   sendEmailVerification,
   updateProfile,
+  updatePassword,
+  reauthenticateWithCredential,
+  EmailAuthProvider,
   GoogleAuthProvider, 
   fbSignOut, 
   onAuthStateChanged 
@@ -102,6 +105,9 @@ interface AuthContextType {
   resendVerificationEmail: (email: string) => Promise<{ success: boolean; message?: string; error?: string }>;
   sendMasterclassVerification: () => Promise<{ success: boolean; message?: string; error?: string }>;
   sendPasswordReset: (email: string) => Promise<{ success: boolean; message?: string; error?: string }>;
+  isPasswordUser: boolean;
+  isGoogleUser: boolean;
+  changePassword: (currentPassword: string, newPassword: string) => Promise<{ success: boolean; error?: string; message?: string }>;
   logout: () => Promise<void>;
   quickLogin: (role: UserRole) => Promise<void>;
   clearError: () => void;
@@ -1128,33 +1134,152 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   // Password reset via Firebase Auth and Supabase fallback
   const sendPasswordReset = async (targetEmail: string): Promise<{ success: boolean; message?: string; error?: string }> => {
     try {
-      const clean = targetEmail.trim().toLowerCase();
-      if (!clean) return { success: false, error: 'Please enter a valid email address.' };
+      const clean = (targetEmail || '').trim().toLowerCase();
+      if (!clean) return { success: false, error: 'Please enter your registered email address.' };
+      if (!clean.includes('@') || !clean.includes('.')) {
+        return { success: false, error: 'Please enter a valid email address.' };
+      }
 
+      // 1. Direct Firebase Auth password-reset email
       try {
-        await sendPasswordResetEmail(auth, clean, {
-          url: CANONICAL_APP_DOMAIN,
-        });
+        await sendPasswordResetEmail(auth, clean);
         return {
           success: true,
-          message: `Password reset instructions sent to ${clean}. Check your inbox!`,
+          message: `Password reset email sent to ${clean}. Please check your inbox and spam folder for instructions.`,
         };
       } catch (fbErr: any) {
-        console.log('[Firebase reset attempt note, trying Supabase fallback]');
-      }
+        const code = fbErr.code || '';
+        console.warn('[Firebase sendPasswordResetEmail notice]', code, fbErr.message);
 
-      const { error: supaErr } = await supabase.auth.resetPasswordForEmail(clean, {
-        redirectTo: `${CANONICAL_APP_DOMAIN}/reset-password`,
-      });
-      if (supaErr) {
-        return { success: false, error: supaErr.message };
+        if (code === 'auth/user-not-found') {
+          return { success: false, error: 'No account found with this email address. Please verify your email or register.' };
+        }
+        if (code === 'auth/invalid-email') {
+          return { success: false, error: 'The email address format is invalid.' };
+        }
+        if (code === 'auth/too-many-requests') {
+          return { success: false, error: 'Too many reset requests sent. Please wait a few moments before trying again.' };
+        }
+
+        // Try with action URL settings if default handler encounters a client restriction
+        try {
+          await sendPasswordResetEmail(auth, clean, { url: window.location.origin });
+          return {
+            success: true,
+            message: `Password reset email sent to ${clean}. Please check your inbox and spam folder for instructions.`,
+          };
+        } catch {
+          // Continue to fallback
+        }
+
+        // Supabase fallback if user account was created via Supabase
+        try {
+          const { error: supaErr } = await supabase.auth.resetPasswordForEmail(clean, {
+            redirectTo: `${window.location.origin}/login`,
+          });
+          if (!supaErr) {
+            return {
+              success: true,
+              message: `Password reset instructions sent to ${clean}. Please check your inbox.`,
+            };
+          }
+        } catch {
+          // ignore
+        }
+
+        return {
+          success: false,
+          error: fbErr.message || 'Failed to send password reset email. Please try again.',
+        };
       }
-      return {
-        success: true,
-        message: `Password reset link sent to ${clean}.`,
-      };
     } catch (err: any) {
       return { success: false, error: err.message || 'Failed to send password reset.' };
+    }
+  };
+
+  // Secure Change Password using Firebase Authentication and re-authentication
+  const changePassword = async (
+    currentPassword: string,
+    newPassword: string
+  ): Promise<{ success: boolean; error?: string; message?: string }> => {
+    try {
+      if (!currentPassword) {
+        return { success: false, error: 'Please enter your current password.' };
+      }
+      if (!newPassword) {
+        return { success: false, error: 'Please enter a new password.' };
+      }
+      if (newPassword.length < 6) {
+        return { success: false, error: 'New password must be at least 6 characters long.' };
+      }
+      if (currentPassword === newPassword) {
+        return { success: false, error: 'New password must be different from your current password.' };
+      }
+
+      const fbUser = auth.currentUser;
+      if (!fbUser || !fbUser.email) {
+        // Fallback if user is currently authenticated via Supabase session
+        if (session?.user?.email) {
+          const { error: supaErr } = await supabase.auth.updateUser({ password: newPassword });
+          if (supaErr) {
+            return { success: false, error: supaErr.message || 'Failed to update password.' };
+          }
+          return { success: true, message: 'Password updated successfully!' };
+        }
+        return { success: false, error: 'You must be signed in to change your password.' };
+      }
+
+      // Check if user has an email/password credential
+      const hasPasswordCredential = fbUser.providerData.some((p) => p.providerId === 'password');
+      const isGoogleOnly = fbUser.providerData.some((p) => p.providerId === 'google.com') && !hasPasswordCredential;
+
+      if (isGoogleOnly) {
+        return {
+          success: false,
+          error: 'Your account is secured via Google Authentication. Password changes must be managed through your Google Account.',
+        };
+      }
+
+      // Re-authenticate using Firebase EmailAuthProvider
+      try {
+        const credential = EmailAuthProvider.credential(fbUser.email, currentPassword);
+        await reauthenticateWithCredential(fbUser, credential);
+      } catch (authErr: any) {
+        const code = authErr.code || '';
+        if (code === 'auth/wrong-password' || code === 'auth/invalid-credential') {
+          return { success: false, error: 'Current password is incorrect. Please verify and try again.' };
+        }
+        if (code === 'auth/too-many-requests') {
+          return { success: false, error: 'Too many attempts. Please wait a few moments before trying again.' };
+        }
+        return { success: false, error: authErr.message || 'Current password verification failed.' };
+      }
+
+      // Securely update password using Firebase updatePassword
+      await updatePassword(fbUser, newPassword);
+
+      // Keep Supabase in sync if active session exists
+      try {
+        if (session) {
+          await supabase.auth.updateUser({ password: newPassword });
+        }
+      } catch {
+        // Non-blocking sync
+      }
+
+      return {
+        success: true,
+        message: 'Your password has been changed successfully. Use your new password the next time you sign in.',
+      };
+    } catch (err: any) {
+      const code = err.code || '';
+      if (code === 'auth/weak-password') {
+        return { success: false, error: 'The new password is too weak. Please use at least 6 characters.' };
+      }
+      if (code === 'auth/requires-recent-login') {
+        return { success: false, error: 'Recent authentication required. Please sign out and sign in again before changing password.' };
+      }
+      return { success: false, error: err.message || 'Failed to update password. Please try again.' };
     }
   };
 
@@ -1249,6 +1374,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     isAdmin
   );
 
+  const isGoogleUser = Boolean(
+    auth.currentUser?.providerData?.some((p) => p.providerId === 'google.com') &&
+    !auth.currentUser?.providerData?.some((p) => p.providerId === 'password')
+  );
+
+  const isPasswordUser = Boolean(
+    auth.currentUser?.providerData?.some((p) => p.providerId === 'password') ||
+    (!isGoogleUser && !!user && !session?.user?.app_metadata?.provider?.includes('google'))
+  );
+
   const userAccessStatus: UserAccessStatus = isAdmin ? 'paid' : (user?.access_status || 'free');
   const canAccessMasterclass = isAdmin || userAccessStatus === 'paid' || userAccessStatus === 'complimentary' || Boolean(user?.can_access_masterclass);
 
@@ -1263,6 +1398,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         isDeveloper,
         isCustomer,
         isLoggedIn,
+        isPasswordUser,
+        isGoogleUser,
         userAccessStatus,
         canAccessMasterclass,
         isEmailVerified,
@@ -1274,6 +1411,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         resendVerificationEmail,
         sendMasterclassVerification,
         sendPasswordReset,
+        changePassword,
         logout,
         quickLogin,
         clearError,

@@ -2,6 +2,7 @@ import { initializeApp, getApps, getApp } from 'firebase/app';
 import { 
   getAuth, 
   GoogleAuthProvider, 
+  EmailAuthProvider,
   signInWithPopup, 
   signInWithCredential, 
   createUserWithEmailAndPassword,
@@ -9,6 +10,8 @@ import {
   sendPasswordResetEmail,
   sendEmailVerification,
   updateProfile,
+  updatePassword,
+  reauthenticateWithCredential,
   signOut as fbSignOut, 
   onAuthStateChanged, 
   User as FirebaseUser 
@@ -40,6 +43,9 @@ export {
   sendPasswordResetEmail,
   sendEmailVerification,
   updateProfile,
+  updatePassword,
+  reauthenticateWithCredential,
+  EmailAuthProvider,
   GoogleAuthProvider, 
   fbSignOut, 
   onAuthStateChanged 

@@ -7,6 +7,7 @@ import { createServer as createViteServer } from 'vite';
 import { GoogleGenAI } from '@google/genai';
 import { createClient } from '@supabase/supabase-js';
 import { initDatabase, db, dbQueries } from './server/db.ts';
+import { SERVER_ACADEMY_LESSONS } from './server/academyCurriculumData.ts';
 import { MEGA_AI_MASTER_SYSTEM_PROMPT } from './server/megaAiPrompt.ts';
 import { sendStrategySubmissionNotifications, sendOrderNotification } from './server/emailService.ts';
 import {
@@ -545,10 +546,22 @@ app.get('/api/academy/curriculum', (_req, res) => {
 app.get('/api/academy/lessons/:id', async (req, res) => {
   try {
     const lessonId = req.params.id;
-    const lesson = dbQueries.getAcademyLessonById(lessonId);
+    let lesson = dbQueries.getAcademyLessonById(lessonId);
 
     if (!lesson) {
       return res.status(404).json({ error: 'Lesson not found' });
+    }
+
+    const serverLessonMeta = SERVER_ACADEMY_LESSONS.find(l => l.id === lessonId || l.uuid === lessonId || String(l.order_index) === lessonId);
+    if (serverLessonMeta) {
+      lesson = {
+        ...lesson,
+        video_url: serverLessonMeta.video_url || lesson.video_url,
+        video_id: serverLessonMeta.video_id || lesson.video_id,
+        video_title: serverLessonMeta.video_title || lesson.video_title,
+        video_subtitle: serverLessonMeta.video_subtitle || lesson.video_subtitle,
+        video_badge: serverLessonMeta.video_badge || lesson.video_badge,
+      };
     }
 
     const isFree = Boolean(lesson.is_free);
@@ -588,6 +601,11 @@ app.get('/api/academy/lessons/:id', async (req, res) => {
           summary: lesson.summary,
           duration_minutes: lesson.duration_minutes,
           is_free: false,
+          video_url: lesson.video_url,
+          video_id: lesson.video_id,
+          video_title: lesson.video_title,
+          video_subtitle: lesson.video_subtitle,
+          video_badge: lesson.video_badge,
           content: '' // ZERO BYTES of proprietary lesson content delivered
         }
       });
@@ -655,6 +673,11 @@ app.get('/api/academy/lessons/:id', async (req, res) => {
         summary: lesson.summary,
         duration_minutes: lesson.duration_minutes,
         is_free: false,
+        video_url: lesson.video_url,
+        video_id: lesson.video_id,
+        video_title: lesson.video_title,
+        video_subtitle: lesson.video_subtitle,
+        video_badge: lesson.video_badge,
         content: '' // ZERO BYTES of proprietary lesson content delivered
       }
     });

@@ -24,7 +24,7 @@ interface AcademyAuthModalProps {
 }
 
 export function AcademyAuthModal({ isOpen, onClose, onSuccess }: AcademyAuthModalProps) {
-  const { login, register, loginWithGoogle, checkEmailExists, resendVerificationEmail } = useAuth();
+  const { login, register, loginWithGoogle, checkEmailExists, resendVerificationEmail, sendPasswordReset } = useAuth();
   const [mode, setMode] = useState<'login' | 'register'>('login');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -506,9 +506,39 @@ export function AcademyAuthModal({ isOpen, onClose, onSuccess }: AcademyAuthModa
               </div>
 
               <div>
-                <label className="block text-[11px] font-mono text-slate-400 mb-1">
-                  Password
-                </label>
+                <div className="flex items-center justify-between mb-1">
+                  <label className="block text-[11px] font-mono text-slate-400">
+                    Password
+                  </label>
+                  {mode === 'login' && (
+                    <button
+                      type="button"
+                      onClick={async () => {
+                        const target = email.trim();
+                        if (!target) {
+                          setErrorMsg('Please enter your email address above to reset password.');
+                          return;
+                        }
+                        setErrorMsg(null);
+                        setSuccessMsg(null);
+                        setLoading(true);
+                        try {
+                          const res = await sendPasswordReset(target);
+                          if (res.success) {
+                            setSuccessMsg(res.message || `Password reset link sent to ${target}!`);
+                          } else {
+                            setErrorMsg(res.error || 'Could not send reset email. Please try again.');
+                          }
+                        } finally {
+                          setLoading(false);
+                        }
+                      }}
+                      className="text-[11px] text-emerald-400 hover:text-emerald-300 font-mono transition-colors cursor-pointer"
+                    >
+                      Forgot Password?
+                    </button>
+                  )}
+                </div>
                 <div className="relative">
                   <input
                     type={showPassword ? 'text' : 'password'}

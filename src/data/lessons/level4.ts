@@ -13,6 +13,11 @@ export const LEVEL4_LESSONS: Lesson[] = [
     "summary": "The 5 mandatory ingredients of a bulletproof prompt: Role, Context, Objective, Constraints, and Format, plus the Master Fill-in-the-Blank Template.",
     "duration_minutes": 15,
     "is_free": false,
+    "video_url": "https://www.youtube.com/watch?v=8dCosWPYlIY",
+    "video_id": "8dCosWPYlIY",
+    "video_title": "Level 4 Masterclass: Mastering AI Prompt Engineering",
+    "video_subtitle": "Watch this masterclass walkthrough on prompt engineering formulas before beginning the written lesson below.",
+    "video_badge": "Level 4 Video Masterclass",
     "content": ""
   },
   {

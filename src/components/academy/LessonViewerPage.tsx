@@ -197,12 +197,30 @@ export function LessonViewerPage({ lessonId, onNavigate, onOpenCheckout }: Lesso
       )
     : false;
 
+  const isLevel4Lesson = lesson
+    ? (
+        lesson.id === 'lesson-4-1' ||
+        lesson.title?.toLowerCase().includes('lesson 4.1') ||
+        (lesson.level_name?.includes('Level 4') && (lesson.lesson_number === 1 || lesson.order_index === 14 || lesson.order_index === 15 || lesson.id?.includes('4-1')))
+      )
+    : false;
+
+  const isLevel5Lesson = lesson
+    ? (
+        lesson.id === 'lesson-5-1' ||
+        lesson.title?.toLowerCase().includes('lesson 5.1') ||
+        (lesson.level_name?.includes('Level 5') && (lesson.lesson_number === 1 || lesson.order_index === 18 || lesson.order_index === 19 || lesson.id?.includes('5-1')))
+      )
+    : false;
+
   const isOtherDedicatedVideoLesson = lesson
     ? (
         Boolean(lesson.video_url || lesson.video_id) &&
         !isLevel1Lesson &&
         !isLevel2Lesson &&
         !isLevel3Lesson &&
+        !isLevel4Lesson &&
+        !isLevel5Lesson &&
         !isBreakoutWorkshop &&
         !isIndicatorWorkshop
       )
@@ -702,6 +720,32 @@ export function LessonViewerPage({ lessonId, onNavigate, onOpenCheckout }: Lesso
                 badgeText={lesson.video_badge || "Level 3 Video Masterclass"}
                 footerHint="Watch the video walkthrough above, then study the 5 program types and blueprints below."
                 footerSubtext="Written Architecture Guide Below ↓"
+              />
+            )}
+
+            {/* Embedded YouTube Video for Level 4 (Lesson 4.1) */}
+            {isLevel4Lesson && (
+              <LessonVideoPlayer
+                videoUrl={lesson.video_url || "https://www.youtube.com/watch?v=8dCosWPYlIY"}
+                videoId={lesson.video_id || "8dCosWPYlIY"}
+                title={lesson.video_title || "Level 4 Masterclass: Mastering AI Prompt Engineering"}
+                subtitle={lesson.video_subtitle || "Watch this masterclass walkthrough on prompt engineering formulas before beginning the written lesson below."}
+                badgeText={lesson.video_badge || "Level 4 Video Masterclass"}
+                footerHint="Watch the Level 4 masterclass video above, then follow the full written lesson and prompt recipes below."
+                footerSubtext="Written Lesson & Prompts Below ↓"
+              />
+            )}
+
+            {/* Embedded YouTube Video for Level 5 (Lesson 5.1) */}
+            {isLevel5Lesson && (
+              <LessonVideoPlayer
+                videoUrl={lesson.video_url || "https://www.youtube.com/watch?v=jXLcal2hSrw"}
+                videoId={lesson.video_id || "jXLcal2hSrw"}
+                title={lesson.video_title || "Level 5 Masterclass: The Safety Shield & Risk Architecture"}
+                subtitle={lesson.video_subtitle || "Watch this video walkthrough on safety shields and automated risk architecture before beginning the written lesson below."}
+                badgeText={lesson.video_badge || "Level 5 Video Masterclass"}
+                footerHint="Watch the Level 5 masterclass video above, then study dynamic lot sizing and prop firm circuit breakers below."
+                footerSubtext="Written Lesson & Code Below ↓"
               />
             )}
 

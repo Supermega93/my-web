@@ -263,7 +263,7 @@ export async function getSupabaseEntitlements(): Promise<SupabaseEntitlement[]> 
 export async function grantSupabaseEntitlement(params: {
   userId: string;
   email: string;
-  accessType?: 'masterclass' | 'ea_lifetime' | 'mentorship';
+  accessType?: 'masterclass' | 'ea_lifetime' | 'mentorship' | 'masterclass_99' | 'masterclass_ea_169' | 'masterclass_vip_299' | string;
   notes?: string;
   grantedBy?: string;
 }): Promise<{ success: boolean; error?: string }> {

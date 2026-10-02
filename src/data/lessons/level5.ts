@@ -13,6 +13,11 @@ export const LEVEL5_LESSONS: Lesson[] = [
     "summary": "Dynamic position sizing based on 1.0% account risk and Stop Loss distance, plus broker lot clamping using VOLUME_MIN, VOLUME_MAX, and VOLUME_STEP.",
     "duration_minutes": 15,
     "is_free": false,
+    "video_url": "https://www.youtube.com/watch?v=jXLcal2hSrw",
+    "video_id": "jXLcal2hSrw",
+    "video_title": "Level 5 Masterclass: The Safety Shield & Risk Architecture",
+    "video_subtitle": "Watch this video walkthrough on safety shields and automated risk architecture before beginning the written lesson below.",
+    "video_badge": "Level 5 Video Masterclass",
     "content": ""
   },
   {
