@@ -102,10 +102,10 @@ export function HomePage({
 
   return (
     <div className="relative min-h-screen bg-[#FAFBFD] text-slate-900 overflow-hidden font-sans">
-      {/* 1. Ambient Warm & Emerald Studio Lighting */}
-      <div className="absolute -top-10 -right-10 w-[550px] h-[550px] bg-gradient-to-bl from-emerald-600/10 via-teal-500/5 to-transparent rounded-full blur-[130px] pointer-events-none -z-0" />
-      <div className="absolute top-24 right-20 w-[300px] h-[300px] bg-emerald-400/5 rounded-full blur-[90px] pointer-events-none -z-0" />
-      <div className="absolute top-40 left-1/2 -translate-x-1/2 w-[900px] h-[500px] bg-gradient-to-b from-emerald-500/8 via-teal-400/5 to-transparent blur-[140px] pointer-events-none -z-0" />
+      {/* 1. Ambient Futuristic Studio Lighting harmonized with Hero Card */}
+      <div className="absolute -top-10 -right-10 w-[600px] h-[600px] bg-gradient-to-bl from-purple-600/12 via-fuchsia-500/8 to-transparent rounded-full blur-[140px] pointer-events-none -z-0" />
+      <div className="absolute top-24 left-10 w-[400px] h-[400px] bg-purple-500/8 rounded-full blur-[100px] pointer-events-none -z-0" />
+      <div className="absolute top-40 left-1/2 -translate-x-1/2 w-[900px] h-[500px] bg-gradient-to-b from-purple-600/8 via-fuchsia-400/5 to-transparent blur-[140px] pointer-events-none -z-0" />
 
       {/* 2. Subtle Technical Grid Pattern */}
       <div 
