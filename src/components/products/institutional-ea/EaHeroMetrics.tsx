@@ -82,12 +82,6 @@ export function EaHeroMetrics({
 
         <div className="flex items-center gap-2">
           <button
-            onClick={onScrollToPricing}
-            className="px-3.5 py-1.5 rounded-lg text-xs font-mono bg-emerald-600 text-white hover:bg-emerald-700 transition-colors shadow-xs cursor-pointer font-bold"
-          >
-            Get License
-          </button>
-          <button
             onClick={onScrollToSystems}
             className="px-3 py-1.5 rounded-lg text-xs font-mono text-slate-700 hover:text-emerald-700 hover:bg-slate-50 transition-colors cursor-pointer border border-slate-200"
           >
@@ -98,6 +92,12 @@ export function EaHeroMetrics({
             className="px-3 py-1.5 rounded-lg text-xs font-mono text-slate-700 hover:text-emerald-700 hover:bg-slate-50 transition-colors cursor-pointer border border-slate-200"
           >
             Audited Stats
+          </button>
+          <button
+            onClick={onScrollToPricing}
+            className="px-3.5 py-1.5 rounded-lg text-xs font-mono bg-emerald-600 text-white hover:bg-emerald-700 transition-colors shadow-xs cursor-pointer font-bold"
+          >
+            Get License
           </button>
         </div>
       </div>

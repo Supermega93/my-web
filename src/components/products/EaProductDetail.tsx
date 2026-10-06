@@ -60,23 +60,23 @@ export function EaProductDetail({
           onScrollToStats={scrollToStats}
         />
 
-        {/* 2. PRICING ABOVE ALL THE INFORMATION AND STATS */}
+        {/* 2. RULE-GOVERNED FRAMEWORK — WHAT ACTUALLY DRIVES THE EA (1st above quantitative stats) */}
+        <div ref={systemsRef}>
+          <EaFiveSystems />
+        </div>
+
+        {/* 3. QUANTITATIVE PERFORMANCE STATS */}
+        <div ref={statsRef}>
+          <EaPositiveStats />
+        </div>
+
+        {/* 4. PRICING & LICENSING */}
         <div ref={pricingRef}>
           <EaPricingAndLicensing
             product={product}
             pricingRef={pricingRef}
             onBuyNow={onBuyNow}
           />
-        </div>
-
-        {/* 3. THE INFORMATION STARTS WITH WHAT ACTUALLY DRIVES THE EA */}
-        <div ref={systemsRef}>
-          <EaFiveSystems />
-        </div>
-
-        {/* 4. POSITIVE STATS ONLY */}
-        <div ref={statsRef}>
-          <EaPositiveStats />
         </div>
 
         {/* 5. FAQS — STRATEGY LOGIC, SETUP REQUIREMENTS & INSTALLATION SUPPORT */}

@@ -17,7 +17,7 @@ import {
 } from 'lucide-react';
 
 export function EaFiveSystems() {
-  const [selectedSystem, setSelectedSystem] = useState<number>(0);
+  const [selectedSystem, setSelectedSystem] = useState<number>(6);
 
   const systems = [
     {
@@ -146,7 +146,11 @@ export function EaFiveSystems() {
         'Maximum Drawdown Lock: Breach of the overall loss threshold triggers full strategy shutdown',
         'Profit Target Lockout: Reaching the target closes every position and halts further execution',
         'Challenge State Machine: All three thresholds evaluated against live equity simultaneously, every tick'
-      ]
+      ],
+      videoTopic: 'Prop Firm Compliance Guard',
+      videoTitle: 'Prop Firm Challenge & Drawdown Protection Guard',
+      youtubeId: 'n3lY57la2C4',
+      videoExplanation: 'The Prop Firm Compliance Guard is a continuous equity-monitoring engine engineered specifically to safeguard prop firm evaluation and funded accounts.\n\nIt evaluates daily loss limits, maximum trailing drawdown, and profit target milestones simultaneously on every incoming market tick. If daily drawdown parameters or overall account thresholds are approached, the system systematically closes open positions and locks execution for the remainder of the trading day to prevent catastrophic rule breaches.\n\nOnce the profit target is achieved, the guard locks in challenge completion, eliminating overtrading risk and protecting trader funding.'
     },
     {
       id: 8,
@@ -218,6 +222,12 @@ export function EaFiveSystems() {
                       <span className="text-xs font-mono text-emerald-800 font-bold uppercase">
                         {sys.badge}
                       </span>
+                      {sys.youtubeId && (
+                        <span className="text-[10px] font-mono text-emerald-700 font-semibold flex items-center gap-1 bg-emerald-50 px-1.5 py-0.5 rounded-full border border-emerald-200/60">
+                          <Play className="w-2.5 h-2.5 fill-emerald-600 text-emerald-600" />
+                          <span>Video</span>
+                        </span>
+                      )}
                     </div>
                     <div className="text-sm font-bold text-slate-900 group-hover:text-emerald-900 transition-colors">
                       {sys.name}
