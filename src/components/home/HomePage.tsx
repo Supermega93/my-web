@@ -527,7 +527,7 @@ export function HomePage({
                       {formatPrice(featuredEa.price, 'USD')}
                     </div>
                     <div className="text-[11px] text-slate-500">
-                      From {formatPrice(199, 'USD')} PC • Up to {formatPrice(349, 'USD')} Source Code
+                      From {formatPrice(119.4, 'USD')} • Prop Firm &amp; Mobile {formatPrice(150, 'USD')}
                     </div>
                   </div>
 

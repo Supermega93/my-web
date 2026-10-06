@@ -160,12 +160,12 @@ export function EaFaq() {
     {
       id: 'install_4',
       category: 'install',
-      question: 'What is the difference between the 6-Month, 12-Month, and Source Code licenses?',
-      answer: 'Standard licenses provide the compiled `.ex5` binary with automated license management, while the Source Code license provides the raw MQL5 source code (.mq5) with full commercial/private developer rights.',
+      question: 'What is the difference between the 6-Month, 12-Month, and Prop Firm & Mobile licenses?',
+      answer: 'Standard licenses provide the compiled `.ex5` binary with automated license management, while the Prop Firm & Mobile Version provides specialized prop-firm risk safeguards and mobile access on Android and iOS.',
       details: [
-        '6-Month License ($199): Compiled .ex5 binary, all 3 risk setfiles, 6 months of updates & support.',
-        '12-Month License ($299, Best Value): Compiled .ex5 binary, all 3 risk setfiles, 12 months of updates & support, multi-account terminal access.',
-        'Developer Source Code License ($499): 100% editable MQL5 (.mq5) source code, unrestricted private execution on unlimited terminals forever, no expiration, and algorithmic customization rights.'
+        '6-Month License ($119.40): Compiled .ex5 binary, all 3 risk setfiles, 6 months of updates & support.',
+        '12-Month License ($179.40, Best Value): Compiled .ex5 binary, all 3 risk setfiles, 12 months of updates & support, multi-account terminal access.',
+        'Prop Firm & Mobile Version ($150): Specialized prop-firm trading configuration, drawdown safeguards, personal or self installation, and full Android & iOS mobile management.'
       ]
     }
   ];

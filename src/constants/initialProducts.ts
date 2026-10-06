@@ -10,7 +10,7 @@ export const INITIAL_PRODUCTS: Product[] = [
       'Adaptive Liquidity Pro is a professional automated trading system developed for MetaTrader 5 (MT5). It is designed to automate structured trading strategies using liquidity, market structure, momentum, volatility, trend alignment and risk-management conditions.',
     short_description:
       'Professional automated trading system for MetaTrader 5 (MT5) utilizing liquidity, market structure, momentum, volatility, and trend alignment.',
-    price: 199.0,
+    price: 119.4,
     currency: 'USD',
     platform: 'MetaTrader 5 (Windows/PC)',
     image_url: STOREFRONT_MEDIA.flagshipEa.imageUrl,
@@ -52,11 +52,11 @@ export const INITIAL_PRODUCTS: Product[] = [
         },
         {
           q: 'Can I use this on Prop Firm challenge accounts?',
-          a: 'Yes. The Professional/Propfirm Version includes dedicated prop-firm risk controls, daily loss limits, and customizable risk per trade.'
+          a: 'Yes. The Prop Firm & Mobile Version includes dedicated prop-firm risk controls, daily loss limits, and customizable risk per trade.'
         },
         {
-          q: 'Is source code available?',
-          a: 'Yes. The With Source Code option ($349) provides complete access to the editable MQL5 source code alongside multi-account usage.'
+          q: 'Is there a Prop Firm & Mobile Version available?',
+          a: 'Yes. The Prop Firm & Mobile Version ($150) is engineered specifically for prop-firm trading with Android and iOS mobile management.'
         }
       ]
     }

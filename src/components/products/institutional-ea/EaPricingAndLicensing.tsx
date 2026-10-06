@@ -41,9 +41,9 @@ export function EaPricingAndLicensing({
     {
       id: 'license_6m',
       name: '6 Month License',
-      price: 199,
+      price: 119.4,
       currency: 'USD',
-      displayPrice: formatCurrencyPrice(199, 'USD'),
+      displayPrice: formatCurrencyPrice(119.4, 'USD'),
       license: 'Access Period: 6 Months Licensed Access',
       badge: 'STANDARD ACCESS',
       features: [
@@ -58,9 +58,9 @@ export function EaPricingAndLicensing({
     {
       id: 'license_12m',
       name: '12 Month License',
-      price: 299,
+      price: 179.4,
       currency: 'USD',
-      displayPrice: formatCurrencyPrice(299, 'USD'),
+      displayPrice: formatCurrencyPrice(179.4, 'USD'),
       license: 'Access Period: 12 Months Licensed Access',
       badge: 'BEST VALUE',
       popular: true,
@@ -77,9 +77,9 @@ export function EaPricingAndLicensing({
     {
       id: 'license_prop_firm_mobile',
       name: 'Prop Firm & Mobile Version',
-      price: 250,
+      price: 150,
       currency: 'USD',
-      displayPrice: formatCurrencyPrice(250, 'USD'),
+      displayPrice: formatCurrencyPrice(150, 'USD'),
       license: 'Specialized Prop-Firm Trading & Mobile Version',
       badge: 'PROP FIRM & MOBILE',
       features: [
@@ -201,7 +201,7 @@ export function EaPricingAndLicensing({
         })}
       </div>
 
-      {/* Prop Firm & Mobile Version ($250) — Replaces Source Code */}
+      {/* Prop Firm & Mobile Version ($150) — Replaces Source Code */}
       {(() => {
         const propTier = pricingTiers[2];
         const isPropSelected = selectedTier.id === propTier.id;
