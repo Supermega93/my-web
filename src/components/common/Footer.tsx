@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { ActiveView } from '../../types.ts';
-import { AlertTriangle, ShieldCheck, Mail, ArrowRight, X, Shield } from 'lucide-react';
+import { AlertTriangle, ShieldCheck, Mail, ArrowRight, X, Shield, Lock, CreditCard } from 'lucide-react';
 import { Button } from './Button.tsx';
 import { MegAiLogoIcon } from './MegAiLogo.tsx';
 
@@ -199,6 +199,92 @@ export function Footer({ onNavigate, onOpenAuth, onTriggerBuildMyEa }: FooterPro
                 </button>
               </li>
             </ul>
+          </div>
+        </div>
+
+        {/* Security & Trust Row */}
+        <div className="mt-12 p-6 rounded-3xl bg-[#080E18] border border-slate-800/90 shadow-xl">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-5 border-b border-slate-800/80">
+            <div className="flex items-center gap-2.5">
+              <div className="w-8 h-8 rounded-xl bg-emerald-500/10 border border-emerald-500/30 flex items-center justify-center text-emerald-400 shrink-0">
+                <ShieldCheck className="w-4 h-4 text-emerald-400" />
+              </div>
+              <div>
+                <span className="text-xs font-mono font-bold uppercase tracking-wider text-slate-200">
+                  Security &amp; Trust Assurance
+                </span>
+                <p className="text-[11px] text-slate-400 leading-tight">
+                  Institutional protocols protecting your transactions, trading intellectual property, and data
+                </p>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-2 text-[10px] font-mono text-emerald-400 bg-emerald-950/40 border border-emerald-500/30 px-3 py-1 rounded-full w-fit shrink-0">
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+              <span>Verified Merchant • 256-Bit SSL Protected</span>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 pt-5">
+            {/* 1. SSL Encryption */}
+            <div className="flex items-start gap-3.5">
+              <div className="w-10 h-10 rounded-2xl bg-slate-900 border border-slate-800 flex items-center justify-center shrink-0 text-cyan-400 shadow-inner">
+                <Lock className="w-5 h-5 text-cyan-400" />
+              </div>
+              <div className="space-y-1">
+                <div className="flex items-center gap-2">
+                  <h4 className="text-xs font-bold text-white uppercase tracking-wider font-mono">
+                    256-Bit SSL Encryption
+                  </h4>
+                  <span className="text-[9px] px-1.5 py-0.2 rounded bg-cyan-500/10 text-cyan-300 font-mono">
+                    TLS 1.3
+                  </span>
+                </div>
+                <p className="text-xs text-slate-400 leading-relaxed">
+                  All traffic, digital downloads, and checkout requests are encrypted end-to-end using bank-grade cryptographic certificates.
+                </p>
+              </div>
+            </div>
+
+            {/* 2. Secure Payments */}
+            <div className="flex items-start gap-3.5">
+              <div className="w-10 h-10 rounded-2xl bg-slate-900 border border-slate-800 flex items-center justify-center shrink-0 text-emerald-400 shadow-inner">
+                <CreditCard className="w-5 h-5 text-emerald-400" />
+              </div>
+              <div className="space-y-1">
+                <div className="flex items-center gap-2">
+                  <h4 className="text-xs font-bold text-white uppercase tracking-wider font-mono">
+                    Secure Payments
+                  </h4>
+                  <span className="text-[9px] px-1.5 py-0.2 rounded bg-emerald-500/10 text-emerald-300 font-mono">
+                    PCI-DSS
+                  </span>
+                </div>
+                <p className="text-xs text-slate-400 leading-relaxed">
+                  Compliant checkout processing via PayPal, Visa, Mastercard, and direct verified Standard Bank EFT with zero hidden fees.
+                </p>
+              </div>
+            </div>
+
+            {/* 3. Data Privacy */}
+            <div className="flex items-start gap-3.5">
+              <div className="w-10 h-10 rounded-2xl bg-slate-900 border border-slate-800 flex items-center justify-center shrink-0 text-indigo-400 shadow-inner">
+                <Shield className="w-5 h-5 text-indigo-400" />
+              </div>
+              <div className="space-y-1">
+                <div className="flex items-center gap-2">
+                  <h4 className="text-xs font-bold text-white uppercase tracking-wider font-mono">
+                    Strict Data Privacy
+                  </h4>
+                  <span className="text-[9px] px-1.5 py-0.2 rounded bg-indigo-500/10 text-indigo-300 font-mono">
+                    NDA Protected
+                  </span>
+                </div>
+                <p className="text-xs text-slate-400 leading-relaxed">
+                  Your trading strategy architecture, setfiles, and personal details remain 100% private. We never sell or share client data.
+                </p>
+              </div>
+            </div>
           </div>
         </div>
 
