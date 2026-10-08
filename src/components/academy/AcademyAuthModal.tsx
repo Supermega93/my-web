@@ -193,7 +193,7 @@ export function AcademyAuthModal({ isOpen, onClose, onSuccess }: AcademyAuthModa
   return createPortal(
     <div 
       id="academy-auth-modal"
-      className="fixed inset-0 z-[99999] overflow-y-auto bg-slate-950/85 backdrop-blur-md animate-in fade-in duration-200 flex items-center justify-center p-4 sm:p-6 text-center"
+      className="fixed inset-0 z-[99999] overflow-y-auto bg-slate-900/50 backdrop-blur-sm animate-in fade-in duration-200 flex items-center justify-center p-4 sm:p-6 text-center"
       style={{ zIndex: 99999 }}
       onClick={onClose}
     >
@@ -205,14 +205,14 @@ export function AcademyAuthModal({ isOpen, onClose, onSuccess }: AcademyAuthModa
       />
 
       <div 
-        className="relative w-full max-w-md my-auto bg-slate-900/98 backdrop-blur-2xl border border-slate-800/90 rounded-3xl p-6 sm:p-8 shadow-2xl text-left z-10 max-h-[92vh] overflow-y-auto"
+        className="relative w-full max-w-md my-auto bg-white border border-slate-200/90 rounded-3xl p-6 sm:p-8 shadow-2xl text-left z-10 max-h-[92vh] overflow-y-auto text-slate-900"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Close Button */}
         <button
           type="button"
           onClick={onClose}
-          className="absolute top-5 right-5 p-2 rounded-full bg-slate-800/80 hover:bg-slate-700 text-slate-400 hover:text-white transition-colors cursor-pointer z-20"
+          className="absolute top-5 right-5 p-2 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-500 hover:text-slate-900 transition-colors cursor-pointer z-20"
           aria-label="Close"
         >
           <X className="w-4 h-4" />
@@ -221,33 +221,33 @@ export function AcademyAuthModal({ isOpen, onClose, onSuccess }: AcademyAuthModa
         {needsVerification ? (
           /* Verification Required Screen */
           <div className="text-center space-y-4 py-2">
-            <div className="w-12 h-12 rounded-2xl bg-amber-500/10 border border-amber-500/30 flex items-center justify-center text-amber-400 mx-auto">
+            <div className="w-12 h-12 rounded-2xl bg-amber-50 border border-amber-200 flex items-center justify-center text-amber-600 mx-auto">
               <Mail className="w-6 h-6" />
             </div>
 
             <div className="space-y-1">
-              <h3 className="text-lg font-bold text-white tracking-tight">
+              <h3 className="text-lg font-bold text-slate-900 tracking-tight">
                 Verify Your Email Address
               </h3>
-              <p className="text-xs text-slate-400 max-w-sm mx-auto leading-relaxed">
+              <p className="text-xs text-slate-600 max-w-sm mx-auto leading-relaxed">
                 For platform security, verify your email address via Supabase to access the Academy courses and files.
               </p>
             </div>
 
-            <div className="p-3 rounded-2xl bg-slate-950 border border-slate-800 text-xs font-mono text-emerald-400 text-center break-all">
+            <div className="p-3 rounded-2xl bg-slate-50 border border-slate-200 text-xs font-mono text-emerald-700 text-center break-all font-semibold">
               {unverifiedEmail || email}
             </div>
 
             {errorMsg && (
-              <div className="p-3 rounded-2xl bg-rose-950/50 border border-rose-800/80 text-rose-300 text-xs flex items-start gap-2 text-left animate-in fade-in duration-150">
-                <AlertCircle className="w-4 h-4 shrink-0 mt-0.5 text-rose-400" />
+              <div className="p-3 rounded-2xl bg-rose-50 border border-rose-200 text-rose-700 text-xs flex items-start gap-2 text-left animate-in fade-in duration-150">
+                <AlertCircle className="w-4 h-4 shrink-0 mt-0.5 text-rose-600" />
                 <span className="leading-relaxed">{errorMsg}</span>
               </div>
             )}
 
             {successMsg && (
-              <div className="p-3 rounded-2xl bg-emerald-950/50 border border-emerald-800/80 text-emerald-300 text-xs flex items-center gap-2 text-left animate-in fade-in duration-150">
-                <CheckCircle2 className="w-4 h-4 shrink-0 text-emerald-400" />
+              <div className="p-3 rounded-2xl bg-emerald-50 border border-emerald-200 text-emerald-700 text-xs flex items-center gap-2 text-left animate-in fade-in duration-150">
+                <CheckCircle2 className="w-4 h-4 shrink-0 text-emerald-600" />
                 <span className="leading-relaxed">{successMsg}</span>
               </div>
             )}
@@ -259,7 +259,7 @@ export function AcademyAuthModal({ isOpen, onClose, onSuccess }: AcademyAuthModa
                 disabled={resending}
                 variant="primary"
                 fullWidth
-                className="bg-emerald-700 hover:bg-emerald-600 text-white font-medium cursor-pointer"
+                className="bg-emerald-600 hover:bg-emerald-500 text-white font-semibold cursor-pointer rounded-2xl shadow-xs"
               >
                 {resending ? 'Sending Link...' : 'Resend Verification Link'}
               </Button>
@@ -272,27 +272,27 @@ export function AcademyAuthModal({ isOpen, onClose, onSuccess }: AcademyAuthModa
                   setErrorMsg(null);
                   setSuccessMsg('Once you have confirmed your email, sign in below.');
                 }}
-                className="w-full py-2 text-xs text-slate-400 hover:text-white transition-colors cursor-pointer"
+                className="w-full py-2 text-xs text-slate-500 hover:text-slate-800 transition-colors cursor-pointer"
               >
-                Already verified? <span className="text-emerald-400 font-semibold underline">Sign In</span>
+                Already verified? <span className="text-emerald-700 font-semibold underline">Sign In</span>
               </button>
 
               <button
                 type="button"
                 onClick={onClose}
-                className="w-full py-2.5 px-4 rounded-2xl bg-slate-800/60 hover:bg-slate-800 text-slate-300 hover:text-white border border-slate-700/60 hover:border-slate-600 text-xs font-semibold transition-all cursor-pointer text-center"
+                className="w-full py-2.5 px-4 rounded-2xl bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-200 text-xs font-semibold transition-all cursor-pointer text-center"
               >
                 Cancel
               </button>
             </div>
 
-            <div className="border-t border-slate-800/80 pt-4 mt-4">
-              <p className="text-[11px] text-slate-400 mb-2.5">Prefer instant login without confirmation emails?</p>
+            <div className="border-t border-slate-200 pt-4 mt-4">
+              <p className="text-[11px] text-slate-500 mb-2.5">Prefer instant login without confirmation emails?</p>
               <button
                 type="button"
                 onClick={handleGoogleSignIn}
                 disabled={loading}
-                className="w-full py-2.5 px-4 rounded-2xl bg-slate-800/90 hover:bg-slate-750 border border-slate-750 hover:border-slate-600 text-xs font-medium text-white flex items-center justify-center gap-2.5 transition-all shadow-xs cursor-pointer active:scale-[0.98]"
+                className="w-full py-2.5 px-4 rounded-2xl bg-white hover:bg-slate-50 border border-slate-200 text-xs font-semibold text-slate-700 flex items-center justify-center gap-2.5 transition-all shadow-xs cursor-pointer active:scale-[0.98]"
               >
                 <svg className="w-4 h-4" viewBox="0 0 24 24">
                   <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" />
@@ -308,13 +308,13 @@ export function AcademyAuthModal({ isOpen, onClose, onSuccess }: AcademyAuthModa
           <>
             {/* Header */}
             <div className="text-center space-y-1.5 mb-5">
-              <div className="w-10 h-10 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-400 mx-auto mb-2">
+              <div className="w-10 h-10 rounded-2xl bg-emerald-50 border border-emerald-200 flex items-center justify-center text-emerald-600 mx-auto mb-2">
                 <Lock className="w-5 h-5" />
               </div>
-              <h3 className="text-lg font-bold text-white tracking-tight">
+              <h3 className="text-lg font-bold text-slate-900 tracking-tight">
                 {mode === 'login' ? 'Welcome Back to Academy' : 'Create Student Account'}
               </h3>
-              <p className="text-xs text-slate-400 max-w-xs mx-auto leading-relaxed">
+              <p className="text-xs text-slate-600 max-w-xs mx-auto leading-relaxed">
                 {mode === 'login' 
                   ? 'Sign in to sync your progress, track quiz scores, and unlock lesson materials.' 
                   : 'Get started for free to access course modules, community notes, and study guides.'}
@@ -322,7 +322,7 @@ export function AcademyAuthModal({ isOpen, onClose, onSuccess }: AcademyAuthModa
             </div>
 
             {/* Segmented Control Tabs */}
-            <div className="flex p-1 bg-slate-950/70 rounded-2xl border border-slate-800/80 mb-4">
+            <div className="flex p-1 bg-slate-100 rounded-2xl border border-slate-200 mb-4">
               <button
                 type="button"
                 onClick={() => {
@@ -330,10 +330,10 @@ export function AcademyAuthModal({ isOpen, onClose, onSuccess }: AcademyAuthModa
                   setErrorMsg(null);
                   setSuccessMsg(null);
                 }}
-                className={`flex-1 py-2 text-xs font-medium rounded-xl transition-all select-none cursor-pointer ${
+                className={`flex-1 py-2 text-xs font-semibold rounded-xl transition-all select-none cursor-pointer ${
                   mode === 'login'
-                    ? 'bg-slate-800 text-white shadow-xs font-semibold'
-                    : 'text-slate-400 hover:text-slate-200'
+                    ? 'bg-white text-slate-900 shadow-xs'
+                    : 'text-slate-600 hover:text-slate-900'
                 }`}
               >
                 Sign In
@@ -345,10 +345,10 @@ export function AcademyAuthModal({ isOpen, onClose, onSuccess }: AcademyAuthModa
                   setErrorMsg(null);
                   setSuccessMsg(null);
                 }}
-                className={`flex-1 py-2 text-xs font-medium rounded-xl transition-all select-none cursor-pointer ${
+                className={`flex-1 py-2 text-xs font-semibold rounded-xl transition-all select-none cursor-pointer ${
                   mode === 'register'
-                    ? 'bg-slate-800 text-white shadow-xs font-semibold'
-                    : 'text-slate-400 hover:text-slate-200'
+                    ? 'bg-white text-slate-900 shadow-xs'
+                    : 'text-slate-600 hover:text-slate-900'
                 }`}
               >
                 Create Account
@@ -357,13 +357,13 @@ export function AcademyAuthModal({ isOpen, onClose, onSuccess }: AcademyAuthModa
 
             {/* Error / Success Notifications */}
             {domainAuthPrompt?.show && (
-              <div className="mb-4 p-4 rounded-2xl bg-amber-950/40 border border-amber-800/70 text-amber-200 text-xs animate-in fade-in duration-150 space-y-2.5">
+              <div className="mb-4 p-4 rounded-2xl bg-amber-50 border border-amber-200 text-amber-800 text-xs animate-in fade-in duration-150 space-y-2.5">
                 <div className="flex items-start gap-2">
-                  <Globe className="w-4 h-4 shrink-0 mt-0.5 text-amber-400" />
+                  <Globe className="w-4 h-4 shrink-0 mt-0.5 text-amber-600" />
                   <div>
-                    <p className="font-semibold text-amber-300">Domain Authorization Required for Google Popup</p>
-                    <p className="text-[11px] text-amber-300/80 leading-relaxed mt-0.5">
-                      Google OAuth requires domain <span className="font-mono bg-amber-950/80 px-1 py-0.5 rounded text-amber-200">{domainAuthPrompt.domain}</span> in your Firebase Console Authorized Domains list.
+                    <p className="font-semibold text-amber-900">Domain Authorization Required for Google Popup</p>
+                    <p className="text-[11px] text-amber-700 leading-relaxed mt-0.5">
+                      Google OAuth requires domain <span className="font-mono bg-amber-100 px-1 py-0.5 rounded text-amber-900">{domainAuthPrompt.domain}</span> in your Firebase Console Authorized Domains list.
                     </p>
                   </div>
                 </div>
@@ -375,7 +375,7 @@ export function AcademyAuthModal({ isOpen, onClose, onSuccess }: AcademyAuthModa
                       setMode('register');
                       setDomainAuthPrompt(null);
                     }}
-                    className="flex-1 py-2 px-3 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-semibold text-xs flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
+                    className="flex-1 py-2 px-3 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-semibold text-xs flex items-center justify-center gap-1.5 transition-colors cursor-pointer shadow-xs"
                   >
                     <span>Create with Email (Instant Access)</span>
                     <ArrowRight className="w-3.5 h-3.5" />
@@ -385,7 +385,7 @@ export function AcademyAuthModal({ isOpen, onClose, onSuccess }: AcademyAuthModa
                     href={domainAuthPrompt.consoleUrl}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="py-2 px-3 rounded-xl bg-amber-900/60 hover:bg-amber-850 text-amber-200 border border-amber-700/60 font-medium text-xs flex items-center justify-center gap-1.5 transition-colors"
+                    className="py-2 px-3 rounded-xl bg-white hover:bg-slate-50 text-amber-800 border border-amber-200 font-semibold text-xs flex items-center justify-center gap-1.5 transition-colors shadow-xs"
                   >
                     <span>Add in Firebase</span>
                     <ExternalLink className="w-3.5 h-3.5" />
@@ -395,12 +395,12 @@ export function AcademyAuthModal({ isOpen, onClose, onSuccess }: AcademyAuthModa
             )}
 
             {isAlreadyRegistered && (
-              <div className="mb-3.5 p-3.5 rounded-2xl bg-amber-950/40 border border-amber-500/50 text-amber-200 text-xs flex flex-col gap-2.5 animate-in fade-in duration-150">
+              <div className="mb-3.5 p-3.5 rounded-2xl bg-amber-50 border border-amber-200 text-amber-800 text-xs flex flex-col gap-2.5 animate-in fade-in duration-150">
                 <div className="flex items-start gap-2">
-                  <AlertCircle className="w-4 h-4 shrink-0 mt-0.5 text-amber-400" />
+                  <AlertCircle className="w-4 h-4 shrink-0 mt-0.5 text-amber-600" />
                   <div className="leading-relaxed">
-                    <span className="font-semibold block text-amber-200">Account Already Registered</span>
-                    <span>An account with <strong className="text-white">{alreadyRegisteredEmail || email}</strong> already exists on MEG.AI Labs. Please sign in to access your course.</span>
+                    <span className="font-semibold block text-amber-900">Account Already Registered</span>
+                    <span>An account with <strong className="text-slate-900">{alreadyRegisteredEmail || email}</strong> already exists on MEG.AI Labs. Please sign in to access your course.</span>
                   </div>
                 </div>
                 <button
@@ -410,7 +410,7 @@ export function AcademyAuthModal({ isOpen, onClose, onSuccess }: AcademyAuthModa
                     setErrorMsg(null);
                     setIsAlreadyRegistered(false);
                   }}
-                  className="w-full py-2 px-3 rounded-xl bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 font-medium text-xs flex items-center justify-center gap-1.5 transition-all cursor-pointer border border-amber-500/30 hover:border-amber-500/50"
+                  className="w-full py-2 px-3 rounded-xl bg-amber-100 hover:bg-amber-200 text-amber-900 font-semibold text-xs flex items-center justify-center gap-1.5 transition-all cursor-pointer border border-amber-300"
                 >
                   <LogIn className="w-3.5 h-3.5" />
                   <span>Switch to Sign In with this Email</span>
@@ -419,14 +419,14 @@ export function AcademyAuthModal({ isOpen, onClose, onSuccess }: AcademyAuthModa
             )}
 
             {errorMsg && !isAlreadyRegistered && (
-              <div className="mb-3.5 p-3 rounded-2xl bg-rose-950/50 border border-rose-800/80 text-rose-300 text-xs flex items-start gap-2 animate-in fade-in duration-150">
-                <AlertCircle className="w-4 h-4 shrink-0 mt-0.5 text-rose-400" />
+              <div className="mb-3.5 p-3 rounded-2xl bg-rose-50 border border-rose-200 text-rose-700 text-xs flex items-start gap-2 animate-in fade-in duration-150">
+                <AlertCircle className="w-4 h-4 shrink-0 mt-0.5 text-rose-600" />
                 <span className="leading-relaxed">{errorMsg}</span>
               </div>
             )}
             {successMsg && (
-              <div className="mb-3.5 p-3 rounded-2xl bg-emerald-950/50 border border-emerald-800/80 text-emerald-300 text-xs flex items-center gap-2 animate-in fade-in duration-150">
-                <CheckCircle2 className="w-4 h-4 shrink-0 text-emerald-400" />
+              <div className="mb-3.5 p-3 rounded-2xl bg-emerald-50 border border-emerald-200 text-emerald-700 text-xs flex items-center gap-2 animate-in fade-in duration-150">
+                <CheckCircle2 className="w-4 h-4 shrink-0 text-emerald-600" />
                 <span>{successMsg}</span>
               </div>
             )}
@@ -436,7 +436,7 @@ export function AcademyAuthModal({ isOpen, onClose, onSuccess }: AcademyAuthModa
               type="button"
               onClick={handleGoogleSignIn}
               disabled={loading}
-              className="w-full py-2.5 px-4 rounded-2xl bg-slate-800/90 hover:bg-slate-750 border border-slate-750 hover:border-slate-600 text-xs font-medium text-white flex items-center justify-center gap-3 transition-all shadow-xs cursor-pointer active:scale-[0.98] disabled:opacity-50"
+              className="w-full py-2.5 px-4 rounded-2xl bg-white hover:bg-slate-50 border border-slate-200 text-xs font-semibold text-slate-700 flex items-center justify-center gap-3 transition-all shadow-xs cursor-pointer active:scale-[0.98] disabled:opacity-50"
             >
               <svg className="w-4 h-4" viewBox="0 0 24 24">
                 <path
@@ -460,18 +460,18 @@ export function AcademyAuthModal({ isOpen, onClose, onSuccess }: AcademyAuthModa
             </button>
 
             <div className="relative flex items-center justify-center my-3">
-              <div className="border-t border-slate-800/80 w-full" />
-              <span className="bg-slate-900 px-3 text-[10px] font-mono uppercase text-slate-500 tracking-wider">
+              <div className="border-t border-slate-200 w-full" />
+              <span className="bg-white px-3 text-[10px] font-mono uppercase text-slate-400 tracking-wider">
                 or email
               </span>
-              <div className="border-t border-slate-800/80 w-full" />
+              <div className="border-t border-slate-200 w-full" />
             </div>
 
             {/* Email & Password Form */}
             <form onSubmit={handleSubmit} className="space-y-3">
               {mode === 'register' && (
                 <div>
-                  <label className="block text-[11px] font-mono text-slate-400 mb-1">
+                  <label className="block text-[11px] font-medium text-slate-600 mb-1">
                     Your Name
                   </label>
                   <input
@@ -479,13 +479,13 @@ export function AcademyAuthModal({ isOpen, onClose, onSuccess }: AcademyAuthModa
                     value={name}
                     onChange={(e) => setName(e.target.value)}
                     placeholder="Alex Morgan"
-                    className="w-full px-3.5 py-2.5 bg-slate-950/80 border border-slate-800 focus:border-slate-500 rounded-2xl text-slate-100 placeholder-slate-600 focus:outline-none focus:ring-1 focus:ring-slate-700 text-xs transition-all"
+                    className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 focus:border-emerald-500 rounded-2xl text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 text-xs transition-all"
                   />
                 </div>
               )}
 
               <div>
-                <label className="block text-[11px] font-mono text-slate-400 mb-1">
+                <label className="block text-[11px] font-medium text-slate-600 mb-1">
                   Email Address
                 </label>
                 <input
@@ -501,13 +501,13 @@ export function AcademyAuthModal({ isOpen, onClose, onSuccess }: AcademyAuthModa
                   }}
                   onBlur={handleEmailBlur}
                   placeholder="student@meg-labs.com"
-                  className="w-full px-3.5 py-2.5 bg-slate-950/80 border border-slate-800 focus:border-slate-500 rounded-2xl text-slate-100 placeholder-slate-600 focus:outline-none focus:ring-1 focus:ring-slate-700 text-xs transition-all"
+                  className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 focus:border-emerald-500 rounded-2xl text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 text-xs transition-all"
                 />
               </div>
 
               <div>
                 <div className="flex items-center justify-between mb-1">
-                  <label className="block text-[11px] font-mono text-slate-400">
+                  <label className="block text-[11px] font-medium text-slate-600">
                     Password
                   </label>
                   {mode === 'login' && (
@@ -533,7 +533,7 @@ export function AcademyAuthModal({ isOpen, onClose, onSuccess }: AcademyAuthModa
                           setLoading(false);
                         }
                       }}
-                      className="text-[11px] text-emerald-400 hover:text-emerald-300 font-mono transition-colors cursor-pointer"
+                      className="text-[11px] text-emerald-700 hover:text-emerald-800 font-medium transition-colors cursor-pointer"
                     >
                       Forgot Password?
                     </button>
@@ -546,12 +546,12 @@ export function AcademyAuthModal({ isOpen, onClose, onSuccess }: AcademyAuthModa
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     placeholder="••••••••"
-                    className="w-full px-3.5 py-2.5 pr-10 bg-slate-950/80 border border-slate-800 focus:border-slate-500 rounded-2xl text-slate-100 placeholder-slate-600 focus:outline-none focus:ring-1 focus:ring-slate-700 text-xs transition-all"
+                    className="w-full px-3.5 py-2.5 pr-10 bg-slate-50 border border-slate-200 focus:border-emerald-500 rounded-2xl text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 text-xs transition-all"
                   />
                   <button
                     type="button"
                     onClick={() => setShowPassword(!showPassword)}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-200 p-1 cursor-pointer transition-colors"
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-700 p-1 cursor-pointer transition-colors"
                     title={showPassword ? 'Hide password' : 'Show password'}
                   >
                     {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
@@ -560,8 +560,8 @@ export function AcademyAuthModal({ isOpen, onClose, onSuccess }: AcademyAuthModa
               </div>
 
               {mode === 'register' && (
-                <div className="p-2.5 rounded-2xl bg-slate-950/60 border border-slate-800/80 text-[11px] text-slate-400 flex items-center gap-2">
-                  <Mail className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
+                <div className="p-2.5 rounded-2xl bg-emerald-50/60 border border-emerald-200 text-[11px] text-emerald-800 flex items-center gap-2">
+                  <Mail className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
                   <span>A confirmation link will be sent to your email to activate access.</span>
                 </div>
               )}
@@ -573,7 +573,7 @@ export function AcademyAuthModal({ isOpen, onClose, onSuccess }: AcademyAuthModa
                   variant="primary"
                   fullWidth
                   icon={mode === 'login' ? <LogIn className="w-4 h-4" /> : <UserPlus className="w-4 h-4" />}
-                  className="w-full bg-emerald-700 hover:bg-emerald-600 text-white font-medium cursor-pointer"
+                  className="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-semibold cursor-pointer rounded-2xl shadow-xs"
                 >
                   {loading ? 'Processing...' : mode === 'login' ? 'Sign In' : 'Create Account'}
                 </Button>
@@ -581,7 +581,7 @@ export function AcademyAuthModal({ isOpen, onClose, onSuccess }: AcademyAuthModa
                 <button
                   type="button"
                   onClick={onClose}
-                  className="w-full py-2.5 px-4 rounded-2xl bg-slate-800/60 hover:bg-slate-800 text-slate-300 hover:text-white border border-slate-700/60 hover:border-slate-600 text-xs font-semibold transition-all cursor-pointer text-center"
+                  className="w-full py-2.5 px-4 rounded-2xl bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-200 text-xs font-semibold transition-all cursor-pointer text-center"
                 >
                   Cancel
                 </button>

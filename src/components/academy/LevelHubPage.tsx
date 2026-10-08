@@ -149,7 +149,7 @@ export function LevelHubPage({ levelId, onNavigate }: LevelHubPageProps) {
   const nextLevel = LEVELS_META.find((m) => m.levelNumber === levelMeta.levelNumber + 1);
 
   return (
-    <div className="min-h-screen bg-[#0B0E14] text-slate-100 font-sans selection:bg-emerald-500/20 selection:text-emerald-300 flex flex-col">
+    <div className="min-h-screen bg-[#F8F9FA] text-slate-900 font-sans selection:bg-emerald-500/20 selection:text-emerald-900 flex flex-col">
       {/* Academy Top Navigation */}
       <AcademyNav onNavigate={onNavigate} activeTab="curriculum" currentLevel={levelMeta.levelNumber} />
 
@@ -157,45 +157,45 @@ export function LevelHubPage({ levelId, onNavigate }: LevelHubPageProps) {
       <main className="flex-1 max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-10 w-full space-y-8">
         
         {/* Breadcrumbs & Level Navigator Bar */}
-        <div className="flex flex-wrap items-center justify-between gap-4 text-xs text-slate-400 border-b border-[#1E293B] pb-4">
+        <div className="flex flex-wrap items-center justify-between gap-4 text-xs text-slate-500 border-b border-slate-200 pb-4">
           <div className="flex items-center gap-2">
             <button
               onClick={() => onNavigate('academy')}
-              className="hover:text-emerald-400 transition-colors flex items-center gap-1 text-slate-400 font-medium"
+              className="hover:text-emerald-700 transition-colors flex items-center gap-1 text-slate-600 font-medium cursor-pointer"
             >
               <span>Academy</span>
             </button>
-            <span className="text-slate-600">/</span>
-            <span className="text-white font-semibold">
+            <span className="text-slate-400">/</span>
+            <span className="text-slate-900 font-bold">
               Level {levelMeta.levelNumber}: {levelMeta.schoolName}
             </span>
           </div>
 
           <div className="flex flex-wrap items-center gap-3">
             {/* Student Tier Badge & Quick Selector */}
-            <div className="flex items-center gap-2 bg-[#101623] border border-[#1E293B] rounded-lg px-2.5 py-1 text-xs">
+            <div className="flex items-center gap-2 bg-white border border-slate-200 rounded-xl px-3 py-1.5 text-xs shadow-xs">
               <span className="text-slate-500 hidden sm:inline">Tier:</span>
               <span
                 className={`font-semibold text-xs ${
                   studentTier === 'paid' || studentTier === 'complimentary'
-                    ? 'text-cyan-400'
-                    : 'text-emerald-400'
+                    ? 'text-cyan-700'
+                    : 'text-emerald-700'
                 }`}
               >
                 {studentTier === 'paid' ? 'Paid Tier' : studentTier === 'complimentary' ? 'Complimentary' : 'Free Core'}
               </span>
               {isAdmin && (
-                <div className="flex items-center gap-1 ml-1 border-l border-[#1E293B] pl-2">
-                  <span className="text-[10px] text-amber-400 font-bold uppercase">ADMIN:</span>
+                <div className="flex items-center gap-1 ml-1 border-l border-slate-200 pl-2">
+                  <span className="text-[10px] text-amber-700 font-bold uppercase">ADMIN:</span>
                   <button
                     onClick={() => setActiveStudentTier('free')}
-                    className={`px-1.5 py-0.5 rounded text-[10px] font-semibold ${studentTier === 'free' ? 'bg-emerald-600 text-white' : 'text-slate-400 hover:text-white'}`}
+                    className={`px-1.5 py-0.5 rounded text-[10px] font-semibold ${studentTier === 'free' ? 'bg-emerald-600 text-white' : 'text-slate-600 hover:text-slate-900'}`}
                   >
                     Free
                   </button>
                   <button
                     onClick={() => setActiveStudentTier('paid')}
-                    className={`px-1.5 py-0.5 rounded text-[10px] font-semibold ${studentTier === 'paid' ? 'bg-cyan-600 text-white' : 'text-slate-400 hover:text-white'}`}
+                    className={`px-1.5 py-0.5 rounded text-[10px] font-semibold ${studentTier === 'paid' ? 'bg-cyan-600 text-white' : 'text-slate-600 hover:text-slate-900'}`}
                   >
                     Paid
                   </button>
@@ -206,7 +206,7 @@ export function LevelHubPage({ levelId, onNavigate }: LevelHubPageProps) {
             {prevLevel && (
               <button
                 onClick={() => onNavigate('level-hub', String(prevLevel.levelNumber))}
-                className="px-2.5 py-1 rounded-lg bg-[#101623] hover:bg-[#141C2A] text-slate-300 hover:text-white border border-[#1E293B] transition-colors flex items-center gap-1 text-xs"
+                className="px-3 py-1.5 rounded-xl bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 transition-colors flex items-center gap-1 text-xs shadow-xs font-medium cursor-pointer"
               >
                 <ChevronLeft className="w-3.5 h-3.5" />
                 <span>Prev: {prevLevel.schoolName}</span>
@@ -215,7 +215,7 @@ export function LevelHubPage({ levelId, onNavigate }: LevelHubPageProps) {
             {nextLevel && (
               <button
                 onClick={() => onNavigate('level-hub', String(nextLevel.levelNumber))}
-                className="px-2.5 py-1 rounded-lg bg-[#101623] hover:bg-[#141C2A] text-slate-300 hover:text-white border border-[#1E293B] transition-colors flex items-center gap-1 text-xs"
+                className="px-3 py-1.5 rounded-xl bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 transition-colors flex items-center gap-1 text-xs shadow-xs font-medium cursor-pointer"
               >
                 <span>Next: {nextLevel.schoolName}</span>
                 <ChevronRight className="w-3.5 h-3.5" />
@@ -225,7 +225,7 @@ export function LevelHubPage({ levelId, onNavigate }: LevelHubPageProps) {
         </div>
 
         {/* 1. TOP LEVEL HEADER */}
-        <section className="relative p-6 sm:p-8 rounded-xl bg-[#101623] border border-[#1E293B] shadow-sm">
+        <section className="relative p-6 sm:p-8 rounded-2xl bg-white border border-slate-200/90 shadow-xs text-slate-900">
           <div className="flex flex-col md:flex-row items-center md:items-start gap-6 lg:gap-10">
             {/* Course Badge / Crest Vector Graphic */}
             <div className="shrink-0 flex justify-center">
@@ -242,14 +242,14 @@ export function LevelHubPage({ levelId, onNavigate }: LevelHubPageProps) {
             <div className="flex-1 text-center md:text-left space-y-3">
               {/* Category / Tier Tag & Course Index */}
               <div className="flex flex-wrap items-center justify-center md:justify-start gap-2 text-xs">
-                <span className="font-semibold text-slate-400 uppercase tracking-wider">
+                <span className="font-bold text-slate-500 uppercase tracking-wider">
                   {levelMeta.courseOrder}
                 </span>
-                <span className="text-slate-600">·</span>
-                <span className={`text-[11px] font-medium px-2 py-0.5 rounded ${
+                <span className="text-slate-400">·</span>
+                <span className={`text-[11px] font-semibold px-2.5 py-0.5 rounded-full ${
                   levelMeta.isFree 
-                    ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20' 
-                    : 'bg-cyan-500/10 text-cyan-400 border border-cyan-500/20'
+                    ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' 
+                    : 'bg-cyan-50 text-cyan-700 border border-cyan-200'
                 }`}>
                   {levelMeta.isFree ? 'Free Core' : 'Masterclass Pro'}
                 </span>
@@ -257,16 +257,16 @@ export function LevelHubPage({ levelId, onNavigate }: LevelHubPageProps) {
 
               {/* Main Level Title */}
               <div>
-                <h1 className="text-2xl sm:text-4xl font-extrabold text-white tracking-tight">
+                <h1 className="text-2xl sm:text-4xl font-extrabold text-slate-900 tracking-tight">
                   {levelMeta.schoolName}
                 </h1>
-                <p className="text-sm font-medium text-emerald-400 mt-1">
+                <p className="text-sm font-semibold text-emerald-600 mt-1">
                   Level {levelMeta.levelNumber}: {levelMeta.technicalTitle}
                 </p>
               </div>
 
               {/* Course Description */}
-              <p className="text-sm text-slate-300 max-w-2xl leading-relaxed font-normal">
+              <p className="text-sm sm:text-base text-slate-600 max-w-2xl leading-relaxed font-normal">
                 {levelMeta.description}
               </p>
 
@@ -275,7 +275,7 @@ export function LevelHubPage({ levelId, onNavigate }: LevelHubPageProps) {
                 {levelMeta.isFree || isAuthorizedForLevel ? (
                   <button
                     onClick={() => onNavigate('lesson-detail', nextLessonToTake?.id || visibleLessons[0]?.id || 'lesson-1-0')}
-                    className="px-5 py-2.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white font-medium text-xs tracking-wide transition-colors shadow-xs flex items-center gap-2 cursor-pointer active:scale-[0.98]"
+                    className="px-5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-semibold text-xs tracking-wide transition-colors shadow-xs flex items-center gap-2 cursor-pointer active:scale-[0.98]"
                   >
                     <span>{completedLessons > 0 ? 'Continue Curriculum' : 'Start First Lesson'}</span>
                     <ChevronRight className="w-3.5 h-3.5" />
@@ -283,7 +283,7 @@ export function LevelHubPage({ levelId, onNavigate }: LevelHubPageProps) {
                 ) : (
                   <button
                     onClick={() => onNavigate('academy-pricing')}
-                    className="px-5 py-2.5 rounded-lg bg-[#1C2638] hover:bg-[#25334A] border border-[#2B3A54] text-white font-medium text-xs tracking-wide transition-colors flex items-center gap-2 cursor-pointer active:scale-[0.98]"
+                    className="px-5 py-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-semibold text-xs tracking-wide transition-colors flex items-center gap-2 cursor-pointer active:scale-[0.98] shadow-xs"
                   >
                     <Lock className="w-3.5 h-3.5 text-cyan-400" />
                     <span>Unlock Masterclass Access</span>
@@ -292,7 +292,7 @@ export function LevelHubPage({ levelId, onNavigate }: LevelHubPageProps) {
                 )}
 
                 {completedLessons > 0 && (
-                  <span className="text-xs text-slate-400">
+                  <span className="text-xs text-slate-500 font-medium">
                     {completedLessons} of {totalLessons} lessons completed
                   </span>
                 )}
@@ -302,20 +302,20 @@ export function LevelHubPage({ levelId, onNavigate }: LevelHubPageProps) {
         </section>
 
         {/* DIVIDER LINE */}
-        <hr className="border-t border-[#1E293B]" />
+        <hr className="border-t border-slate-200" />
 
         {/* 2. TWO-COLUMN SPLIT LAYOUT (DESKTOP) */}
         <section className="grid grid-cols-1 lg:grid-cols-12 gap-8">
           
           {/* LEFT COLUMN: "Your Progress" */}
           <div className="lg:col-span-4 space-y-6">
-            <div className="p-5 sm:p-6 rounded-xl bg-[#101623] border border-[#1E293B] space-y-5 sticky top-24 shadow-sm">
+            <div className="p-5 sm:p-6 rounded-2xl bg-white border border-slate-200/90 space-y-5 sticky top-24 shadow-xs text-slate-900">
               <div className="flex items-center justify-between">
-                <h2 className="text-base font-bold text-white tracking-tight">
+                <h2 className="text-base font-bold text-slate-900 tracking-tight">
                   Your Progress
                 </h2>
                 {user && (
-                  <span className="text-xs font-bold text-emerald-400">
+                  <span className="text-xs font-bold text-emerald-700">
                     {completionPercentage}%
                   </span>
                 )}
@@ -324,10 +324,10 @@ export function LevelHubPage({ levelId, onNavigate }: LevelHubPageProps) {
               {/* LOGGED OUT STATE */}
               {!user ? (
                 <div className="space-y-4">
-                  <p className="text-xs text-slate-300 leading-normal">
+                  <p className="text-xs text-slate-600 leading-relaxed font-normal">
                     <button
                       onClick={() => setAuthModalOpen(true)}
-                      className="text-emerald-400 hover:text-emerald-300 font-semibold underline underline-offset-2 transition-colors cursor-pointer"
+                      className="text-emerald-700 hover:text-emerald-800 font-semibold underline underline-offset-2 transition-colors cursor-pointer"
                     >
                       Sign in
                     </button>{' '}
@@ -336,9 +336,9 @@ export function LevelHubPage({ levelId, onNavigate }: LevelHubPageProps) {
 
                   <button
                     onClick={() => setAuthModalOpen(true)}
-                    className="w-full py-2.5 px-4 rounded-lg bg-[#141C2A] hover:bg-[#1A2538] text-slate-200 border border-[#222E42] text-xs font-medium tracking-wide transition-colors flex items-center justify-center gap-2 cursor-pointer"
+                    className="w-full py-2.5 px-4 rounded-xl bg-slate-50 hover:bg-slate-100 text-slate-700 border border-slate-200 text-xs font-semibold tracking-wide transition-colors flex items-center justify-center gap-2 cursor-pointer shadow-xs"
                   >
-                    <LogIn className="w-3.5 h-3.5 text-emerald-400" />
+                    <LogIn className="w-3.5 h-3.5 text-emerald-600" />
                     <span>Sign In to Track</span>
                   </button>
                 </div>
@@ -346,15 +346,15 @@ export function LevelHubPage({ levelId, onNavigate }: LevelHubPageProps) {
                 /* LOGGED IN STATE */
                 <div className="space-y-4">
                   <div className="space-y-2">
-                    <div className="flex items-center justify-between text-xs text-slate-300">
+                    <div className="flex items-center justify-between text-xs text-slate-600">
                       <span>Course Completion</span>
-                      <span className="font-semibold text-white">
+                      <span className="font-bold text-slate-900">
                         {completedLessons} of {totalLessons} Finished
                       </span>
                     </div>
 
                     {/* Active Progress Bar */}
-                    <div className="w-full h-2 bg-[#162030] rounded-full overflow-hidden">
+                    <div className="w-full h-2 bg-slate-100 rounded-full overflow-hidden border border-slate-200/60">
                       <div
                         className="h-full bg-emerald-500 rounded-full transition-all duration-500"
                         style={{ width: `${completionPercentage}%` }}
@@ -363,18 +363,18 @@ export function LevelHubPage({ levelId, onNavigate }: LevelHubPageProps) {
                   </div>
 
                   {isLevelCompleted ? (
-                    <div className="p-3 rounded-lg bg-emerald-500/10 border border-emerald-500/20 flex items-center gap-2.5 text-emerald-300">
-                      <Award className="w-4 h-4 text-emerald-400 shrink-0" />
+                    <div className="p-3 rounded-xl bg-emerald-50 border border-emerald-200 flex items-center gap-2.5 text-emerald-800">
+                      <Award className="w-4 h-4 text-emerald-600 shrink-0" />
                       <div className="text-xs">
-                        <span className="font-bold block text-white">Course Completed!</span>
+                        <span className="font-bold block text-slate-900">Course Completed!</span>
                         You have mastered all modules in {levelMeta.schoolName}.
                       </div>
                     </div>
                   ) : null}
 
                   {/* Checklist */}
-                  <div className="space-y-2 pt-3 border-t border-[#1E293B]">
-                    <span className="text-[11px] uppercase text-slate-400 tracking-wider font-semibold block">
+                  <div className="space-y-2 pt-3 border-t border-slate-200">
+                    <span className="text-[11px] uppercase text-slate-500 tracking-wider font-bold block">
                       Lesson Checklist
                     </span>
                     <div className="space-y-1">
@@ -384,20 +384,20 @@ export function LevelHubPage({ levelId, onNavigate }: LevelHubPageProps) {
                           <div
                             key={lesson.id}
                             onClick={(e) => handleToggleComplete(lesson.id, e)}
-                            className="p-2 rounded-md bg-[#0C121D] hover:bg-[#141C2A] border border-[#1A2234] hover:border-[#2A3852] cursor-pointer transition-colors flex items-center gap-2 text-xs group"
+                            className="p-2 rounded-lg bg-slate-50 hover:bg-emerald-50/50 border border-slate-200/80 hover:border-emerald-300 cursor-pointer transition-colors flex items-center gap-2 text-xs group"
                           >
                             <div
-                              className={`w-3.5 h-3.5 rounded-full flex items-center justify-center shrink-0 transition-colors ${
+                              className={`w-4 h-4 rounded-full flex items-center justify-center shrink-0 transition-colors ${
                                 isDone
-                                  ? 'bg-emerald-500 text-slate-950'
-                                  : 'border border-slate-600 group-hover:border-emerald-400'
+                                  ? 'bg-emerald-500 text-white'
+                                  : 'border border-slate-300 group-hover:border-emerald-500'
                               }`}
                             >
                               {isDone && <Check className="w-2.5 h-2.5 stroke-[3]" />}
                             </div>
                             <span
-                              className={`truncate flex-1 ${
-                                isDone ? 'text-slate-400 line-through' : 'text-slate-200 group-hover:text-white'
+                              className={`truncate flex-1 font-medium ${
+                                isDone ? 'text-slate-400 line-through' : 'text-slate-700 group-hover:text-slate-900'
                               }`}
                             >
                               {lesson.title}
@@ -414,17 +414,17 @@ export function LevelHubPage({ levelId, onNavigate }: LevelHubPageProps) {
 
           {/* RIGHT COLUMN: "Course Outline" */}
           <div className="lg:col-span-8 space-y-4">
-            <div className="flex items-center justify-between pb-2 border-b border-[#1E293B]">
-              <h2 className="text-lg font-bold text-white tracking-tight">
+            <div className="flex items-center justify-between pb-2 border-b border-slate-200">
+              <h2 className="text-lg font-bold text-slate-900 tracking-tight">
                 Curriculum Lessons
               </h2>
-              <span className="text-xs text-slate-400">
+              <span className="text-xs text-slate-500 font-medium">
                 {totalLessons} {totalLessons === 1 ? 'Lesson' : 'Lessons'}
               </span>
             </div>
 
             {loading ? (
-              <div className="py-12 text-center text-slate-500 text-xs">
+              <div className="py-12 text-center text-slate-400 text-xs">
                 Loading curriculum outline...
               </div>
             ) : (
@@ -447,17 +447,17 @@ export function LevelHubPage({ levelId, onNavigate }: LevelHubPageProps) {
                           onNavigate('academy-pricing');
                         }
                       }}
-                      className="p-4 sm:p-5 rounded-xl bg-[#101623] hover:bg-[#141C2A] border border-[#1E293B] hover:border-[#2A3852] cursor-pointer transition-colors shadow-sm group"
+                      className="p-4 sm:p-5 rounded-2xl bg-white hover:bg-slate-50/80 border border-slate-200/90 hover:border-slate-300 cursor-pointer transition-all shadow-xs group"
                     >
                       <div className="flex items-start justify-between gap-4">
-                        <div className="flex items-start gap-3 min-w-0">
+                        <div className="flex items-start gap-3.5 min-w-0">
                           {/* Circular Status Icon */}
                           <div className={`w-6 h-6 rounded-full flex items-center justify-center shrink-0 mt-0.5 transition-colors ${
                             isDone
-                              ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/40'
+                              ? 'bg-emerald-100 text-emerald-700 border border-emerald-300'
                               : isPractical && !isPracticalUnlocked
-                              ? 'bg-amber-500/10 border border-amber-500/30 text-amber-400'
-                              : 'bg-[#162030] text-slate-400 group-hover:text-emerald-400 border border-[#223048]'
+                              ? 'bg-amber-50 border border-amber-200 text-amber-600'
+                              : 'bg-slate-100 text-slate-500 group-hover:text-emerald-700 border border-slate-200'
                           }`}>
                             {isDone ? (
                               <Check className="w-3.5 h-3.5 stroke-[2.5]" />
@@ -470,7 +470,7 @@ export function LevelHubPage({ levelId, onNavigate }: LevelHubPageProps) {
 
                           <div className="min-w-0">
                             <div className="flex items-center gap-2 flex-wrap pb-1">
-                              <span className="text-xs text-slate-400 font-semibold">
+                              <span className="text-xs text-slate-500 font-semibold">
                                 {lesson.id === 'lesson-3-bonus'
                                   ? 'Bonus Chapter 3.B'
                                   : lesson.id === 'lesson-3-practical'
@@ -481,37 +481,37 @@ export function LevelHubPage({ levelId, onNavigate }: LevelHubPageProps) {
                                   ? 'Bonus Chapter 8.B'
                                   : `Lesson ${levelMeta.levelNumber}.${lesson.lesson_number}`}
                               </span>
-                              <span className="text-slate-600">·</span>
-                              <span className="text-xs text-slate-400 flex items-center gap-1">
-                                <Clock className="w-3 h-3 text-slate-500" />
+                              <span className="text-slate-300">·</span>
+                              <span className="text-xs text-slate-500 flex items-center gap-1">
+                                <Clock className="w-3 h-3 text-slate-400" />
                                 <span>{lesson.duration_minutes || 15}m</span>
                               </span>
                               {isPractical && (
                                 isPracticalUnlocked ? (
-                                  <span className="text-[11px] font-medium text-emerald-400">
+                                  <span className="text-[11px] font-semibold text-emerald-700">
                                     Capstone Unlocked
                                   </span>
                                 ) : (
-                                  <span className="text-[11px] font-medium text-amber-400">
+                                  <span className="text-[11px] font-semibold text-amber-700">
                                     Locked ({practicalProgress.completedCount}/14)
                                   </span>
                                 )
                               )}
                             </div>
 
-                            <h3 className="text-base font-bold text-white group-hover:text-emerald-400 transition-colors leading-snug">
+                            <h3 className="text-base font-bold text-slate-900 group-hover:text-emerald-700 transition-colors leading-snug">
                               {lesson.title}
                             </h3>
 
                             {lesson.summary && (
-                              <p className="text-xs sm:text-sm text-slate-400 mt-1.5 line-clamp-2 leading-relaxed font-normal">
+                              <p className="text-xs sm:text-sm text-slate-600 mt-1.5 line-clamp-2 leading-relaxed font-normal">
                                 {lesson.summary}
                               </p>
                             )}
                           </div>
                         </div>
 
-                        <ChevronRight className="w-4 h-4 text-slate-500 group-hover:text-emerald-400 transition-colors shrink-0 mt-1" />
+                        <ChevronRight className="w-4 h-4 text-slate-400 group-hover:text-emerald-700 transition-colors shrink-0 mt-1" />
                       </div>
                     </div>
                   );
@@ -523,10 +523,10 @@ export function LevelHubPage({ levelId, onNavigate }: LevelHubPageProps) {
         </section>
 
         {/* Footer Navigation Strip */}
-        <div className="pt-8 border-t border-[#1E293B] flex flex-col sm:flex-row items-center justify-between gap-4">
+        <div className="pt-8 border-t border-slate-200 flex flex-col sm:flex-row items-center justify-between gap-4">
           <button
             onClick={() => onNavigate('academy')}
-            className="px-4 py-2 rounded-lg bg-[#101623] hover:bg-[#141C2A] text-slate-300 text-xs font-medium transition-colors flex items-center gap-2 border border-[#1E293B]"
+            className="px-4 py-2.5 rounded-xl bg-white hover:bg-slate-50 text-slate-700 text-xs font-semibold transition-colors flex items-center gap-2 border border-slate-200 shadow-xs cursor-pointer"
           >
             <ChevronLeft className="w-3.5 h-3.5" />
             <span>Return to School of Strategy Architect</span>
@@ -534,9 +534,9 @@ export function LevelHubPage({ levelId, onNavigate }: LevelHubPageProps) {
 
           <button
             onClick={() => onNavigate('prompt-architect')}
-            className="px-4 py-2 rounded-lg bg-[#101623] hover:bg-[#141C2A] border border-[#1E293B] hover:border-cyan-500/50 text-slate-200 text-xs font-medium transition-colors flex items-center gap-2"
+            className="px-4 py-2.5 rounded-xl bg-white hover:bg-slate-50 border border-slate-200 hover:border-emerald-300 text-slate-700 text-xs font-semibold transition-colors flex items-center gap-2 shadow-xs cursor-pointer"
           >
-            <Sparkles className="w-3.5 h-3.5 text-cyan-400" />
+            <Sparkles className="w-3.5 h-3.5 text-emerald-600" />
             <span>Open Prompt Architect Tool</span>
           </button>
         </div>

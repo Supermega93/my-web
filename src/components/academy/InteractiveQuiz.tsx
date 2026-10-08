@@ -170,19 +170,19 @@ export function InteractiveQuiz({ quiz, onCompleteQuiz, onNextLesson }: Interact
     const isMastery = percentage >= 80;
 
     return (
-      <div className="rounded-xl bg-[#101623] border border-[#1E293B] p-6 sm:p-10 text-center space-y-5 shadow-sm relative overflow-hidden animate-in fade-in duration-200">
-        <div className="w-14 h-14 mx-auto rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-400">
+      <div className="rounded-2xl bg-white border border-slate-200/90 p-6 sm:p-10 text-center space-y-5 shadow-sm relative overflow-hidden animate-in fade-in duration-200 text-slate-900">
+        <div className="w-14 h-14 mx-auto rounded-2xl bg-emerald-50 border border-emerald-200 flex items-center justify-center text-emerald-600 shadow-xs">
           <Award className="w-7 h-7" />
         </div>
 
         <div className="space-y-2">
-          <span className="text-xs font-semibold uppercase tracking-wider text-emerald-400">
+          <span className="text-xs font-bold uppercase tracking-wider text-emerald-700">
             {isMastery ? 'Concept Mastered' : 'Assessment Completed'}
           </span>
-          <h3 className="text-2xl sm:text-3xl font-bold text-white tracking-tight">
+          <h3 className="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight">
             Score: {score} / {totalQ} ({percentage}%)
           </h3>
-          <p className="text-sm text-slate-300 max-w-md mx-auto leading-relaxed">
+          <p className="text-sm text-slate-600 max-w-md mx-auto leading-relaxed font-normal">
             {isMastery 
               ? 'Institutional concept mastery confirmed. You have demonstrated a clear understanding of the trading logic and risk controls in this lesson.' 
               : 'Review the educational takeaways above or retake the assessment to achieve an 80%+ mastery score.'}
@@ -192,7 +192,7 @@ export function InteractiveQuiz({ quiz, onCompleteQuiz, onNextLesson }: Interact
         <div className="flex flex-col sm:flex-row items-center justify-center gap-3 pt-3">
           <button
             onClick={handleRetake}
-            className="px-4 py-2 rounded-lg bg-[#141C2A] hover:bg-[#1A2538] text-slate-300 hover:text-white border border-[#222E42] text-xs font-medium transition-colors flex items-center gap-2 cursor-pointer"
+            className="px-4 py-2.5 rounded-xl bg-white hover:bg-slate-50 text-slate-700 hover:text-slate-900 border border-slate-200 text-xs font-semibold transition-colors flex items-center gap-2 cursor-pointer shadow-xs"
           >
             <RotateCcw className="w-3.5 h-3.5" />
             <span>Retake Assessment</span>
@@ -201,7 +201,7 @@ export function InteractiveQuiz({ quiz, onCompleteQuiz, onNextLesson }: Interact
           {onNextLesson && (
             <button
               onClick={onNextLesson}
-              className="px-5 py-2.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white font-medium text-xs tracking-wide transition-colors shadow-xs flex items-center gap-2 cursor-pointer active:scale-[0.98]"
+              className="px-5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-semibold text-xs tracking-wide transition-colors shadow-xs flex items-center gap-2 cursor-pointer active:scale-[0.98]"
             >
               <span>Next Lesson</span>
               <ArrowRight className="w-3.5 h-3.5" />
@@ -213,28 +213,28 @@ export function InteractiveQuiz({ quiz, onCompleteQuiz, onNextLesson }: Interact
   }
 
   return (
-    <div className="rounded-xl bg-[#101623] border border-[#1E293B] shadow-sm p-6 sm:p-8 space-y-6">
+    <div className="rounded-2xl bg-white border border-slate-200/90 shadow-sm p-6 sm:p-8 space-y-6 text-slate-900">
       {/* Header bar */}
-      <div className="flex flex-wrap items-center justify-between gap-4 pb-4 border-b border-[#1E293B]">
+      <div className="flex flex-wrap items-center justify-between gap-4 pb-4 border-b border-slate-200">
         <div className="flex items-center gap-3">
-          <div className="w-8 h-8 rounded-lg bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-400">
+          <div className="w-8 h-8 rounded-xl bg-emerald-50 border border-emerald-200 flex items-center justify-center text-emerald-600 shadow-xs">
             <HelpCircle className="w-4 h-4" />
           </div>
           <div>
-            <div className="text-[10px] uppercase tracking-wider text-emerald-400 font-semibold">
+            <div className="text-[10px] uppercase tracking-wider text-emerald-700 font-bold">
               Assessment
             </div>
-            <h4 className="text-sm sm:text-base font-bold text-white">
+            <h4 className="text-sm sm:text-base font-bold text-slate-900">
               {quiz.title}
             </h4>
           </div>
         </div>
 
         <div className="flex items-center gap-3 text-xs">
-          <span className="text-slate-400">
-            Question <strong className="text-white font-semibold">{currentIdx + 1}</strong> of {totalQ}
+          <span className="text-slate-500">
+            Question <strong className="text-slate-900 font-bold">{currentIdx + 1}</strong> of {totalQ}
           </span>
-          <div className="w-20 sm:w-28 h-1.5 bg-[#162030] rounded-full overflow-hidden">
+          <div className="w-20 sm:w-28 h-2 bg-slate-100 rounded-full overflow-hidden">
             <div 
               className="h-full bg-emerald-500 rounded-full transition-all duration-300"
               style={{ width: `${((currentIdx + 1) / totalQ) * 100}%` }}
@@ -246,10 +246,10 @@ export function InteractiveQuiz({ quiz, onCompleteQuiz, onNextLesson }: Interact
       {/* Question Card */}
       <div className="space-y-4">
         <div className="flex items-start gap-2.5">
-          <span className="px-2 py-0.5 rounded bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-[10px] font-semibold uppercase tracking-wider shrink-0 mt-0.5">
+          <span className="px-2.5 py-0.5 rounded-md bg-emerald-50 border border-emerald-200 text-emerald-800 text-[10px] font-bold uppercase tracking-wider shrink-0 mt-0.5">
             {currentQ.conceptTag || 'Concept'}
           </span>
-          <h3 className="text-base sm:text-lg font-bold text-white leading-snug">
+          <h3 className="text-base sm:text-lg font-bold text-slate-900 leading-snug">
             {currentQ.question}
           </h3>
         </div>
@@ -261,22 +261,22 @@ export function InteractiveQuiz({ quiz, onCompleteQuiz, onNextLesson }: Interact
             const isSelected = selectedOption === idx;
             const isCorrect = idx === currentQ.correctIndex;
 
-            let optionStyle = 'bg-[#0C121D] border-[#1E293B] hover:border-[#2A3852] hover:bg-[#141C2A] text-slate-200';
-            let badgeStyle = 'bg-[#162030] text-slate-400 border-[#223048]';
+            let optionStyle = 'bg-slate-50/70 border-slate-200/90 hover:border-slate-300 hover:bg-slate-100 text-slate-800';
+            let badgeStyle = 'bg-white text-slate-700 border-slate-200';
 
             if (isAnswerSubmitted) {
               if (isCorrect) {
-                optionStyle = 'bg-emerald-500/10 border-emerald-500/50 text-emerald-200';
-                badgeStyle = 'bg-emerald-500 text-slate-950 font-bold border-emerald-400';
+                optionStyle = 'bg-emerald-50 border-emerald-400 text-emerald-950 font-medium';
+                badgeStyle = 'bg-emerald-600 text-white font-bold border-emerald-600';
               } else if (isSelected && !isCorrect) {
-                optionStyle = 'bg-rose-500/10 border-rose-500/50 text-rose-200';
-                badgeStyle = 'bg-rose-500 text-white font-bold border-rose-400';
+                optionStyle = 'bg-rose-50 border-rose-300 text-rose-950 font-medium';
+                badgeStyle = 'bg-rose-600 text-white font-bold border-rose-600';
               } else {
-                optionStyle = 'bg-[#0C121D]/50 border-[#1E293B]/40 text-slate-500 opacity-60';
+                optionStyle = 'bg-slate-50/40 border-slate-200/50 text-slate-400 opacity-60';
               }
             } else if (isSelected) {
-              optionStyle = 'bg-emerald-500/10 border-emerald-500/50 text-white';
-              badgeStyle = 'bg-emerald-500 text-slate-950 font-bold border-emerald-400';
+              optionStyle = 'bg-emerald-50/80 border-emerald-400 text-emerald-950 font-medium';
+              badgeStyle = 'bg-emerald-600 text-white font-bold border-emerald-600';
             }
 
             return (
@@ -284,9 +284,9 @@ export function InteractiveQuiz({ quiz, onCompleteQuiz, onNextLesson }: Interact
                 key={idx}
                 disabled={isAnswerSubmitted}
                 onClick={() => handleSelectOption(idx)}
-                className={`w-full text-left p-3.5 sm:p-4 rounded-lg border transition-colors flex items-start gap-3 cursor-pointer disabled:cursor-default ${optionStyle}`}
+                className={`w-full text-left p-3.5 sm:p-4 rounded-xl border transition-colors flex items-start gap-3 cursor-pointer disabled:cursor-default ${optionStyle}`}
               >
-                <div className={`w-6 h-6 rounded-md flex items-center justify-center text-xs font-semibold shrink-0 border ${badgeStyle}`}>
+                <div className={`w-6 h-6 rounded-lg flex items-center justify-center text-xs font-bold shrink-0 border ${badgeStyle}`}>
                   {isAnswerSubmitted && isCorrect ? (
                     <Check className="w-3.5 h-3.5 stroke-[3]" />
                   ) : isAnswerSubmitted && isSelected && !isCorrect ? (
@@ -307,21 +307,21 @@ export function InteractiveQuiz({ quiz, onCompleteQuiz, onNextLesson }: Interact
 
       {/* Explanation Box */}
       {isAnswerSubmitted && (
-        <div className="p-4 sm:p-5 rounded-lg bg-[#0C121D] border border-[#1E293B] space-y-3 animate-in fade-in duration-150">
+        <div className="p-4 sm:p-5 rounded-xl bg-amber-50/70 border border-amber-200/80 space-y-3 animate-in fade-in duration-150">
           <div className="flex items-center gap-2">
-            <Lightbulb className="w-4 h-4 text-amber-400" />
-            <span className="text-xs font-semibold uppercase tracking-wider text-amber-400">
+            <Lightbulb className="w-4 h-4 text-amber-600" />
+            <span className="text-xs font-bold uppercase tracking-wider text-amber-800">
               {selectedOption === currentQ.correctIndex ? 'Correct Analysis' : 'Explanation & Context'}
             </span>
           </div>
-          <p className="text-sm text-slate-300 leading-relaxed font-normal">
+          <p className="text-sm text-slate-700 leading-relaxed font-normal">
             {currentQ.explanation}
           </p>
 
           <div className="pt-2 flex justify-end">
             <button
               onClick={handleNextQuestion}
-              className="px-4 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white font-medium text-xs tracking-wide transition-colors shadow-xs flex items-center gap-1.5 cursor-pointer active:scale-[0.98]"
+              className="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-semibold text-xs tracking-wide transition-colors shadow-xs flex items-center gap-1.5 cursor-pointer active:scale-[0.98]"
             >
               <span>{currentIdx < totalQ - 1 ? 'Next Question' : 'View Summary'}</span>
               <ArrowRight className="w-3.5 h-3.5" />
