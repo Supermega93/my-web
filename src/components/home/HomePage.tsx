@@ -522,12 +522,25 @@ export function HomePage({
 
                 {/* Actions */}
                 <div className="pt-6 border-t border-slate-200 flex flex-wrap items-center justify-between gap-4">
-                  <div>
-                    <div className="text-3xl font-black text-slate-900 font-mono">
-                      {formatPrice(featuredEa.price, 'USD')}
+                  <div className="space-y-1">
+                    <div className="flex items-center gap-2">
+                      <span className="px-2.5 py-0.5 rounded-full bg-rose-50 text-rose-700 border border-rose-200 text-[10px] font-mono font-bold uppercase tracking-wider">
+                        50% OFF SPECIAL
+                      </span>
+                      <span className="text-xs text-slate-400 font-mono line-through font-normal">
+                        Normal: {formatPrice(featuredEa.original_price || 238.8, 'USD')}
+                      </span>
                     </div>
-                    <div className="text-[11px] text-slate-500">
-                      From {formatPrice(119.4, 'USD')} • Prop Firm &amp; Mobile {formatPrice(150, 'USD')}
+                    <div className="flex items-baseline gap-2">
+                      <div className="text-3xl font-black text-slate-900 font-mono">
+                        {formatPrice(featuredEa.price, 'USD')}
+                      </div>
+                      <span className="text-xs font-bold text-emerald-700 font-mono">
+                        (Save 50%)
+                      </span>
+                    </div>
+                    <div className="text-[11px] text-slate-500 font-mono">
+                      Current Special Price • Normal: {formatPrice(238.8, 'USD')} • Prop Firm &amp; Mobile {formatPrice(150, 'USD')} (was {formatPrice(300, 'USD')})
                     </div>
                   </div>
 
@@ -730,16 +743,25 @@ export function HomePage({
               </div>
 
               <div>
+                <div className="flex items-center gap-2 mb-1">
+                  <span className="px-2 py-0.5 rounded-full bg-rose-500/20 border border-rose-400/40 text-rose-200 text-[10px] font-mono font-bold uppercase tracking-wider">
+                    50% OFF SPECIAL
+                  </span>
+                  <span className="text-xs font-mono text-emerald-200/80 line-through">
+                    Normal: {formatPrice(featuredEa?.original_price || 238.80)}
+                  </span>
+                </div>
                 <div className="flex items-baseline gap-2">
                   <span className="text-4xl font-black text-white font-mono">
-                    {formatPrice(featuredEa?.price || 249.00)}
+                    {formatPrice(featuredEa?.price || 119.40)}
                   </span>
-                  <span className="text-sm font-mono text-emerald-300/70 line-through">{formatPrice(499.00)}</span>
-                  <span className="text-xs font-bold text-slate-950 bg-emerald-300 px-2 py-0.5 rounded-full">50% OFF</span>
+                  <span className="text-xs font-bold text-slate-950 bg-emerald-300 px-2 py-0.5 rounded-full">
+                    SAVE 50%
+                  </span>
                 </div>
                 <div className="text-[11px] text-emerald-200 mt-1 flex items-center gap-1.5 font-mono">
                   <CheckCircle2 className="w-3.5 h-3.5 text-emerald-300" />
-                  <span>Instant delivery (.ex5 + .set presets + manual)</span>
+                  <span>Current special price (50% off normal: {formatPrice(featuredEa?.original_price || 238.80)})</span>
                 </div>
               </div>
 

@@ -11,6 +11,9 @@ export const INITIAL_PRODUCTS: Product[] = [
     short_description:
       'Professional automated trading system for MetaTrader 5 (MT5) utilizing liquidity, market structure, momentum, volatility, and trend alignment.',
     price: 119.4,
+    original_price: 238.8,
+    on_special: true,
+    discount_percent: 50,
     currency: 'USD',
     platform: 'MetaTrader 5 (Windows/PC)',
     image_url: STOREFRONT_MEDIA.flagshipEa.imageUrl,

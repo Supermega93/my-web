@@ -1,5 +1,5 @@
 import { motion } from 'motion/react';
-import { Shield, TrendingUp, Activity, CheckCircle, Database, Award, Zap } from 'lucide-react';
+import { Shield, TrendingUp, Activity, CheckCircle, Database, Award, Zap, Sparkles } from 'lucide-react';
 import { STOREFRONT_MEDIA } from '../../../constants/media.ts';
 
 interface EaHeroMetricsProps {
@@ -95,9 +95,12 @@ export function EaHeroMetrics({
           </button>
           <button
             onClick={onScrollToPricing}
-            className="px-3.5 py-1.5 rounded-lg text-xs font-mono bg-emerald-600 text-white hover:bg-emerald-700 transition-colors shadow-xs cursor-pointer font-bold"
+            className="px-3.5 py-1.5 rounded-lg text-xs font-mono bg-emerald-600 text-white hover:bg-emerald-700 transition-colors shadow-xs cursor-pointer font-bold flex items-center gap-1.5"
           >
-            Get License
+            <span>Get License</span>
+            <span className="px-1.5 py-0.2 rounded-full bg-rose-500 text-white text-[9px] uppercase tracking-wider font-mono">
+              50% Off Special
+            </span>
           </button>
         </div>
       </div>
@@ -156,6 +159,25 @@ export function EaHeroMetrics({
                 MT5 ARCHITECTURE
               </span>
               <span className="text-slate-500">XAUUSD H1</span>
+            </div>
+
+            {/* Special Pricing Notice */}
+            <div className="w-full mt-2.5 p-3 rounded-xl bg-rose-50/90 border border-rose-200/80 text-center space-y-1">
+              <div className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-rose-100 text-rose-800 text-[10px] font-mono font-bold uppercase tracking-wider">
+                <Sparkles className="w-3 h-3 text-rose-600" />
+                <span>50% OFF SPECIAL</span>
+              </div>
+              <div className="flex items-center justify-center gap-2 pt-0.5">
+                <span className="text-xs font-mono text-slate-400 line-through">
+                  Normal: $238.80
+                </span>
+                <span className="text-lg font-black font-mono text-slate-950">
+                  Now: $119.40
+                </span>
+              </div>
+              <p className="text-[10px] text-rose-700 font-mono font-semibold">
+                Current pricing is on special by 50%
+              </p>
             </div>
           </div>
         </div>

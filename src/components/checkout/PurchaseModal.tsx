@@ -28,7 +28,8 @@ import {
   RefreshCw,
   Info,
   X,
-  Shield
+  Shield,
+  Sparkles
 } from 'lucide-react';
 
 interface PurchaseModalProps {
@@ -192,6 +193,10 @@ export function PurchaseModal({
   // Dynamic pricing with tier override
   const zarRate = 18.25;
   const basePriceUsd = tier?.price ?? activeProduct?.price ?? 89;
+  const isAdaptiveLiquidity = activeProduct?.id === 'prod_ea_adaptive_liquidity' || activeProduct?.name?.toLowerCase().includes('adaptive liquidity') || Boolean(tier?.id?.startsWith('license_'));
+  const normalPriceUsd = isAdaptiveLiquidity 
+    ? (activeProduct?.original_price || (basePriceUsd * 2))
+    : (activeProduct?.original_price || null);
   const zarAmount = (tier?.currency || activeProduct?.currency) === 'ZAR' 
     ? basePriceUsd 
     : Math.round(basePriceUsd * zarRate * 100) / 100;
@@ -867,19 +872,36 @@ export function PurchaseModal({
           {/* Pricing Highlight Strip (like "Price per day / Total" in popu2.png) */}
           <div className="mt-4 pt-3.5 border-t border-slate-800/80 flex items-end justify-between">
             <div>
+              {isAdaptiveLiquidity && (
+                <div className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-rose-500/20 border border-rose-500/40 text-rose-300 font-mono text-[10px] font-bold uppercase tracking-wider mb-1.5">
+                  <Sparkles className="w-3 h-3 text-rose-400" />
+                  <span>50% OFF SPECIAL</span>
+                </div>
+              )}
               <span className="text-[11px] font-mono uppercase tracking-wider text-slate-400 block font-semibold">
                 Investment Total
               </span>
               <span className="text-xs text-slate-500 font-sans">
-                One-time payment • Lifetime access terms
+                {isAdaptiveLiquidity ? (
+                  <span className="text-emerald-400 font-mono font-medium">
+                    Special 50% discount applied • Normal: ${((normalPriceUsd || basePriceUsd * 2)).toFixed(2)} USD
+                  </span>
+                ) : (
+                  'One-time payment • Lifetime access terms'
+                )}
               </span>
             </div>
             <div className="text-right">
+              {isAdaptiveLiquidity && (
+                <div className="text-xs text-slate-400 font-mono line-through mb-0.5">
+                  Normal: ${((normalPriceUsd || basePriceUsd * 2)).toFixed(2)} USD
+                </div>
+              )}
               <div className="text-2xl sm:text-3xl font-black text-white font-mono tracking-tight leading-none">
                 ${basePriceUsd.toFixed(2)} <span className="text-xs font-bold text-slate-400 font-sans">USD</span>
               </div>
               <div className="text-xs text-emerald-400 font-mono font-semibold mt-1">
-                ≈ R {formattedZar} ZAR
+                ≈ R {formattedZar} ZAR {isAdaptiveLiquidity && <span className="text-rose-300 font-normal">(50% Off Special)</span>}
               </div>
             </div>
           </div>
@@ -904,7 +926,9 @@ export function PurchaseModal({
             >
               <PayPalMark className="h-5" />
               <span className="font-extrabold text-[#003087] text-sm">Buy Now</span>
-              <span className="text-xs font-bold text-[#003087]/80 ml-1">(${basePriceUsd.toFixed(2)} USD)</span>
+              <span className="text-xs font-bold text-[#003087]/80 ml-1">
+                (${basePriceUsd.toFixed(2)} USD{isAdaptiveLiquidity ? ' • 50% Off Special' : ''})
+              </span>
             </button>
 
             {/* Clean 'or' Divider with Card Network Badges (Inspired by popu2.png) */}

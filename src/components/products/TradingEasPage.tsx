@@ -163,11 +163,26 @@ export function TradingEasPage({
 
                 {/* Pricing & Dual CTA */}
                 <div className="pt-4 border-t border-slate-100 flex flex-wrap items-center justify-between gap-4">
-                  <div>
-                    <div className="text-3xl font-black text-slate-900 font-mono">
-                      {formatPrice(featuredEa.price, featuredEa.currency)}
+                  <div className="space-y-1">
+                    <div className="flex items-center gap-2">
+                      <span className="px-2.5 py-0.5 rounded-full bg-rose-50 text-rose-700 border border-rose-200 text-[10px] font-mono font-bold uppercase tracking-wider">
+                        50% OFF SPECIAL
+                      </span>
+                      <span className="text-xs text-slate-400 font-mono line-through font-normal">
+                        Normal: {formatPrice(featuredEa.original_price || 238.8, featuredEa.currency)}
+                      </span>
                     </div>
-                    <div className="text-[11px] text-slate-500 font-mono">Instant digital download • {featuredEa.currency || 'USD'}</div>
+                    <div className="flex items-baseline gap-2">
+                      <div className="text-3xl font-black text-slate-900 font-mono">
+                        {formatPrice(featuredEa.price, featuredEa.currency)}
+                      </div>
+                      <span className="text-xs font-bold text-emerald-700 font-mono">
+                        (Save 50%)
+                      </span>
+                    </div>
+                    <div className="text-[11px] text-slate-500 font-mono">
+                      Current Special Price • Normal Price: {formatPrice(featuredEa.original_price || 238.8, featuredEa.currency)}
+                    </div>
                   </div>
 
                   <div className="flex items-center gap-3">
@@ -277,10 +292,22 @@ export function TradingEasPage({
 
               <div className="pt-6 mt-6 border-t border-slate-100 flex items-center justify-between">
                 <div>
+                  {(ea.on_special || ea.original_price || ea.id === 'prod_ea_adaptive_liquidity') && (
+                    <div className="flex items-center gap-1.5 mb-0.5">
+                      <span className="px-1.5 py-0.5 rounded bg-rose-50 text-rose-700 border border-rose-200 text-[9px] font-mono font-bold uppercase">
+                        50% OFF SPECIAL
+                      </span>
+                      <span className="text-[11px] text-slate-400 font-mono line-through">
+                        Normal: {formatPrice(ea.original_price || 238.8, ea.currency)}
+                      </span>
+                    </div>
+                  )}
                   <div className="text-xl font-bold text-slate-900 font-mono">
                     {formatPrice(ea.price, ea.currency)}
                   </div>
-                  <div className="text-[10px] text-slate-400">{currentCurrency.code} (Lifetime)</div>
+                  <div className="text-[10px] text-slate-500 font-mono">
+                    {(ea.on_special || ea.id === 'prod_ea_adaptive_liquidity') ? `Current Special: 50% Off (Normal: ${formatPrice(ea.original_price || 238.8, ea.currency)})` : `${currentCurrency.code} (Lifetime)`}
+                  </div>
                 </div>
 
                 <div className="flex items-center gap-2">

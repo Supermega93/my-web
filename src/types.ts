@@ -74,6 +74,9 @@ export interface Product {
   description: string;
   short_description?: string | null;
   price: number;
+  original_price?: number | null;
+  on_special?: boolean;
+  discount_percent?: number;
   currency: string;
   platform?: string | null;
   image_url?: string | null;

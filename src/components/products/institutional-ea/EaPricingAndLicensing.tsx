@@ -16,6 +16,9 @@ export interface PricingTier {
   id: string;
   name: string;
   price: number;
+  originalPrice: number;
+  displayOriginalPrice: string;
+  discountPercent: number;
   currency: string;
   displayPrice: string;
   license: string;
@@ -42,10 +45,13 @@ export function EaPricingAndLicensing({
       id: 'license_6m',
       name: '6 Month License',
       price: 119.4,
+      originalPrice: 238.8,
+      displayOriginalPrice: formatCurrencyPrice(238.8, 'USD'),
+      discountPercent: 50,
       currency: 'USD',
       displayPrice: formatCurrencyPrice(119.4, 'USD'),
       license: 'Access Period: 6 Months Licensed Access',
-      badge: 'STANDARD ACCESS',
+      badge: '50% OFF SPECIAL',
       features: [
         'Full licensed access to Adaptive Liquidity Pro V1.0',
         'All 3 Calibrated Presets (Preservation, Balanced, High Growth)',
@@ -59,10 +65,13 @@ export function EaPricingAndLicensing({
       id: 'license_12m',
       name: '12 Month License',
       price: 179.4,
+      originalPrice: 358.8,
+      displayOriginalPrice: formatCurrencyPrice(358.8, 'USD'),
+      discountPercent: 50,
       currency: 'USD',
       displayPrice: formatCurrencyPrice(179.4, 'USD'),
       license: 'Access Period: 12 Months Licensed Access',
-      badge: 'BEST VALUE',
+      badge: '50% OFF • BEST VALUE',
       popular: true,
       features: [
         'Full licensed access to Adaptive Liquidity Pro V1.0',
@@ -78,10 +87,13 @@ export function EaPricingAndLicensing({
       id: 'license_prop_firm_mobile',
       name: 'Prop Firm & Mobile Version',
       price: 150,
+      originalPrice: 300,
+      displayOriginalPrice: formatCurrencyPrice(300, 'USD'),
+      discountPercent: 50,
       currency: 'USD',
       displayPrice: formatCurrencyPrice(150, 'USD'),
       license: 'Specialized Prop-Firm Trading & Mobile Version',
-      badge: 'PROP FIRM & MOBILE',
+      badge: '50% OFF SPECIAL',
       features: [
         'Engineered specifically for prop-firm trading rules & drawdown safeguards',
         'Full mobile monitoring & management on Android and iOS devices',
@@ -100,8 +112,11 @@ export function EaPricingAndLicensing({
     const customizedProduct: Product = {
       ...product,
       price: tierToUse.price,
+      original_price: tierToUse.originalPrice,
+      on_special: true,
+      discount_percent: 50,
       currency: tierToUse.currency,
-      short_description: `${product.name} (${tierToUse.name}) — ${tierToUse.displayPrice}`
+      short_description: `${product.name} (${tierToUse.name}) — ${tierToUse.displayPrice} (Special: 50% Off, was ${tierToUse.displayOriginalPrice})`
     };
     onBuyNow(customizedProduct, tierToUse);
   };
@@ -110,20 +125,43 @@ export function EaPricingAndLicensing({
     <div ref={pricingRef} className="pt-12 border-t border-slate-200/80 space-y-10">
       <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
         <div className="space-y-2">
-          <span className="text-xs font-mono uppercase tracking-widest text-emerald-800 font-bold">
-            Licensed Access Terms
-          </span>
+          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-rose-50 border border-rose-200 text-rose-700 text-xs font-mono font-bold uppercase tracking-wider">
+            <Sparkles className="w-3.5 h-3.5 text-rose-600" />
+            <span>LIMITED-TIME SPECIAL PRICING — 50% OFF</span>
+          </div>
           <h2 className="text-3xl sm:text-4xl font-black text-slate-950 tracking-tight">
             Acquire Institutional Access
           </h2>
           <p className="text-sm sm:text-base text-slate-600 max-w-2xl font-normal leading-relaxed">
-            Choose your licensed deployment term with pre-calibrated setfiles for all 3 risk tiers, or get the specialized Prop Firm &amp; Mobile Version.
+            Current pricing is on special by 50% off normal retail pricing across all licensed terms and the specialized Prop Firm &amp; Mobile Version.
           </p>
         </div>
 
         <div className="flex items-center gap-2 text-xs font-mono text-slate-600 bg-white border border-slate-200 px-3.5 py-1.5 rounded-full shadow-xs">
           <ShieldCheck className="w-4 h-4 text-emerald-600" />
           <span>Instant Download • Automated Provisioning</span>
+        </div>
+      </div>
+
+      {/* Special Offer Highlight Banner */}
+      <div className="p-4 sm:p-5 rounded-2xl bg-gradient-to-r from-rose-50 via-amber-50 to-emerald-50 border border-rose-200/80 shadow-xs flex flex-col sm:flex-row items-center justify-between gap-4 text-center sm:text-left">
+        <div className="flex items-center gap-3.5">
+          <div className="w-11 h-11 rounded-xl bg-rose-600 text-white flex items-center justify-center shrink-0 shadow-xs font-black font-mono text-sm">
+            -50%
+          </div>
+          <div>
+            <div className="text-xs font-mono font-bold text-rose-800 uppercase tracking-wider">
+              SPECIAL PROMOTION: 50% OFF CURRENT PRICING
+            </div>
+            <div className="text-sm font-bold text-slate-900">
+              All Adaptive Liquidity Pro licenses are currently reduced by 50% from the normal price.
+            </div>
+          </div>
+        </div>
+        <div className="flex items-center gap-2 shrink-0">
+          <span className="px-3 py-1 rounded-full bg-rose-100 text-rose-800 border border-rose-300 font-mono text-xs font-bold">
+            50% SAVINGS APPLIED
+          </span>
         </div>
       </div>
 
@@ -159,11 +197,27 @@ export function EaPricingAndLicensing({
                   <div className="text-xs text-emerald-700 font-mono mt-1 font-semibold">{tier.license}</div>
                 </div>
 
-                <div className="pt-2">
-                  <div className="text-4xl font-black text-slate-900 font-mono">
-                    {tier.displayPrice}
+                <div className="pt-2 space-y-1">
+                  <div className="flex items-center gap-2">
+                    <span className="px-2 py-0.5 rounded-full bg-rose-50 text-rose-700 border border-rose-200 text-[10px] font-mono font-bold uppercase">
+                      50% OFF SPECIAL
+                    </span>
+                    <span className="text-xs text-slate-400 font-mono line-through font-normal">
+                      Normal: {tier.displayOriginalPrice}
+                    </span>
                   </div>
-                  <div className="text-xs text-slate-500 font-mono mt-1">
+                  <div className="flex items-baseline gap-2">
+                    <div className="text-4xl font-black text-slate-900 font-mono">
+                      {tier.displayPrice}
+                    </div>
+                    <span className="text-xs font-bold text-emerald-700 font-mono">
+                      (Save 50%)
+                    </span>
+                  </div>
+                  <div className="text-xs text-slate-500 font-mono">
+                    Current Special Price • Normal Price: {tier.displayOriginalPrice}
+                  </div>
+                  <div className="text-[11px] text-slate-400 font-mono">
                     {currentCurrency.code} • License Term: {tier.name === '12 Month License' ? '12 Months' : '6 Months'} Access Period
                   </div>
                 </div>
@@ -346,17 +400,30 @@ export function EaPricingAndLicensing({
 
               {/* Price & CTA Column */}
               <div className="flex flex-col sm:flex-row lg:flex-col items-start lg:items-end justify-between gap-6 shrink-0 lg:border-l lg:border-slate-800/80 lg:pl-8 lg:w-72">
-                <div className="space-y-1 lg:text-right">
-                  <span className="text-[11px] font-mono uppercase text-slate-400 font-semibold block">
+                <div className="space-y-1.5 lg:text-right">
+                  <div className="flex lg:justify-end items-center gap-2">
+                    <span className="px-2 py-0.5 rounded-full bg-rose-500/20 text-rose-300 border border-rose-500/40 text-[10px] font-mono font-bold uppercase">
+                      50% OFF SPECIAL
+                    </span>
+                    <span className="text-xs text-slate-400 font-mono line-through font-normal">
+                      Normal: {propTier.displayOriginalPrice}
+                    </span>
+                  </div>
+                  <span className="text-[11px] font-mono uppercase text-slate-300 font-semibold block">
                     Prop Firm &amp; Mobile Version
                   </span>
-                  <div className="text-4xl sm:text-5xl font-black text-white font-mono">
-                    {propTier.displayPrice}
+                  <div className="flex lg:justify-end items-baseline gap-2">
+                    <div className="text-4xl sm:text-5xl font-black text-white font-mono">
+                      {propTier.displayPrice}
+                    </div>
+                    <span className="text-xs font-bold text-emerald-400 font-mono">
+                      (Save 50%)
+                    </span>
                   </div>
                   <span className="text-xs font-mono text-emerald-400 block">
-                    Prop-Firm Optimized • Mobile Ready
+                    Current Special Price (Normal: {propTier.displayOriginalPrice}) • Mobile Ready
                   </span>
-                  <span className="text-[11px] text-slate-400 font-sans block pt-1">
+                  <span className="text-[11px] text-slate-400 font-sans block pt-0.5">
                     Personal or self installation included
                   </span>
                 </div>
